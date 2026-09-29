@@ -1,0 +1,23 @@
+ARG NIM_VERSION=2.2.10
+
+FROM nimlang/nim:${NIM_VERSION}
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    build-essential \
+    ca-certificates \
+    curl \
+    git \
+    libsqlite3-dev \
+    libssl-dev \
+    liburing-dev \
+    make \
+    pkg-config \
+    procps \
+    python3 \
+    wrk \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /work
+
+CMD ["bash"]

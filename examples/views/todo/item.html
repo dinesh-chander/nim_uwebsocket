@@ -1,0 +1,1 @@
+<li id="todo-{{id}}"><label class="{{done_class}}"><input type="checkbox" hx-post="/todos/{{id}}/toggle" hx-target="closest li" hx-swap="outerHTML"{{checked}}><span>{{title}}</span></label><button hx-delete="/todos/{{id}}" hx-target="closest li" hx-swap="delete">Delete</button></li>

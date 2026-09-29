@@ -1,0 +1,30 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "nim_express REST OpenAPI example",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "paths": {
+    "/api/todos": {
+      "get": {
+        "summary": "List todos"
+      },
+      "post": {
+        "summary": "Create todo"
+      }
+    },
+    "/api/todos/{id}": {
+      "get": {
+        "summary": "Get todo by id"
+      },
+      "delete": {
+        "summary": "Delete todo by id"
+      }
+    }
+  }
+}

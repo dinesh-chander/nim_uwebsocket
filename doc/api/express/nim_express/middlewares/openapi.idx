@@ -1,0 +1,16 @@
+nimTitle	openapi	nim_express/middlewares/openapi.html	module nim_express/middlewares/openapi		0
+nim	OpenApiContact	nim_express/middlewares/openapi.html#OpenApiContact	object OpenApiContact		8
+nim	OpenApiInfo	nim_express/middlewares/openapi.html#OpenApiInfo	object OpenApiInfo		13
+nim	RouteDoc	nim_express/middlewares/openapi.html#RouteDoc	object RouteDoc		19
+nim	OpenApiParam	nim_express/middlewares/openapi.html#OpenApiParam	object OpenApiParam		31
+nim	OpenApiOptions	nim_express/middlewares/openapi.html#OpenApiOptions	object OpenApiOptions		38
+nim	OpenApiRegistry	nim_express/middlewares/openapi.html#OpenApiRegistry	type OpenApiRegistry		44
+nim	defaultOpenApiOptions	nim_express/middlewares/openapi.html#defaultOpenApiOptions	proc defaultOpenApiOptions(): OpenApiOptions		50
+nim	newOpenApiRegistry	nim_express/middlewares/openapi.html#newOpenApiRegistry	proc newOpenApiRegistry(): OpenApiRegistry		64
+nim	document	nim_express/middlewares/openapi.html#document,OpenApiRegistry,string,string,RouteDoc	proc document(registry: OpenApiRegistry; httpMethod: string; pattern: string;\n         doc: RouteDoc)		74
+nim	documentGet	nim_express/middlewares/openapi.html#documentGet,OpenApiRegistry,string,RouteDoc	proc documentGet(registry: OpenApiRegistry; pattern: string; doc: RouteDoc)		86
+nim	documentPost	nim_express/middlewares/openapi.html#documentPost,OpenApiRegistry,string,RouteDoc	proc documentPost(registry: OpenApiRegistry; pattern: string; doc: RouteDoc)		90
+nim	documentPut	nim_express/middlewares/openapi.html#documentPut,OpenApiRegistry,string,RouteDoc	proc documentPut(registry: OpenApiRegistry; pattern: string; doc: RouteDoc)		94
+nim	documentDelete	nim_express/middlewares/openapi.html#documentDelete,OpenApiRegistry,string,RouteDoc	proc documentDelete(registry: OpenApiRegistry; pattern: string; doc: RouteDoc)		98
+nim	documentPatch	nim_express/middlewares/openapi.html#documentPatch,OpenApiRegistry,string,RouteDoc	proc documentPatch(registry: OpenApiRegistry; pattern: string; doc: RouteDoc)		102
+nim	openapi	nim_express/middlewares/openapi.html#openapi,OpenApiRegistry,OpenApiOptions	proc openapi(registry: OpenApiRegistry;\n        options: OpenApiOptions = defaultOpenApiOptions()): AsyncMiddleware		282

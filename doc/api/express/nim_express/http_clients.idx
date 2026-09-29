@@ -1,0 +1,8 @@
+nimTitle	http_clients	nim_express/http_clients.html	module nim_express/http_clients		0
+nim	HttpClientRegistry	nim_express/http_clients.html#HttpClientRegistry	object HttpClientRegistry		11
+nim	parseHttpClientConfig	nim_express/http_clients.html#parseHttpClientConfig,JsonNode	proc parseHttpClientConfig(j: JsonNode): HttpClientConfig		16
+nim	initRegistry	nim_express/http_clients.html#initRegistry	proc initRegistry(): HttpClientRegistry		47
+nim	loadHttpClients	nim_express/http_clients.html#loadHttpClients,string	proc loadHttpClients(configPath: string): HttpClientRegistry		52
+nim	initRegistryClients	nim_express/http_clients.html#initRegistryClients,HttpClientRegistry,UsLoopPtr	proc initRegistryClients(registry: var HttpClientRegistry; loop: UsLoopPtr)		77
+nim	getClient	nim_express/http_clients.html#getClient,HttpClientRegistry,string	proc getClient(registry: HttpClientRegistry; name: string): ptr fasttypes.HttpClient		84
+nim	closeAll	nim_express/http_clients.html#closeAll,HttpClientRegistry	proc closeAll(registry: var HttpClientRegistry)		90

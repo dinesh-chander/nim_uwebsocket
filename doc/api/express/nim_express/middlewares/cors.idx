@@ -1,0 +1,5 @@
+nimTitle	cors	nim_express/middlewares/cors.html	module nim_express/middlewares/cors		0
+nim	CorsOptions	nim_express/middlewares/cors.html#CorsOptions	object CorsOptions		28
+nim	corsOriginMatched	nim_express/middlewares/cors.html#corsOriginMatched,string,seq[string]	proc corsOriginMatched(origin: string; allowlist: seq[string]): bool		51
+nim	cors	nim_express/middlewares/cors.html#cors,CorsOptions	proc cors(options: CorsOptions = CorsOptions()): AsyncMiddleware		263
+nim	corsSync	nim_express/middlewares/cors.html#corsSync,CorsOptions	proc corsSync(options: CorsOptions = CorsOptions()): SyncNextMiddleware		275

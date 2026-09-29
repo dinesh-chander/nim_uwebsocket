@@ -1,0 +1,2 @@
+nimTitle	cookie_parser	nim_express/middlewares/cookie_parser.html	module nim_express/middlewares/cookie_parser		0
+nim	cookieParser	nim_express/middlewares/cookie_parser.html#cookieParser	proc cookieParser(): AsyncMiddleware		23

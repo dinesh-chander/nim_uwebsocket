@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>nim_express Chat Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f4ed;
+      --panel: #fffdf8;
+      --ink: #1d1f21;
+      --muted: #6f756f;
+      --accent: #0f766e;
+      --accent-2: #d97706;
+      --border: #d9d3c3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", serif;
+      background:
+        radial-gradient(circle at top left, rgba(217,119,6,0.12), transparent 30%),
+        radial-gradient(circle at top right, rgba(15,118,110,0.10), transparent 35%),
+        var(--bg);
+      color: var(--ink);
+    }
+    main {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+    .hero {
+      margin-bottom: 24px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 20px;
+      box-shadow: 0 18px 50px rgba(29, 31, 33, 0.08);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 6vw, 3.6rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+    p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 28px rgba(29, 31, 33, 0.06);
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      cursor: pointer;
+      color: white;
+      background: var(--accent);
+    }
+    button.secondary {
+      background: var(--accent-2);
+    }
+    .status {
+      margin-top: 14px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    #messages {
+      display: grid;
+      gap: 10px;
+      max-height: 420px;
+      overflow: auto;
+      padding-right: 6px;
+    }
+    .msg {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #fff;
+      border: 1px solid var(--border);
+    }
+    .msg.broadcast {
+      border-left: 4px solid var(--accent);
+    }
+    .msg.direct {
+      border-left: 4px solid var(--accent-2);
+    }
+    .msg.system {
+      background: #f5f7f6;
+    }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    code {
+      font-family: "SFMono-Regular", ui-monospace, monospace;
+      font-size: 0.92em;
+    }
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <h1>Chat Demo</h1>
+      <p>A minimal <code>nim_express</code> websocket example with two flows: direct single-message replies and broadcast fan-out.</p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <label for="author">Display name</label>
+        <input id="author" value="guest">
+
+        <label for="target" style="margin-top: 16px;">Direct target client ID</label>
+        <input id="target" placeholder="e.g. 2">
+
+        <label for="text" style="margin-top: 16px;">Message</label>
+        <textarea id="text" placeholder="Type a message..."></textarea>
+
+        <div class="row">
+          <button id="send-direct" type="button">Send Direct</button>
+          <button id="send-broadcast" class="secondary" type="button">Broadcast</button>
+        </div>
+
+        <div class="status" id="status">Connecting…</div>
+      </article>
+
+      <article class="card">
+        <div id="messages" aria-live="polite"></div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const messagesEl = document.getElementById("messages");
+    const authorEl = document.getElementById("author");
+    const targetEl = document.getElementById("target");
+    const textEl = document.getElementById("text");
+    const directBtn = document.getElementById("send-direct");
+    const broadcastBtn = document.getElementById("send-broadcast");
+
+    const scheme = location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(`${scheme}://${location.host}/ws`);
+
+    function appendMessage(kind, scope, author, text) {
+      const item = document.createElement("div");
+      item.className = `msg ${scope || "system"} ${kind === "error" ? "system" : ""}`;
+      const ts = new Date().toLocaleTimeString();
+      item.innerHTML = `
+        <div class="meta">
+          <strong>${author || "system"}</strong>
+          <span>${scope || "system"} · ${ts}</span>
+        </div>
+        <div>${text}</div>
+      `;
+      messagesEl.prepend(item);
+    }
+
+    function send(scope) {
+      const text = textEl.value.trim();
+      if (!text) {
+        textEl.focus();
+        return;
+      }
+      const payload = {
+        scope,
+        author: authorEl.value.trim() || "guest",
+        text
+      };
+      if (scope === "direct") {
+        const target = targetEl.value.trim();
+        if (!target) {
+          targetEl.focus();
+          statusEl.textContent = "Enter a target client ID for direct messages";
+          return;
+        }
+        payload.target = target;
+      }
+      ws.send(JSON.stringify({
+        ...payload
+      }));
+      textEl.value = "";
+      textEl.focus();
+    }
+
+    ws.addEventListener("open", () => {
+      statusEl.textContent = "Connected";
+    });
+
+    ws.addEventListener("close", () => {
+      statusEl.textContent = "Disconnected";
+    });
+
+    ws.addEventListener("message", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.kind === "ack") {
+          statusEl.textContent = data.scope === "broadcast"
+            ? `Broadcast delivered to ${data.delivered} subscriber(s)`
+            : `Direct message delivered to client #${data.target}`;
+          return;
+        }
+        if (data.kind === "welcome") {
+          statusEl.textContent = `Connected as client #${data.clientId}`;
+          targetEl.placeholder = `Try another client ID, not ${data.clientId}`;
+          appendMessage("system", "system", "server", data.text);
+          return;
+        }
+        appendMessage(data.kind, data.scope, data.author, data.text);
+      } catch (_) {
+        appendMessage("message", "system", "server", event.data);
+      }
+    });
+
+    directBtn.addEventListener("click", () => send("direct"));
+    broadcastBtn.addEventListener("click", () => send("broadcast"));
+    textEl.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+        send(event.shiftKey ? "broadcast" : "direct");
+      }
+    });
+  </script>
+</body>
+</html>

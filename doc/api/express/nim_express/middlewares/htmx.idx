@@ -1,0 +1,2 @@
+nimTitle	htmx	nim_express/middlewares/htmx.html	module nim_express/middlewares/htmx		0
+nim	htmx	nim_express/middlewares/htmx.html#htmx	proc htmx(): AsyncMiddleware		10

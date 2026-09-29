@@ -1,0 +1,10 @@
+nimTitle	panic_recovery	nim_express/middlewares/panic_recovery.html	module nim_express/middlewares/panic_recovery		0
+nim	erfJson	nim_express/middlewares/panic_recovery.html#erfJson	ErrorResponseFormat.erfJson		9
+nim	erfPlainText	nim_express/middlewares/panic_recovery.html#erfPlainText	ErrorResponseFormat.erfPlainText		9
+nim	ErrorResponseFormat	nim_express/middlewares/panic_recovery.html#ErrorResponseFormat	enum ErrorResponseFormat		9
+nim	ErrorReportHook	nim_express/middlewares/panic_recovery.html#ErrorReportHook	type ErrorReportHook		13
+nim	PanicRecoveryOptions	nim_express/middlewares/panic_recovery.html#PanicRecoveryOptions	object PanicRecoveryOptions		18
+nim	defaultPanicRecoveryOptions	nim_express/middlewares/panic_recovery.html#defaultPanicRecoveryOptions	proc defaultPanicRecoveryOptions(): PanicRecoveryOptions		28
+nim	panicRecovery	nim_express/middlewares/panic_recovery.html#panicRecovery,PanicRecoveryOptions	proc panicRecovery(options: PanicRecoveryOptions = defaultPanicRecoveryOptions()): AsyncMiddleware		72
+nim	panicRecovery	nim_express/middlewares/panic_recovery.html#panicRecovery,ErrorReportHook	proc panicRecovery(reportHook: ErrorReportHook): AsyncMiddleware		106
+nimgrp	panicrecovery	nim_express/middlewares/panic_recovery.html#panicRecovery-procs-all	proc		72

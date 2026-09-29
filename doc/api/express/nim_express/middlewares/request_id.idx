@@ -1,0 +1,3 @@
+nimTitle	request_id	nim_express/middlewares/request_id.html	module nim_express/middlewares/request_id		0
+nim	buildFallbackRequestId	nim_express/middlewares/request_id.html#buildFallbackRequestId	proc buildFallbackRequestId(): string		13
+nim	requestId	nim_express/middlewares/request_id.html#requestId,bool,string	proc requestId(trustUpstream: bool = false; headerName: string = "x-request-id"): AsyncMiddleware		45

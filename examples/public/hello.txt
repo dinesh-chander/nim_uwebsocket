@@ -1,0 +1,1 @@
+hello from middleware_showcase_app static middleware

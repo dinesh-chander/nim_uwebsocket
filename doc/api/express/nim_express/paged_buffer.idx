@@ -1,0 +1,39 @@
+nimTitle	paged_buffer	nim_express/paged_buffer.html	module nim_express/paged_buffer		0
+nim	DefaultPageBufferSize	nim_express/paged_buffer.html#DefaultPageBufferSize	const DefaultPageBufferSize		5
+nim	DefaultPagePoolLimit	nim_express/paged_buffer.html#DefaultPagePoolLimit	const DefaultPagePoolLimit		6
+nim	HtmlEscapeLookup	nim_express/paged_buffer.html#HtmlEscapeLookup	const HtmlEscapeLookup		7
+nim	PageBuffer	nim_express/paged_buffer.html#PageBuffer	object PageBuffer		21
+nim	PagePoolMetrics	nim_express/paged_buffer.html#PagePoolMetrics	object PagePoolMetrics		29
+nim	PagePoolPolicy	nim_express/paged_buffer.html#PagePoolPolicy	object PagePoolPolicy		35
+nim	pagePoolMetrics	nim_express/paged_buffer.html#pagePoolMetrics_2	proc pagePoolMetrics(): PagePoolMetrics		92
+nim	resetPagePoolMetrics	nim_express/paged_buffer.html#resetPagePoolMetrics	proc resetPagePoolMetrics()		104
+nim	pagePoolPolicy	nim_express/paged_buffer.html#pagePoolPolicy_2	proc pagePoolPolicy(): PagePoolPolicy		110
+nim	trimPagePool	nim_express/paged_buffer.html#trimPagePool,int,int64	proc trimPagePool(retainPages: int = -1; retainBytes: int64 = -1'i64): int		116
+nim	setPagePoolEvictionPolicy	nim_express/paged_buffer.html#setPagePoolEvictionPolicy,int,int64,bool,int,int64	proc setPagePoolEvictionPolicy(maxRetainedPages: int = DefaultPagePoolLimit;\n                          maxRetainedBytes: int64 = 0'i64;\n                          trimNow: bool = false; trimTargetPages: int = -1;\n                          trimTargetBytes: int64 = -1'i64): int		146
+nim	initPageBuffer	nim_express/paged_buffer.html#initPageBuffer,int	proc initPageBuffer(pageSize: int = DefaultPageBufferSize): PageBuffer		190
+nim	reservePages	nim_express/paged_buffer.html#reservePages,PageBuffer,int	proc reservePages(buf: var PageBuffer; count: int)		200
+nim	add	nim_express/paged_buffer.html#add,PageBuffer,string	proc add(buf: var PageBuffer; text: string)		268
+nim	appendRawPtr	nim_express/paged_buffer.html#appendRawPtr,PageBuffer,pointer,int	proc appendRawPtr(buf: var PageBuffer; src: pointer; len: int)		273
+nim	appendRawPtr	nim_express/paged_buffer.html#appendRawPtr,string,pointer,int	proc appendRawPtr(dst: var string; src: pointer; len: int)		281
+nim	ensureContiguousWritable	nim_express/paged_buffer.html#ensureContiguousWritable,PageBuffer,int	proc ensureContiguousWritable(buf: var PageBuffer; requiredBytes: int): bool		290
+nim	appendRawContiguousUnsafe	nim_express/paged_buffer.html#appendRawContiguousUnsafe,PageBuffer,pointer,int	proc appendRawContiguousUnsafe(buf: var PageBuffer; src: pointer; len: int)		303
+nim	reserveContiguousWritable	nim_express/paged_buffer.html#reserveContiguousWritable,PageBuffer,int	proc reserveContiguousWritable(buf: var PageBuffer; requiredBytes: int): pointer		318
+nim	appendStringContiguousUnsafe	nim_express/paged_buffer.html#appendStringContiguousUnsafe,PageBuffer,string	proc appendStringContiguousUnsafe(buf: var PageBuffer; text: string)		332
+nim	addSlice	nim_express/paged_buffer.html#addSlice,PageBuffer,string,int,int	proc addSlice(buf: var PageBuffer; text: string; startPos, endPos: int)		339
+nim	add	nim_express/paged_buffer.html#add,PageBuffer,char	proc add(buf: var PageBuffer; c: char)		344
+nim	encodeIntAscii	nim_express/paged_buffer.html#encodeIntAscii,int,openArray[char]	proc encodeIntAscii(n: int; storage: var openArray[char]): tuple[start: int, len: int]		357
+nim	addInt	nim_express/paged_buffer.html#addInt,PageBuffer,int	proc addInt(buf: var PageBuffer; n: int)		394
+nim	hasHtmlEscapes	nim_express/paged_buffer.html#hasHtmlEscapes,pointer,int	proc hasHtmlEscapes(textPtr: pointer; textLen: int): bool		403
+nim	addHtmlEscaped	nim_express/paged_buffer.html#addHtmlEscaped,PageBuffer,string	proc addHtmlEscaped(buf: var PageBuffer; text: string)		415
+nim	addHtmlEscaped	nim_express/paged_buffer.html#addHtmlEscaped,PageBuffer,pointer,int	proc addHtmlEscaped(buf: var PageBuffer; textPtr: pointer; textLen: int)		446
+nim	addHtmlEscaped	nim_express/paged_buffer.html#addHtmlEscaped,string,pointer,int	proc addHtmlEscaped(dst: var string; textPtr: pointer; textLen: int)		512
+nim	isSinglePage	nim_express/paged_buffer.html#isSinglePage,PageBuffer	proc isSinglePage(buf: PageBuffer): bool		553
+nim	firstPageData	nim_express/paged_buffer.html#firstPageData,PageBuffer	proc firstPageData(buf: PageBuffer): tuple[dataPtr: pointer, dataLen: int]		557
+nim	flushTo	nim_express/paged_buffer.html#flushTo,PageBuffer,proc(string)	proc flushTo(buf: var PageBuffer;\n        writeSegment: proc (segment: string): bool {.closure.}): bool		566
+nim	flushToRaw	nim_express/paged_buffer.html#flushToRaw,PageBuffer,proc(pointer,int)	proc flushToRaw(buf: var PageBuffer; writeSegment: proc (segmentPtr: pointer;\n    segmentLen: int): bool {.closure.}): bool		584
+nim	takeStringAndClear	nim_express/paged_buffer.html#takeStringAndClear,PageBuffer	proc takeStringAndClear(buf: var PageBuffer): string		599
+nim	clear	nim_express/paged_buffer.html#clear,PageBuffer	proc clear(buf: var PageBuffer)		615
+nim	release	nim_express/paged_buffer.html#release,PageBuffer	proc release(buf: var PageBuffer)		621
+nimgrp	addhtmlescaped	nim_express/paged_buffer.html#addHtmlEscaped-procs-all	proc		415
+nimgrp	appendrawptr	nim_express/paged_buffer.html#appendRawPtr-procs-all	proc		273
+nimgrp	add	nim_express/paged_buffer.html#add-procs-all	proc		268

@@ -1,0 +1,7 @@
+nimTitle	timeout	nim_express/middlewares/timeout.html	module nim_express/middlewares/timeout		0
+nim	tpApiStrict	nim_express/middlewares/timeout.html#tpApiStrict	TimeoutPreset.tpApiStrict		15
+nim	tpApiDefault	nim_express/middlewares/timeout.html#tpApiDefault	TimeoutPreset.tpApiDefault		15
+nim	tpLongPoll	nim_express/middlewares/timeout.html#tpLongPoll	TimeoutPreset.tpLongPoll		15
+nim	TimeoutPreset	nim_express/middlewares/timeout.html#TimeoutPreset	enum TimeoutPreset		15
+nim	timeout	nim_express/middlewares/timeout.html#timeout,int	proc timeout(ms: int = 30000): AsyncMiddleware		21
+nim	timeoutPreset	nim_express/middlewares/timeout.html#timeoutPreset,TimeoutPreset	proc timeoutPreset(preset: TimeoutPreset): AsyncMiddleware		24

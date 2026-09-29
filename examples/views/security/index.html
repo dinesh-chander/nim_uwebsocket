@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{title}}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 0 auto; padding: 20px; }
+    .panel { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+    input { width: 100%; padding: 8px; margin: 8px 0; }
+    button { padding: 8px 12px; }
+    code { background: #f1f5f9; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>{{title}}</h1>
+  <p>{{subtitle}}</p>
+
+  <div class="panel">
+    <p>Session visit count: <strong>{{visit_count}}</strong></p>
+    <p>CSRF token (for demo): <code>{{csrf_token}}</code></p>
+  </div>
+
+  <form method="post" action="/profile">
+    <input type="hidden" name="_csrf" value="{{csrf_token}}">
+    <label for="display_name">Display name</label>
+    <input id="display_name" type="text" name="display_name" required>
+    <button type="submit">Update profile</button>
+  </form>
+</body>
+</html>

@@ -1,0 +1,641 @@
+## uws-opt-01 (done)
+- Change summary:
+  - Added scoped write batching depth in `onSocketData` request processing loop.
+  - Disabled per-response auto-flush during active batch and flushed once at batch boundary.
+  - Forced queue path (instead of immediate write) for batch mode in `sendPreparedResponse`, `sendFilePreparedResponse`, and chunked-start path.
+  - Initialized/reset `writeBatchDepth` in socket open/close lifecycle.
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/websocket.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - `wrk -t8 -c256 -d10s http://127.0.0.1:3002/plaintext` -> `Requests/sec: 121407.95`
+  - `nim c ... -o:benchmark/ws_echo_bench benchmark/ws_echo_bench.nim` -> SuccessX
+  - `node benchmark/ws_bench.js ws://127.0.0.1:3400 220 8 64 16` -> `rttMsgPerSec: 131632.31`, `errors: 0`
+
+## uws-opt-02 (done)
+- Change summary:
+  - Completed tryEnd/onWritable lifecycle surface with explicit write-offset API.
+  - Added low-level `getWriteOffset*(res: HttpResponse): uint64` to expose current progressive write position during `tryEnd` flow.
+  - Added framework wrapper `getWriteOffset*(res: Response): uint64` in nim_express.
+  - Lifecycle path in core now supports: `onWritable` handler registration, `tryEnd` progressive writes, and offset introspection via `getWriteOffset`.
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `nim_express/src/nim_express/response.nim`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/response.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - `wrk -t8 -c256 -d10s http://127.0.0.1:3002/plaintext` -> `Requests/sec: 116712.32`, `Transfer/sec: 13.02MB`
+
+## uws-opt-03 (done)
+- Change summary:
+  - Added websocket backpressure policy options to `ServerOptions`: `wsMaxBackpressure`, `wsCloseOnBackpressureLimit`.
+  - Added websocket policy callbacks to server API: `onWebSocketDrain`, `onWebSocketDropped`.
+  - Implemented websocket output queue with partial-write handling (`wsOutQueue`, `wsPendingBytes`) and writable-time draining.
+  - Implemented drop/close behavior when queue growth exceeds configured backpressure limit.
+  - Routed websocket sends (`send`, `ping`, `close`, pong replies) through backpressure-aware send path.
+  - Exposed policy controls/hooks in `nim_express` (`setWsMaxBackpressure`, `setWsCloseOnBackpressureLimit`, `onWsDrain`, `onWsDropped`).
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `nim_express/src/nim_express/types.nim`
+  - `nim_express/src/nim_express/app.nim`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/types.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - `wrk -t8 -c256 -d10s http://127.0.0.1:3002/plaintext` -> `Requests/sec: 130300.83`
+  - `nim c ... -o:benchmark/ws_echo_bench benchmark/ws_echo_bench.nim` -> SuccessX
+  - `node benchmark/ws_bench.js ws://127.0.0.1:3400 220 8 64 16` -> `rttMsgPerSec: 147503.36`, `errors: 0`
+
+## uws-opt-03 (done)
+- Change summary:
+  - Completed WebSocket backpressure lifecycle behavior by opportunistically draining queued WS frames after incoming WS message handling.
+  - Preserved existing policy surface: `wsMaxBackpressure`, `wsCloseOnBackpressureLimit`, `onWebSocketDrain`, `onWebSocketDropped`, and queued-frame bounded buffering.
+  - Ensured defaults/initialization are consistent with bounded buffering expectations (`DefaultWsMaxBackpressure`, explicit handler init).
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - `node benchmark/ws_bench.js ws://127.0.0.1:3400 120 8 64 8` (with `benchmark/ws_echo_bench`) -> `rttMsgPerSec: 136663.99`, `errors: 0`
+
+## uws-opt-04 (done)
+- Change summary:
+  - Added configurable WebSocket idle timeout controls in core server options:
+    - `wsIdleTimeoutSeconds` (0 disables timeout)
+    - `wsResetIdleTimeoutOnSend` (refresh timeout on successful send/drain)
+  - Wired timeout refresh into WS send/drain paths and WS read activity path.
+  - Applied WS timeout at upgrade time and made `onSocketTimeout` enforce WS idle close only when configured.
+  - Added framework-level setters: `setWsIdleTimeout` and `setWsResetIdleTimeoutOnSend`.
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `nim_express/src/nim_express/app.nim`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - `node benchmark/ws_bench.js ws://127.0.0.1:3400 120 8 64 8` (with rebuilt `benchmark/ws_echo_bench`) -> `rttMsgPerSec: 135579.59`, `errors: 0`
+  - WS idle timeout smoke (`setWsIdleTimeout(1)`) -> `closed:true` within 4s
+
+## uws-opt-04 (done)
+- Change summary:
+  - Completed configurable WS idle-timeout refresh behavior on outbound send/drain path via `wsResetIdleTimeoutOnSend`.
+  - Ensured refresh is invoked after successful websocket writes in both direct-send and queued-drain paths.
+  - Exposed runtime control through `setWsResetIdleTimeoutOnSend` in core server and app API.
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `nim_express/src/nim_express/app.nim`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - `wrk -t8 -c256 -d10s http://127.0.0.1:3002/plaintext` (with `benchmark/bench_nim_express`) -> `Requests/sec: 125635.92`
+  - `node benchmark/ws_bench.js ws://127.0.0.1:3400 120 8 64 8` (with `benchmark/ws_echo_bench`) -> `rttMsgPerSec: 126870.5`, `errors: 0`
+
+## uws-opt-05 (done)
+- Change summary:
+  - Added prepared websocket message API:
+    - `PreparedWsMessage`
+    - `prepareWsMessage(data, binary=false)`
+    - `ws.sendPrepared(msg)`
+    - `server.broadcastPrepared(msg)`
+  - Added large-message fast path for regular `ws.send(...)`: now attempts direct header+payload write first (`writeWsFrame`, no pre-merge copy) and only builds/queues framed string on partial/backpressured writes.
+  - Kept bounded queue/backpressure/drop semantics intact for both normal and prepared sends.
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - Prepared-send smoke (`/tmp/ws_prepared_smoke`) + Node client -> echoed `hello`
+  - `node benchmark/ws_bench.js ws://127.0.0.1:3400 120 8 64 8` -> `rttMsgPerSec: 121054.74`, `errors: 0`
+
+## uws-opt-06 (done)
+- Change summary:
+  - Added topic-based WS pub/sub API in core:
+    - `ws.subscribe(topic)` / `ws.unsubscribe(topic)`
+    - `server.publish(topic, data, binary=false)`
+    - `server.publishPrepared(topic, preparedMsg)`
+  - Added per-server topic index/subscriber tracking optimized with `FastMap[int64]` + compact seq storage.
+  - Added batched drain-callback scheduling per loop iteration:
+    - queue drained sockets into server drain queue
+    - flush callbacks in `onLoopPost` once per iteration (deduped by `FastSet`)
+  - Added app wrappers: `app.publish(...)` and `app.publishPrepared(...)`.
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `nim_express/src/nim_express/app.nim`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - Pub/sub ordering smoke (`/tmp/ws_pubsub_smoke` + Node) -> `order:true`
+  - Fanout micro-bench (50 subs x 2000 msgs) -> `fanout_deliveries_per_sec:389105.06`
+
+## uws-opt-05 (done)
+- Change summary:
+  - Added large-payload fast path (`WsPreparedDirectThreshold`) so websocket sends >= 4KB use framed/backpressure path directly.
+  - Added app-level broadcast helpers: `broadcastWs` and `broadcastPreparedWs` for reuse of prepared frames.
+  - Updated `htmx_app` live updates to pre-frame and broadcast shared time payload once per tick via prepared WS API.
+  - Fixed forward declaration ordering for `socketDataFor` in `http.nim` after ws-drain queue helpers.
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `nim_express/src/nim_express/app.nim`
+  - `nim_express/examples/htmx_app.nim`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `nim check nim_express/examples/htmx_app.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - `wrk -t8 -c256 -d10s http://127.0.0.1:3002/plaintext` (with `benchmark/bench_nim_express`) -> `Requests/sec: 114249.22`
+  - `node benchmark/ws_bench.js ws://127.0.0.1:3400 120 8 64 8` (with `benchmark/ws_echo_bench`) -> `rttMsgPerSec: 127495.85`, `errors: 0`
+  - `nim c ... -o:../bin/htmx_app htmx_app.nim` (from `nim_express/examples`) -> SuccessX
+  - `curl http://127.0.0.1:3000/` (with `nim_express/bin/htmx_app`) -> HTML response returned.
+- Notes:
+  - `make examples` currently fails in `basic_app.nim` (existing type mismatch in `render` locals), unrelated to this task.
+
+## uws-opt-07 (done)
+- Change summary:
+  - Added distinct deferred queues for loop pre/post phases in core server (`deferredPreCallbacks`, existing post queue retained).
+  - Added API `deferPre*(server, cb)` and kept post-queue API as ``defer`` with escaped identifier.
+  - Added unified deferred queue flusher and integrated execution into loop shims:
+    - `onLoopPre`: flush pre-queue, then user pre-callback.
+    - `onLoopPost`: flush WS drain queue, flush post-queue, then user post-callback.
+  - Updated loop creation to always bind `onLoopPre/onLoopPost` shims so internal deferred/drain maintenance runs even when users do not configure loop callbacks.
+  - Added framework wrappers in `nim_express`:
+    - `deferPre*(app, cb)`
+    - ``defer``*(app, cb)
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `nim_express/src/nim_express/app.nim`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - `wrk -t8 -c256 -d10s http://127.0.0.1:3002/plaintext` (with `benchmark/bench_nim_express`) -> `Requests/sec: 119491.15`, `Transfer/sec: 13.33MB`
+  - `nim c ... -o:benchmark/ws_echo_bench benchmark/ws_echo_bench.nim` -> SuccessX
+  - `node benchmark/ws_bench.js ws://127.0.0.1:3400 120 8 64 8` -> `rttMsgPerSec: 126346.07`, `errors: 0`
+
+## uws-opt-08 (done)
+- Change summary:
+  - Finalized loop-cached `Date` response header support in core HTTP path.
+  - Reused a cached RFC date header line (`cachedDateHeaderLine` / `cachedDateEpochSec`) and injected it only when user code did not set `date` explicitly.
+  - Ensured coverage across response emission paths (`sendHeaders`, end/tryEnd builders, simple responses).
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - `wrk -t8 -c256 -d10s http://127.0.0.1:3002/plaintext` (with `benchmark/bench_nim_express`) -> `Requests/sec: 119489.73`, `Transfer/sec: 13.33MB`
+
+## uws-opt-09 (pending)
+- Attempt summary:
+  - Audited parser hot path and copy/compaction behavior (`findCrlf`, `parseHttpRequest`, `decodeChunkedBody`, socket compaction thresholds).
+  - Confirmed this task requires a coordinated parser signature refactor (bounded parse limit + post-padding semantics) and corresponding `onSocketData` buffer lifecycle changes.
+- Commands:
+  - `rg -n "findCrlf\(|parseHttpRequest\(|decodeChunkedBody\(|compactSocketBuffer\(|InputCompactThreshold" nim_uwebsockets/src/nim_uwebsockets/http.nim`
+- Blocker:
+  - Safe post-padding adoption cannot be applied as a narrow patch: it affects chunked decode, request-size accounting, pipelined-request boundaries, and compaction behavior together.
+  - Applying only partial changes risks HTTP framing regressions (especially pipelining/chunked trailers).
+- Next step:
+  - Keep `uws-opt-09` pending and execute as a dedicated parser refactor pass with targeted compliance tests before marking done.
+
+## uws-opt-09 (done)
+- Change summary:
+  - Implemented bounded header parsing in `parseHttpRequest` using `findHeaderTerminator` + `findCrlfBounded` so request-line/header scans are fenced to the header block and do not scan body/pipelined bytes.
+  - Updated header loop to parse only up to `headersEnd` and then jump directly to body start with `pos = headersEnd + 4` (minimal-copy flow preserved for body extraction).
+  - Kept malformed-frame safeguards active with explicit bounds checks (`lineEnd > headersEnd` => parse error).
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - `curl -i -s http://127.0.0.1:3002/plaintext | sed -n '1,20p'` (with `./benchmark/bench_nim_express` running) ->
+    - `HTTP/1.1 200 OK`
+    - `content-length: 13`
+    - body: `Hello, World!`
+
+## uws-opt-10 (done)
+- Change summary:
+  - Added fast request header presence flags in `HttpRequest` (`headerFlags`) for hot headers.
+  - Tracked special WS header values directly during parse (`upgradeHeader`, `secWebSocketKeyHeader`, `secWebSocketVersionHeader`) to avoid repeated map lookups.
+  - Wired flags into both minimal and full header parse branches.
+  - Updated websocket upgrade validation paths (`isWebSocketUpgrade`, `validateWebSocketUpgrade`, `upgradeToWebSocket`) to use fast fields/flags with map fallback.
+  - Restored missing `findHeaderTerminator` helper required by bounded-header parsing path.
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - `wrk -t8 -c256 -d10s http://127.0.0.1:3002/plaintext` (with `benchmark/bench_nim_express`) -> `Requests/sec: 124835.81`, `Transfer/sec: 13.93MB`
+
+## uws-opt-11 (done)
+- Change summary:
+  - Added route hot-path metadata (`staticPrefix`, `firstLiteralSegment`, `minSegmentCount`, `maxSegmentCount`) to precompute segment/prefix constraints at route registration.
+  - Added dynamic-route fast reject path in `findRoute` with per-request path segment analysis to avoid unnecessary full matcher scans.
+  - Preserved existing route semantics by keeping `matchRoute` as final authority after fast checks.
+- Files:
+  - `nim_express/src/nim_express/types.nim`
+  - `nim_express/src/nim_express/app.nim`
+- Validation commands/results:
+  - `nim check nim_express/src/nim_express/types.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `make bench` -> SuccessX
+  - `wrk -t8 -c256 -d10s http://127.0.0.1:3002/plaintext` -> `Requests/sec: 130316.63`
+
+## uws-opt-12 (done)
+- Change summary:
+  - Added HTTP stream-control APIs: `pauseRead`, `resumeRead`, `isReadPaused` on `HttpResponse` and framework wrappers on `Response`.
+  - Implemented safe deferred resume processing (single-flight) to avoid recursive `onSocketData` re-entry.
+  - Added socket-level `readPaused`/`resumeScheduled` state and parser-loop pause guards.
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `nim_express/src/nim_express/response.nim`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/response.nim` -> SuccessX
+  - pause/resume smoke (`benchmark/pause_resume_smoke_dbg` + `curl -X POST /pause`) -> `HTTP/1.1 200 OK`, body `ok`
+
+## framework-hooks-config-suite (done)
+- Change summary:
+  - Added core lifecycle and write-path hooks in `nim_uwebsockets`:
+    - connection open/close, request start/end, before headers, before/after write, backpressure, timeout, error, panic.
+  - Added framework-level hook APIs in `nim_express` and wired them to core callbacks.
+  - Added compression policy config + hooks in framework (`shouldCompress`, `selectCompressionProfile`, `onCompressionResult`, `onCompressionBypass`) and integrated them into response compression path.
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `nim_express/src/nim_express/types.nim`
+  - `nim_express/src/nim_express/app.nim`
+  - `nim_express/src/nim_express/response.nim`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/types.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/response.nim` -> SuccessX
+
+## iter-http-standards-15 (done)
+- Report:
+  - `benchmark/http_compliance_iterations_20260305.md`
+- Summary:
+  - 15/15 iterations passed for key compliance checks:
+    - `GET` success (200)
+    - unsupported `TRACE` returns 501
+    - missing `Host` in HTTP/1.1 returns 400
+    - invalid `Content-Length` returns 400
+
+## iter-todo-http-15 (done)
+- Report:
+  - `benchmark/todo_http_iterations_20260305.md`
+- Summary:
+  - 15 benchmark iterations on `/todos/fragment` (`wrk -t8 -c200 -d5s`)
+  - Average throughput: `3539.23 req/s`
+  - Stable latency envelope around ~55ms average under configured load.
+
+## iter-ws-realistic-20 (done)
+- Report:
+  - `benchmark/ws_realistic_iterations_20260305.md`
+- Summary:
+  - 20 realistic WS RTT iterations (`220 clients`, `payload 64`, `maxInflight 16`, `4s`) on `ws://127.0.0.1:3400`
+  - Average throughput: `127443.26 msg/s`
+  - Errors remained `0` across all runs.
+  - 200k+ target not reached on current macOS setup; observed ceiling remained in ~123k-132k range for this scenario.
+
+## unit-tests-all-modules (done)
+- Added tests:
+  - `nim_express/tests/test_route_hotpath_meta.nim`
+  - `nim_express/tests/test_hooks_and_compression.nim`
+  - `nim_uwebsockets/tests/test_stream_control_hooks.nim`
+- Existing tests retained:
+  - `nim_express/tests/test_fast_collections.nim`
+- Validation command/result:
+  - `make test` -> all suites pass.
+
+## cleanup-production-ready (done)
+- Cleanup summary:
+  - Removed temporary pause/resume smoke artifacts from `benchmark/`.
+  - Added stable test target (`make test`) and preserved benchmark/compliance reports as production-readiness artifacts.
+  - Kept core build/bench paths intact (`make bench`, `make examples`, `make test`).
+
+## crossfw-opt-01..20 (done)
+- Change summary:
+  - Added transport-aware write tuning and TLS flatten threshold controls in `nim_uwebsockets` (`setTlsFlattenThreshold`, `setWriteCoalesceLimits`) and exposed these in `nim_express`.
+  - Added adaptive read-buffer policy with hysteresis (`setAdaptiveReadBuffer`), parse fairness budgets (`setParseFairnessBudget`), overload admission control (`setOverloadController`), large-body spill-to-disk (`setBodySpillToDisk`), and socket kernel tunables (`setSocketTunables`).
+  - Added low-level observability counters and app-level snapshots (`optimizationMetrics`, parser/overload/write/backpressure counters).
+  - Switched parser query handling to lazy query-map materialization in `nim_express` and added spilled-body lazy load/cleanup lifecycle.
+  - Accelerated framework template rendering using compiled token plans + thread-local cache and preserved placeholder pass-through semantics for missing locals.
+  - Reduced todo MVC hot-path hash overhead by replacing per-call template table lookups with direct thread-local compiled template cache.
+  - Added static-file precompressed asset selection (`.br`/`.gz`) with `Vary: Accept-Encoding` support.
+  - Added benchmark/profile automation and reports:
+    - `benchmark/run_benchmark_matrix.sh`
+    - `benchmark/profile_and_observe.sh`
+    - `benchmark/run_template_bench.sh`
+    - `benchmark/bench_template_pipeline.nim`
+    - `benchmark/linux_affinity_numa.sh`
+    - `benchmark/http2_feasibility_plan.md`
+    - `benchmark/observability_schema.md`
+  - Added `Makefile` targets: `bench-matrix`, `profile-loop`, `template-bench`.
+- Files:
+  - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+  - `nim_express/src/nim_express/app.nim`
+  - `nim_express/src/nim_express/types.nim`
+  - `nim_express/src/nim_express/response.nim`
+  - `nim_express/src/nim_express/middlewares/file_helpers.nim`
+  - `nim_express/examples/todo_sqlite_mvc/todo_view.nim`
+  - `benchmark/bench_template_pipeline.nim`
+  - `benchmark/run_benchmark_matrix.sh`
+  - `benchmark/profile_and_observe.sh`
+  - `benchmark/run_template_bench.sh`
+  - `benchmark/linux_affinity_numa.sh`
+  - `benchmark/http2_feasibility_plan.md`
+  - `benchmark/observability_schema.md`
+  - `Makefile`
+  - `todo.json`
+- Validation commands/results:
+  - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/types.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/response.nim` -> SuccessX
+  - `nim check nim_express/src/nim_express/app.nim` -> SuccessX
+  - `nim check nim_express/examples/todo_sqlite_mvc/todo_view.nim` -> SuccessX
+  - `nim check benchmark/bench_template_pipeline.nim` -> SuccessX
+  - `bash -n benchmark/run_benchmark_matrix.sh benchmark/profile_and_observe.sh benchmark/linux_affinity_numa.sh benchmark/run_template_bench.sh` -> SuccessX
+
+## fa-opt-16-fragment-windowing-mode (done)
+- Change summary:
+  - Added optional range-based windowing mode for `GET /todos/fragment` behind query toggle (`mode=window` or `window=true`).
+  - Implemented HTTP-compliant `Range: items=<start>-<end>` parsing and `206`/`416` response behavior with `Accept-Ranges` and `Content-Range`.
+  - Added framework helpers:
+    - `nim_express/windowing.nim` for range parsing and content-range formatting.
+    - `Response.acceptRanges`, `Response.contentRange`, and `Response.contentRangeUnsatisfied`.
+  - Added model support for windowed list queries and total-count retrieval:
+    - `streamTodosFragmentWindow(offset, limit, onRow)`
+    - `countTodos()`
+  - Added benchmark hook script for A/B full-vs-windowed fragment runs:
+    - `benchmark/run_todo_fragment_windowing.sh`
+- Files:
+  - `nim_express/src/nim_express/windowing.nim`
+  - `nim_express/src/nim_express/response.nim`
+  - `nim_express/src/nim_express.nim`
+  - `nim_express/examples/todo_sqlite_mvc/todo_model.nim`
+  - `nim_express/examples/todo_sqlite_mvc/todo_controller.nim`
+  - `nim_express/tests/test_fragment_windowing.nim`
+  - `Makefile`
+  - `http_compliance.md`
+  - `benchmark/run_todo_fragment_windowing.sh`
+
+## iter-todo-fragment-reprofile-20260306 (done)
+- Reports:
+  - `benchmark/profiles/todo_frag_20260306_180612/wrk.txt`
+  - `benchmark/profiles/todo_frag_20260306_180612/top_flat.txt`
+  - `benchmark/profiles/todo_frag_20260306_180633/wrk.txt`
+  - `benchmark/profiles/todo_frag_20260306_180633/top_flat.txt`
+- Validation commands/results:
+  - `bash benchmark/tmp_todo_fragment_profile.sh` -> run1 `Requests/sec: 3345.20`
+  - `bash benchmark/tmp_todo_fragment_profile.sh` -> run2 `Requests/sec: 3340.66`
+  - averaged throughput across both runs -> `3342.93 req/s`
+- Findings:
+  - Current benchmark path is still full fragment path by default. `listTodosHtmx` only uses windowed/hybrid path when query toggle is set (`mode=window` or `window=true`), otherwise it executes `respondTodoListFragment`.
+  - Profile is stable and points to non-template bottlenecks as primary limiters:
+    - ~21% `libdyld\`_tlv_get_addr` (thread-local access overhead)
+    - ~30% combined `sendto` + `platform_memmove` (+ `bzero`) in write/copy path
+    - ~10.5% `sqlite3VdbeExec` plus additional sqlite column/step work
+  - Hot renderer proc `appendTodoItemPlannedFast` is ~1.1-1.2%, so template rendering is no longer the main ceiling.
+  - Given this profile, expecting `4300-4400 req/s` on plain `/todos/fragment` is unlikely without reducing thread-local lookup cost and copy/write/SQLite work, or benchmarking the explicit window mode path.
+
+## todo-fragment-hotpath-remediation-20260306 (in progress)
+- Track 1: `_tlv_get_addr` reduction (in progress)
+  - Planned:
+    - Reduce `threadvar` touches in hot loops.
+    - Move page-pool metrics updates behind compile-time flag in benchmark mode.
+    - Cache pool policy once per `PageBuffer` instance and reuse in inner loops.
+    - Support single-thread benchmark mode with non-TLS page pool storage.
+  - Implemented in this iteration:
+    - Added optional non-threadvar page-pool mode via compile flag `-d:pagepool_single_thread`.
+    - Added compile-time metrics gating via `-d:pagepool_metrics`; hot-path hit/miss counters are now disabled unless explicitly enabled.
+    - Cached `maxRetainedPages`/`maxRetainedBytes` on `PageBuffer` init and used cached values in page recycle/acquire paths.
+    - Avoided retained-bytes accounting writes when byte-budget retention is disabled (`maxRetainedBytes == 0`).
+  - Files:
+    - `nim_express/src/nim_express/paged_buffer.nim`
+  - Validation:
+    - `nim check nim_express/src/nim_express/paged_buffer.nim` -> SuccessX
+    - `nim check nim_express/examples/todo_sqlite_mvc/todo_controller.nim` -> SuccessX
+  - Post-change profile snapshot:
+    - `benchmark/profiles/todo_frag_20260306_185324/wrk.txt` -> `Requests/sec: 3074.68`
+    - `benchmark/profiles/todo_frag_20260306_185324/top_flat.txt` -> `_tlv_get_addr: 14.44%`, `sendto: 16.22%`, `platform_memmove: 14.60%`
+    - Prior snapshot for comparison: `benchmark/profiles/todo_frag_20260306_180633/top_flat.txt` -> `_tlv_get_addr: 21.25%`
+    - Note: throughput is not directly comparable with older archived runs unless built with exactly the same compile profile/build flags.
+
+- Track 2: `sendto + memmove (+ bzero)` reduction (in progress)
+  - Planned:
+    - Avoid per-page `setLen` shrink/restore in flush path by moving toward pointer+len segment writes.
+    - Add vectored/gather write path (`writev`-style) to reduce syscall count.
+    - Increase effective segment size/reduce segment count for fragment responses.
+    - Keep windowed response mode as default for large todo lists to shrink bytes copied/sent.
+  - Implemented in this iteration:
+    - Enabled auto window/hybrid activation when requests already express window semantics (`Range`, `offset`, or `limit`), reducing need for explicit mode toggle in high-throughput clients.
+    - Tried increasing todo fragment page size to reduce segment count, then reverted in the same iteration (no reliable gain under current local run setup).
+    - Added `PageBuffer.flushToRaw(segmentPtr, segmentLen)` and switched `sendPageBuffer` chunked/tryEnd paths to raw segment flushing (no per-page `setLen` shrink/restore during flush).
+    - Tried 64 KiB batch aggregation on top of raw flush and reverted (regressed local throughput and increased `platform_memmove` share).
+  - Files:
+    - `nim_express/src/nim_express/paged_buffer.nim`
+    - `nim_express/src/nim_express/response.nim`
+    - `nim_express/examples/todo_sqlite_mvc/todo_controller.nim`
+  - Validation:
+    - `nim check nim_express/src/nim_express/paged_buffer.nim` -> SuccessX
+    - `nim check nim_express/src/nim_express/response.nim` -> SuccessX
+    - `nim check nim_express/examples/todo_sqlite_mvc/todo_controller.nim` -> SuccessX
+  - Post-change profile snapshots:
+    - `benchmark/profiles/todo_frag_20260306_190038/wrk.txt` -> `Requests/sec: 3226.66`
+    - `benchmark/profiles/todo_frag_20260306_190101/wrk.txt` -> `Requests/sec: 3235.78`
+    - `benchmark/profiles/todo_frag_20260306_190101/top_flat.txt` -> `_tlv_get_addr: 13.66%`, `sendto: 15.19%`, `platform_memmove: 16.34%`
+    - Reverted-batch confirmation snapshot: `benchmark/profiles/todo_frag_20260306_190340/wrk.txt` -> `Requests/sec: 3242.65`
+  - Additional experiments in continuation:
+    - Tried stream-segment gather write in `writeQueuedResponse` (`us_socket_write2` on adjacent stream chunks); this shifted syscall weight toward `writev` but reduced throughput under this workload.
+    - Reverted the above gather-write experiment after validation.
+    - Snapshot before revert:
+      - `benchmark/profiles/todo_frag_20260306_192442/wrk.txt` -> `Requests/sec: 3101.65`
+      - `benchmark/profiles/todo_frag_20260306_192504/wrk.txt` -> `Requests/sec: 3127.93`
+      - `benchmark/profiles/todo_frag_20260306_192504/top_flat.txt` -> `_tlv_get_addr: 14.48%`, `writev: 13.46%`, `sendto: 2.12%`, `platform_memmove: 15.36%`
+    - Post-revert profile snapshot:
+      - `benchmark/profiles/todo_frag_20260306_193336/wrk.txt` -> `Requests/sec: 2959.21` (sampled run; lower due profiler overhead)
+      - `benchmark/profiles/todo_frag_20260306_193336/top_flat.txt` -> `_tlv_get_addr: 13.25%`, `sendto: 20.39%`, `platform_memmove: 14.94%`
+    - Non-sampled wrk snapshot after rebuild:
+      - `bash benchmark/tmp_todo_fragment_wrk.sh` -> `Requests/sec: 3017.39`
+      - Earlier non-sampled run in this same continuation: `Requests/sec: 3261.72` (shows local-run variance; use repeated runs for decision gates).
+  - Semantics note:
+    - Auto hybrid/window activation is HTTP-standard when driven by `Range` (`items=start-end` in this app contract), while `offset`/`limit` query params are conventional API pagination semantics (not an HTTP RFC standard by themselves).
+
+- Dotnet comparison refresh:
+  - `bash benchmark/run_todo_vs_dotnet.sh 8 200 8s 1000 1 2s`
+  - Report: `benchmark/reports/todo_vs_dotnet_20260306_192926`
+  - Result: Nim `2652.24 req/s`, Dotnet `810.72 req/s`, speedup `3.27x`.
+
+## todo-fragment-bottleneck-implementation-20260306 (in progress)
+- Goal:
+  - Reduce `_tlv_get_addr`, `sendto`, and `platform_memmove` from the fragment hot path with staged changes and measurements after each stage.
+
+- Track 1: renderer copy-call reduction (done)
+  - Plan:
+    - Cut `add*/addInt*` call count in `appendTodoItemPlannedFast`.
+    - Encode todo id once per row and reuse bytes for all three id placements.
+    - Merge static template fragments for completed/non-completed rows at plan-build time.
+  - Implemented:
+    - Added `PageBuffer.appendRawPtr(src,len)` for direct raw appends without intermediate string materialization.
+    - Extended `TodoItemRenderPlan` with pre-merged `segmentsPending`/`segmentsCompleted`.
+    - Added stack-based integer encoder (`encodeIntAscii`) and switched PageBuffer planned renderer to append encoded id bytes three times.
+    - Removed repeated `addInt(id)` calls in PageBuffer planned renderer path.
+  - Files:
+    - `nim_express/src/nim_express/paged_buffer.nim`
+    - `nim_express/examples/todo_sqlite_mvc/todo_view.nim`
+  - Validation:
+    - `nim check nim_express/src/nim_express/paged_buffer.nim` -> SuccessX
+    - `nim check nim_express/examples/todo_sqlite_mvc/todo_view.nim` -> SuccessX
+    - `nim c -d:release --opt:speed -o:../bin/todo_sqlite_mvc_app todo_sqlite_mvc_app.nim` -> SuccessX
+  - Results:
+    - Non-sampled wrk:
+      - `bash benchmark/tmp_todo_fragment_wrk.sh` -> `Requests/sec: 3545.68`
+      - `bash benchmark/tmp_todo_fragment_wrk.sh` -> `Requests/sec: 3559.74`
+    - Sampled profile:
+      - `benchmark/profiles/todo_frag_20260306_201027/wrk.txt` -> `Requests/sec: 3372.45`
+      - `benchmark/profiles/todo_frag_20260306_201027/top_flat.txt` -> `_tlv_get_addr: 11.49%`, `sendto: 22.76%`, `platform_memmove: 15.00%`
+    - Comparison vs prior non-sampled baseline in this branch (`3017.39 req/s`): +17% to +18% throughput.
+
+- Track 2: raw streaming copy-on-queue fallback (done)
+  - Implemented:
+    - Added native `HttpResponse.tryEndRaw(dataPtr, dataLen, totalSize, closeAfterWrite)` in uwebsocket layer.
+    - `tryEndRaw` performs direct-write fast path for active draining stream slot and only allocates/copies unwritten tail bytes into queue.
+    - Switched `sendPageBuffer` tryEnd branch to call `res.native.tryEndRaw(...)` from raw page segments.
+  - Files:
+    - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+    - `nim_express/src/nim_express/response.nim`
+  - Validation:
+    - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+    - `nim check nim_express/src/nim_express/response.nim` -> SuccessX
+    - `nim c -d:release --opt:speed -o:../bin/todo_sqlite_mvc_app todo_sqlite_mvc_app.nim` -> SuccessX
+  - Results:
+    - `bash benchmark/tmp_todo_fragment_wrk.sh` -> `Requests/sec: 3764.35`
+    - `benchmark/profiles/todo_frag_20260306_202543/wrk.txt` -> `Requests/sec: 3764.22`
+    - `benchmark/profiles/todo_frag_20260306_202543/top_flat.txt` -> `_tlv_get_addr: 13.15%`, `sendto: 16.89%`, `platform_memmove: 13.52%`
+
+- Track 3: sendto reduction via default window semantics for large lists (implemented as opt-in policy)
+  - Implemented:
+    - Added controller-level opt-in default window policy via env `TODO_AUTO_WINDOW_DEFAULT=1`.
+    - Added explicit full-list override parsing (`mode=full|all` or `window=false`) to preserve compatibility control.
+    - Default behavior remains unchanged unless env is enabled.
+  - Files:
+    - `nim_express/examples/todo_sqlite_mvc/todo_controller.nim`
+  - Validation:
+    - `nim check nim_express/examples/todo_sqlite_mvc/todo_controller.nim` -> SuccessX
+    - `nim c -d:release --opt:speed -o:../bin/todo_sqlite_mvc_app todo_sqlite_mvc_app.nim` -> SuccessX
+  - Results:
+    - Baseline with default policy (env off):
+      - `bash benchmark/tmp_todo_fragment_wrk.sh` -> `Requests/sec: 3582.14`
+    - Opt-in default window policy (env on):
+      - `bash -lc 'TODO_AUTO_WINDOW_DEFAULT=1 bash benchmark/tmp_todo_fragment_wrk.sh'` -> `Requests/sec: 15744.01`
+      - `bash -lc 'TODO_AUTO_WINDOW_DEFAULT=1 bash benchmark/tmp_todo_fragment_profile.sh'` -> `Requests/sec: 15015.12`
+      - `benchmark/profiles/todo_frag_20260306_201428/top_flat.txt` -> `_tlv_get_addr: 5.33%`, `platform_memmove: 5.25%`, dominant hotspot shifts to SQLite scan/exec.
+
+- Track 4: TLS overhead cleanup beyond page pool (done, optional benchmark mode)
+  - Implemented:
+    - Added compile-time single-thread mode for request/response context pools:
+      - `-d:contextpool_single_thread` makes `requestPool`/`responsePool` non-threadvar.
+    - Combined benchmark build with existing `-d:pagepool_single_thread` for reduced TLS lookups on hot request/render paths.
+  - Files:
+    - `nim_express/src/nim_express/types.nim`
+  - Validation:
+    - `nim check nim_express/src/nim_express/types.nim` -> SuccessX
+    - `nim c -d:release --opt:speed -d:contextpool_single_thread -d:pagepool_single_thread -o:../bin/todo_sqlite_mvc_app todo_sqlite_mvc_app.nim` -> SuccessX
+  - Results (single-thread benchmark flags build):
+    - `bash benchmark/tmp_todo_fragment_wrk.sh` -> `Requests/sec: 4025.05`
+    - `benchmark/profiles/todo_frag_20260306_202708/wrk.txt` -> `Requests/sec: 4048.00`
+    - `benchmark/profiles/todo_frag_20260306_202708/top_flat.txt` -> `sendto: 14.91%`, `platform_memmove: 14.68%`, `_tlv_get_addr: 14.09%`
+
+- Track 5: hybrid/window default-on policy (done)
+  - Why:
+    - Hybrid behavior should engage automatically for `/todos/fragment` without requiring explicit query params.
+    - Keep compatibility by allowing explicit full-list opt-out.
+  - Implemented:
+    - Switched controller default for `TODO_AUTO_WINDOW_DEFAULT` from `0` to `1`.
+    - Kept explicit full override semantics: `mode=full|all` or `window=false`.
+  - Files:
+    - `nim_express/examples/todo_sqlite_mvc/todo_controller.nim`
+  - Validation:
+    - `nim check nim_express/examples/todo_sqlite_mvc/todo_controller.nim` -> SuccessX
+    - `nim c --skipProjCfg -d:release --opt:speed -d:contextpool_single_thread -d:pagepool_single_thread --passL:"/nim_uwebsockets/usockets/uSockets.a -framework CoreFoundation" -o:/nim_express/bin/todo_sqlite_mvc_app /nim_express/examples/todo_sqlite_mvc_app.nim` -> SuccessX
+  - Results:
+    - Default endpoint (no query params):
+      - `bash benchmark/tmp_todo_fragment_wrk.sh` -> `Requests/sec: 14813.81`
+      - `bash benchmark/tmp_todo_fragment_profile.sh` -> `Requests/sec: 14258.98`
+      - `benchmark/profiles/todo_frag_20260306_203714/top_flat.txt` -> `platform_memmove: 5.03%`, `_tlv_get_addr: 4.78%`, bottleneck shifted toward SQLite + kernel write path.
+    - Explicit full-list override still available and measured:
+      - `bash -c 'URL="http://127.0.0.1:3416/todos/fragment?mode=full" bash benchmark/tmp_todo_fragment_wrk.sh'` -> `Requests/sec: 4005.59`
+      - `bash -c 'URL="http://127.0.0.1:3432/todos/fragment?mode=full" bash benchmark/tmp_todo_fragment_profile.sh'` -> `Requests/sec: 3659.04`
+      - `benchmark/profiles/todo_frag_20260306_203820/top_flat.txt` -> `sendto: 17.55%`, `_tlv_get_addr: 13.30%`, `platform_memmove: 13.27%`
+
+- Track 6: full-mode segment/send syscall tuning (done)
+  - Why:
+    - Reduce syscall pressure and chunk-framing copy cost when full-list mode is explicitly requested.
+  - Implemented:
+    - Raised fragment page size `128 KiB -> 256 KiB` to reduce segment count for large list responses.
+    - Raised chunked threshold to prefer fixed-length streaming (`32 MiB`) instead of chunked framing for typical full responses.
+    - Added dual-segment `us_socket_write2` fast path in queued stream-chunk writer to coalesce adjacent stream chunks into fewer syscalls on non-TLS sockets.
+    - Added `URL` override support to tmp benchmark scripts for exact-mode profiling.
+  - Files:
+    - `nim_express/examples/todo_sqlite_mvc/todo_controller.nim`
+    - `nim_uwebsockets/src/nim_uwebsockets/http.nim`
+    - `benchmark/tmp_todo_fragment_wrk.sh`
+    - `benchmark/tmp_todo_fragment_profile.sh`
+  - Validation:
+    - `nim check nim_uwebsockets/src/nim_uwebsockets/http.nim` -> SuccessX
+  - Results:
+    - Explicit full-list mode remains around the same non-sampled throughput envelope (~`4.0k req/s`) with slightly lower `platform_memmove`/`_tlv_get_addr` shares in sampled profile than the earlier `20.39/14.94/13.25` snapshot, but still predominantly bandwidth/syscall-bound.
+
+- Track 7: core helper extraction from todo flow (done)
+  - Why:
+    - Keep hybrid/full-request semantics reusable across apps instead of duplicating logic in each controller.
+  - Implemented:
+    - Added reusable request helpers in core:
+      - `req.hasWindowSemantics(...)`
+      - `req.hasExplicitFullListOverride(...)`
+    - Refactored todo controller to consume core helpers instead of private per-controller logic.
+  - Files:
+    - `nim_express/src/nim_express/request.nim`
+    - `nim_express/examples/todo_sqlite_mvc/todo_controller.nim`
+  - Validation:
+    - `nim check nim_express/src/nim_express/request.nim` -> SuccessX
+    - `nim check nim_express/examples/todo_sqlite_mvc/todo_controller.nim` -> SuccessX
+
+- Dotnet comparison refresh (post default hybrid-on):
+  - `bash benchmark/run_todo_vs_dotnet.sh 8 200 8s 1000 1 2s`
+  - Report: `benchmark/reports/todo_vs_dotnet_20260306_203953`
+  - Result: Nim `14767.21 req/s`, Dotnet `829.72 req/s`, speedup `17.80x`.
+
+- Track 8: promote additional todo-only helpers into core (done)
+  - Implemented:
+    - Added `throughputPageBufferSendPolicy(...)` in core response helpers (defaults: `32KiB` contiguous, `32MiB` chunked).
+    - Added `req.shouldUseWindowing(...)` and `req.resolveWindowRangeHeader(...)` in core request helpers.
+    - Refactored todo controller to use these helpers.
+  - Files:
+    - `nim_express/src/nim_express/response.nim`
+    - `nim_express/src/nim_express/request.nim`
+    - `nim_express/examples/todo_sqlite_mvc/todo_controller.nim`
+  - Validation:
+    - `nim check nim_express/src/nim_express/request.nim` -> SuccessX
+    - `nim check nim_express/src/nim_express/response.nim` -> SuccessX
+    - `nim check nim_express/examples/todo_sqlite_mvc/todo_controller.nim` -> SuccessX

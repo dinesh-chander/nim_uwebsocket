@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Pub/Sub Example</title>
+  <style>
+    body { font-family: ui-monospace, Menlo, monospace; max-width: 860px; margin: 0 auto; padding: 20px; }
+    .row { display: flex; gap: 8px; margin-bottom: 10px; }
+    input { flex: 1; padding: 8px; }
+    button { padding: 8px 12px; }
+    #log { background: #111827; color: #d1fae5; min-height: 260px; padding: 10px; border-radius: 10px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>WebSocket + Pub/Sub + Compression</h1>
+  <p>Commands use a simple protocol: <code>sub:&lt;topic&gt;</code>, <code>unsub:&lt;topic&gt;</code>, <code>pub:&lt;topic&gt;:&lt;message&gt;</code>.</p>
+
+  <div class="row">
+    <input id="cmd" placeholder="sub:updates">
+    <button onclick="sendCmd()">Send command</button>
+  </div>
+  <div class="row">
+    <input id="topic" placeholder="updates">
+    <input id="msg" placeholder="hello from browser">
+    <button onclick="publishHttp()">Publish via HTTP</button>
+  </div>
+
+  <pre id="log"></pre>
+
+  <script>
+    const log = document.getElementById("log");
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+    ws.onopen = () => append("ws open");
+    ws.onclose = () => append("ws closed");
+    ws.onerror = (e) => append("ws error: " + e.message);
+    ws.onmessage = (event) => append(event.data);
+
+    function append(line) {
+      log.textContent += line + "\n";
+      log.scrollTop = log.scrollHeight;
+    }
+    function sendCmd() {
+      ws.send(document.getElementById("cmd").value);
+    }
+    async function publishHttp() {
+      const topic = document.getElementById("topic").value;
+      const msg = document.getElementById("msg").value;
+      const res = await fetch(`/publish/${encodeURIComponent(topic)}`, {
+        method: "POST",
+        headers: {"content-type": "application/json"},
+        body: JSON.stringify({message: msg})
+      });
+      append("HTTP publish => " + await res.text());
+    }
+  </script>
+</body>
+</html>

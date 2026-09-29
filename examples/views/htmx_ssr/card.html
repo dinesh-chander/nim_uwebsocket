@@ -1,0 +1,5 @@
+<article class="card" id="card-{{id}}">
+  <strong>{{text}}</strong>
+  <div class="meta">{{created_at}}</div>
+  <button hx-delete="/cards/{{id}}" hx-target="#card-{{id}}" hx-swap="delete">Remove</button>
+</article>

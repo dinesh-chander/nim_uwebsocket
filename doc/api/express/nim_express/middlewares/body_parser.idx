@@ -1,0 +1,27 @@
+nimTitle	body_parser	nim_express/middlewares/body_parser.html	module nim_express/middlewares/body_parser		0
+nim	DefaultJsonLimitBytes	nim_express/middlewares/body_parser.html#DefaultJsonLimitBytes	const DefaultJsonLimitBytes		12
+nim	DefaultTextLimitBytes	nim_express/middlewares/body_parser.html#DefaultTextLimitBytes	const DefaultTextLimitBytes		13
+nim	DefaultRawLimitBytes	nim_express/middlewares/body_parser.html#DefaultRawLimitBytes	const DefaultRawLimitBytes		14
+nim	DefaultUrlEncodedLimitBytes	nim_express/middlewares/body_parser.html#DefaultUrlEncodedLimitBytes	const DefaultUrlEncodedLimitBytes		15
+nim	DefaultUrlEncodedMaxPairs	nim_express/middlewares/body_parser.html#DefaultUrlEncodedMaxPairs	const DefaultUrlEncodedMaxPairs		16
+nim	DefaultUrlEncodedMaxKeyBytes	nim_express/middlewares/body_parser.html#DefaultUrlEncodedMaxKeyBytes	const DefaultUrlEncodedMaxKeyBytes		17
+nim	DefaultUrlEncodedMaxValueBytes	nim_express/middlewares/body_parser.html#DefaultUrlEncodedMaxValueBytes	const DefaultUrlEncodedMaxValueBytes		18
+nim	DefaultXmlLimitBytes	nim_express/middlewares/body_parser.html#DefaultXmlLimitBytes	const DefaultXmlLimitBytes		19
+nim	JsonParserOptions	nim_express/middlewares/body_parser.html#JsonParserOptions	object JsonParserOptions		22
+nim	TextParserOptions	nim_express/middlewares/body_parser.html#TextParserOptions	object TextParserOptions		28
+nim	RawParserOptions	nim_express/middlewares/body_parser.html#RawParserOptions	object RawParserOptions		33
+nim	UrlEncodedParserOptions	nim_express/middlewares/body_parser.html#UrlEncodedParserOptions	object UrlEncodedParserOptions		37
+nim	XmlParserOptions	nim_express/middlewares/body_parser.html#XmlParserOptions	object XmlParserOptions		44
+nim	defaultJsonParserOptions	nim_express/middlewares/body_parser.html#defaultJsonParserOptions	proc defaultJsonParserOptions(): JsonParserOptions		49
+nim	defaultTextParserOptions	nim_express/middlewares/body_parser.html#defaultTextParserOptions	proc defaultTextParserOptions(): TextParserOptions		58
+nim	defaultRawParserOptions	nim_express/middlewares/body_parser.html#defaultRawParserOptions	proc defaultRawParserOptions(): RawParserOptions		66
+nim	defaultUrlEncodedParserOptions	nim_express/middlewares/body_parser.html#defaultUrlEncodedParserOptions	proc defaultUrlEncodedParserOptions(): UrlEncodedParserOptions		73
+nim	defaultXmlParserOptions	nim_express/middlewares/body_parser.html#defaultXmlParserOptions	proc defaultXmlParserOptions(): XmlParserOptions		83
+nim	contentTypeCharset	nim_express/middlewares/body_parser.html#contentTypeCharset,string	proc contentTypeCharset(contentType: string): string		90
+nim	json	nim_express/middlewares/body_parser.html#json,JsonParserOptions	proc json(options: JsonParserOptions = defaultJsonParserOptions()): AsyncMiddleware		218
+nim	text	nim_express/middlewares/body_parser.html#text,TextParserOptions	proc text(options: TextParserOptions = defaultTextParserOptions()): AsyncMiddleware		236
+nim	raw	nim_express/middlewares/body_parser.html#raw,RawParserOptions	proc raw(options: RawParserOptions = defaultRawParserOptions()): AsyncMiddleware		260
+nim	urlencoded	nim_express/middlewares/body_parser.html#urlencoded,UrlEncodedParserOptions	proc urlencoded(options: UrlEncodedParserOptions = defaultUrlEncodedParserOptions()): AsyncMiddleware		332
+nim	xml	nim_express/middlewares/body_parser.html#xml,XmlParserOptions	proc xml(options: XmlParserOptions = defaultXmlParserOptions()): AsyncMiddleware		352
+nim	bodyParser	nim_express/middlewares/body_parser.html#bodyParser	proc bodyParser(): AsyncMiddleware		372
+nim	bodyParserSync	nim_express/middlewares/body_parser.html#bodyParserSync	proc bodyParserSync(): SyncNextMiddleware		388

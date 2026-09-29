@@ -1,0 +1,14 @@
+<li id="todo-{{id}}">
+  <div>
+    <strong class="{{done_class}}">{{title}}</strong>
+  </div>
+  <div class="row">
+    <button hx-post="/todos/{{id}}/toggle" hx-target="#todo-{{id}}" hx-swap="outerHTML">Toggle</button>
+    <button hx-delete="/todos/{{id}}" hx-target="#todo-{{id}}" hx-swap="delete">Delete</button>
+  </div>
+  <form class="upload" hx-post="/todos/{{id}}/upload" hx-encoding="multipart/form-data" hx-target="#todo-{{id}}" hx-swap="outerHTML">
+    <input type="file" name="attachment" required>
+    <button type="submit">Upload file</button>
+  </form>
+  <div class="attachments">{{attachments}}</div>
+</li>

@@ -1,0 +1,17 @@
+nimTitle	graceful_shutdown	nim_express/middlewares/graceful_shutdown.html	module nim_express/middlewares/graceful_shutdown		0
+nim	ShutdownHook	nim_express/middlewares/graceful_shutdown.html#ShutdownHook	type ShutdownHook		30
+nim	GracefulShutdownOptions	nim_express/middlewares/graceful_shutdown.html#GracefulShutdownOptions	object GracefulShutdownOptions		32
+nim	GracefulShutdownState	nim_express/middlewares/graceful_shutdown.html#GracefulShutdownState	type GracefulShutdownState		38
+nim	resetGracefulShutdownSignalForTest	nim_express/middlewares/graceful_shutdown.html#resetGracefulShutdownSignalForTest	proc resetGracefulShutdownSignalForTest()		86
+nim	markGracefulShutdownSignalForTest	nim_express/middlewares/graceful_shutdown.html#markGracefulShutdownSignalForTest	proc markGracefulShutdownSignalForTest()		102
+nim	defaultGracefulShutdownOptions	nim_express/middlewares/graceful_shutdown.html#defaultGracefulShutdownOptions	proc defaultGracefulShutdownOptions(): GracefulShutdownOptions		106
+nim	newGracefulShutdownState	nim_express/middlewares/graceful_shutdown.html#newGracefulShutdownState,GracefulShutdownOptions	proc newGracefulShutdownState(options: GracefulShutdownOptions = defaultGracefulShutdownOptions()): GracefulShutdownState		115
+nim	isShuttingDown	nim_express/middlewares/graceful_shutdown.html#isShuttingDown,GracefulShutdownState	proc isShuttingDown(state: GracefulShutdownState): bool		131
+nim	inflightCount	nim_express/middlewares/graceful_shutdown.html#inflightCount,GracefulShutdownState	proc inflightCount(state: GracefulShutdownState): int64		137
+nim	isDrainComplete	nim_express/middlewares/graceful_shutdown.html#isDrainComplete,GracefulShutdownState	proc isDrainComplete(state: GracefulShutdownState): bool		142
+nim	hooksCompleted	nim_express/middlewares/graceful_shutdown.html#hooksCompleted,GracefulShutdownState	proc hooksCompleted(state: GracefulShutdownState): bool		148
+nim	runShutdownHooks	nim_express/middlewares/graceful_shutdown.html#runShutdownHooks,GracefulShutdownState	proc runShutdownHooks(state: GracefulShutdownState)		154
+nim	initiateShutdown	nim_express/middlewares/graceful_shutdown.html#initiateShutdown,GracefulShutdownState	proc initiateShutdown(state: GracefulShutdownState)		180
+nim	gracefulShutdown	nim_express/middlewares/graceful_shutdown.html#gracefulShutdown,GracefulShutdownState,bool	proc gracefulShutdown(state: GracefulShutdownState;\n                 installSignalHandlers: bool = true): AsyncMiddleware		276
+nim	gracefulShutdown	nim_express/middlewares/graceful_shutdown.html#gracefulShutdown,GracefulShutdownOptions	proc gracefulShutdown(options: GracefulShutdownOptions = defaultGracefulShutdownOptions()): AsyncMiddleware		322
+nimgrp	gracefulshutdown	nim_express/middlewares/graceful_shutdown.html#gracefulShutdown-procs-all	proc		276

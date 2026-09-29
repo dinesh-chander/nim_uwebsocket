@@ -1,0 +1,11 @@
+nimTitle	normalize_path	nim_express/middlewares/normalize_path.html	module nim_express/middlewares/normalize_path		0
+nim	tsmTrim	nim_express/middlewares/normalize_path.html#tsmTrim	TrailingSlashMode.tsmTrim		8
+nim	tsmAppend	nim_express/middlewares/normalize_path.html#tsmAppend	TrailingSlashMode.tsmAppend		8
+nim	TrailingSlashMode	nim_express/middlewares/normalize_path.html#TrailingSlashMode	enum TrailingSlashMode		8
+nim	NormalizePathOptions	nim_express/middlewares/normalize_path.html#NormalizePathOptions	object NormalizePathOptions		12
+nim	defaultNormalizePathOptions	nim_express/middlewares/normalize_path.html#defaultNormalizePathOptions	proc defaultNormalizePathOptions(): NormalizePathOptions		18
+nim	resolveDotSegments	nim_express/middlewares/normalize_path.html#resolveDotSegments,string	proc resolveDotSegments(path: string): string		26
+nim	mergeSlashes	nim_express/middlewares/normalize_path.html#mergeSlashes,string	proc mergeSlashes(path: string): string		67
+nim	normalizePath	nim_express/middlewares/normalize_path.html#normalizePath,NormalizePathOptions	proc normalizePath(options: NormalizePathOptions = defaultNormalizePathOptions()): AsyncMiddleware		80
+nim	normalizePath	nim_express/middlewares/normalize_path.html#normalizePath,TrailingSlashMode	proc normalizePath(trailingSlash: TrailingSlashMode): AsyncMiddleware		160
+nimgrp	normalizepath	nim_express/middlewares/normalize_path.html#normalizePath-procs-all	proc		80

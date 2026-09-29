@@ -1,0 +1,4 @@
+nimTitle	health	nim_express/middlewares/health.html	module nim_express/middlewares/health		0
+nim	healthRequestCount	nim_express/middlewares/health.html#healthRequestCount	proc healthRequestCount(): int64		13
+nim	resetHealthRequestCount	nim_express/middlewares/health.html#resetHealthRequestCount	proc resetHealthRequestCount()		17
+nim	health	nim_express/middlewares/health.html#health,string,bool	proc health(path: string = "/health"; verbose: bool = false): AsyncMiddleware		35

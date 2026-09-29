@@ -1,0 +1,17 @@
+nimTitle	circuit_breaker	nim_express/middlewares/circuit_breaker.html	module nim_express/middlewares/circuit_breaker		0
+nim	csClosed	nim_express/middlewares/circuit_breaker.html#csClosed	CircuitState.csClosed		5
+nim	csOpen	nim_express/middlewares/circuit_breaker.html#csOpen	CircuitState.csOpen		5
+nim	csHalfOpen	nim_express/middlewares/circuit_breaker.html#csHalfOpen	CircuitState.csHalfOpen		5
+nim	CircuitState	nim_express/middlewares/circuit_breaker.html#CircuitState	enum CircuitState		5
+nim	CircuitBreakerOptions	nim_express/middlewares/circuit_breaker.html#CircuitBreakerOptions	object CircuitBreakerOptions		12
+nim	CircuitBreaker	nim_express/middlewares/circuit_breaker.html#CircuitBreaker	type CircuitBreaker		27
+nim	state	nim_express/middlewares/circuit_breaker.html#state,CircuitBreaker	proc state(cb: CircuitBreaker): CircuitState		36
+nim	newCircuitBreaker	nim_express/middlewares/circuit_breaker.html#newCircuitBreaker,CircuitBreakerOptions	proc newCircuitBreaker(options: CircuitBreakerOptions): CircuitBreaker		42
+nim	newCircuitBreaker	nim_express/middlewares/circuit_breaker.html#newCircuitBreaker,string,int,int,int	proc newCircuitBreaker(name: string = "default"; failureThreshold: int = 5;\n                  successThreshold: int = 2; timeoutMs: int = 30000): CircuitBreaker		60
+nim	isAllowed	nim_express/middlewares/circuit_breaker.html#isAllowed,CircuitBreaker	proc isAllowed(cb: CircuitBreaker): bool		75
+nim	recordSuccess	nim_express/middlewares/circuit_breaker.html#recordSuccess,CircuitBreaker	proc recordSuccess(cb: CircuitBreaker)		97
+nim	recordFailure	nim_express/middlewares/circuit_breaker.html#recordFailure,CircuitBreaker	proc recordFailure(cb: CircuitBreaker)		118
+nim	reset	nim_express/middlewares/circuit_breaker.html#reset,CircuitBreaker	proc reset(cb: CircuitBreaker)		140
+nim	circuitBreakerRejectBody	nim_express/middlewares/circuit_breaker.html#circuitBreakerRejectBody	const circuitBreakerRejectBody		150
+nim	circuitBreakerMiddleware	nim_express/middlewares/circuit_breaker.html#circuitBreakerMiddleware,CircuitBreaker	proc circuitBreakerMiddleware(cb: CircuitBreaker): AsyncMiddleware		153
+nimgrp	newcircuitbreaker	nim_express/middlewares/circuit_breaker.html#newCircuitBreaker-procs-all	proc		42

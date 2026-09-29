@@ -1,0 +1,9 @@
+nimTitle	csrf	nim_express/middlewares/csrf.html	module nim_express/middlewares/csrf		0
+nim	CsrfOptions	nim_express/middlewares/csrf.html#CsrfOptions	object CsrfOptions		7
+nim	defaultCsrfOptions	nim_express/middlewares/csrf.html#defaultCsrfOptions	proc defaultCsrfOptions(): CsrfOptions		26
+nim	normalizeCsrfOptions	nim_express/middlewares/csrf.html#normalizeCsrfOptions,CsrfOptions	proc normalizeCsrfOptions(options: CsrfOptions): CsrfOptions		52
+nim	csrfGenerateToken	nim_express/middlewares/csrf.html#csrfGenerateToken	proc csrfGenerateToken(): string		84
+nim	csrfConstantTimeEqual	nim_express/middlewares/csrf.html#csrfConstantTimeEqual,string,string	proc csrfConstantTimeEqual(a, b: string): bool		95
+nim	csrfToken	nim_express/middlewares/csrf.html#csrfToken,Req,string	proc csrfToken(req: Req; localKey: string = "csrf_token"): string		115
+nim	csrf	nim_express/middlewares/csrf.html#csrf,CsrfOptions	proc csrf(options: CsrfOptions = defaultCsrfOptions()): AsyncMiddleware		123
+nim	csrfSync	nim_express/middlewares/csrf.html#csrfSync,CsrfOptions	proc csrfSync(options: CsrfOptions = defaultCsrfOptions()): SyncNextMiddleware		202

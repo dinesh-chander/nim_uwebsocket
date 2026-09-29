@@ -1,0 +1,42 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NIM_VERSION: "2.2.10"
+        APP_SOURCE: benchmark/bench_nim_express.nim
+        APP_BINARY: app
+    ports:
+      - "3000:3000"
+    environment:
+      - NIM_EXPRESS_PROFILE=linux-throughput
+      - NIM_EXPRESS_SCALE_MODE=auto
+      - PORT=3000
+    volumes:
+      - ./nim_express/config.json:/etc/nim_express/config.json:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-s", "http://127.0.0.1:3000/plaintext"]
+      interval: 10s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 512M
+    networks:
+      - nim-net
+
+networks:
+  nim-net:
+    driver: bridge

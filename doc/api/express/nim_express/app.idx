@@ -1,0 +1,300 @@
+nimTitle	app	nim_express/app.html	module nim_express/app		0
+nim	MacosGcdMainThreadError	nim_express/app.html#MacosGcdMainThreadError	const MacosGcdMainThreadError		21
+nim	buildFallbackCorrelationId	nim_express/app.html#buildFallbackCorrelationId	proc buildFallbackCorrelationId(): string		46
+nim	emitInspectorEvent	nim_express/app.html#emitInspectorEvent,ExpressApp,InspectorEvent	proc emitInspectorEvent(app: ExpressApp; event: InspectorEvent)		70
+nim	onInspector	nim_express/app.html#onInspector,ExpressApp,InspectorHook	proc onInspector(app: ExpressApp; hook: InspectorHook)		79
+nim	pluginDef	nim_express/app.html#pluginDef,string,seq[string],JsonNode,PluginInitHook,PluginShutdownHook	proc pluginDef(id: string; dependsOn: seq[string] = @[]; config: JsonNode = nil;\n          initHook: PluginInitHook = nil; shutdownHook: PluginShutdownHook = nil): PluginDefinition		85
+nim	registerPlugin	nim_express/app.html#registerPlugin,ExpressApp,PluginDefinition	proc registerPlugin(app: ExpressApp; plugin: PluginDefinition): bool		106
+nim	initializePlugins	nim_express/app.html#initializePlugins,ExpressApp	proc initializePlugins(app: ExpressApp): bool		204
+nim	shutdownPlugins	nim_express/app.html#shutdownPlugins,ExpressApp	proc shutdownPlugins(app: ExpressApp)		245
+nim	onBeforeRouteMatchAdvice	nim_express/app.html#onBeforeRouteMatchAdvice,ExpressApp,BeforeRouteMatchAdviceHook	proc onBeforeRouteMatchAdvice(app: ExpressApp; hook: BeforeRouteMatchAdviceHook)		262
+nim	onBeforeHandlerAdvice	nim_express/app.html#onBeforeHandlerAdvice,ExpressApp,BeforeHandlerAdviceHook	proc onBeforeHandlerAdvice(app: ExpressApp; hook: BeforeHandlerAdviceHook)		269
+nim	onAfterHandlerAdvice	nim_express/app.html#onAfterHandlerAdvice,ExpressApp,AfterHandlerAdviceHook	proc onAfterHandlerAdvice(app: ExpressApp; hook: AfterHandlerAdviceHook)		276
+nim	onErrorAdvice	nim_express/app.html#onErrorAdvice,ExpressApp,ErrorAdviceHook	proc onErrorAdvice(app: ExpressApp; hook: ErrorAdviceHook)		283
+nim	recordAsyncPumpPollFailure	nim_express/app.html#recordAsyncPumpPollFailure,ExpressApp,string	proc recordAsyncPumpPollFailure(app: ExpressApp; errMessage: string)		358
+nim	asyncPumpPollFailureCount	nim_express/app.html#asyncPumpPollFailureCount	proc asyncPumpPollFailureCount(): int64		375
+nim	resetAsyncPumpPollTelemetryForTest	nim_express/app.html#resetAsyncPumpPollTelemetryForTest	proc resetAsyncPumpPollTelemetryForTest()		379
+nim	assertMacosGcdMainThread	nim_express/app.html#assertMacosGcdMainThread,string	proc assertMacosGcdMainThread(operation: string)		446
+nim	defaultWorkerCount	nim_express/app.html#defaultWorkerCount	proc defaultWorkerCount(): int		525
+nim	defaultThreadCount	nim_express/app.html#defaultThreadCount	proc defaultThreadCount(): int		538
+nim	supportsMultiThreading	nim_express/app.html#supportsMultiThreading	proc supportsMultiThreading(): bool		545
+nim	applyRuntimeTunablesFromEnv	nim_express/app.html#applyRuntimeTunablesFromEnv,ExpressApp	proc applyRuntimeTunablesFromEnv(app: ExpressApp)		756
+nim	optimizationMetrics	nim_express/app.html#optimizationMetrics,ExpressApp	proc optimizationMetrics(app: ExpressApp): FastMap[int64]		758
+nim	setTrustProxy	nim_express/app.html#setTrustProxy,ExpressApp,bool	proc setTrustProxy(app: ExpressApp; enabled: bool)		760
+nim	setTrustedProxyHops	nim_express/app.html#setTrustedProxyHops,ExpressApp,int	proc setTrustedProxyHops(app: ExpressApp; hops: int)		762
+nim	setTrustedProxyAllowlist	nim_express/app.html#setTrustedProxyAllowlist,ExpressApp,string	proc setTrustedProxyAllowlist(app: ExpressApp; allowlistCsv: string)		764
+nim	useRawHandler	nim_express/app.html#useRawHandler,ExpressApp,HttpHandler	proc useRawHandler(app: ExpressApp; handler: HttpHandler)		767
+nim	newExpressApp	nim_express/app.html#newExpressApp	proc newExpressApp(): ExpressApp		773
+nim	setMaxInflightAsyncRequests	nim_express/app.html#setMaxInflightAsyncRequests,ExpressApp,int	proc setMaxInflightAsyncRequests(app: ExpressApp; maxRequests: int)		833
+nim	getMaxInflightAsyncRequests	nim_express/app.html#getMaxInflightAsyncRequests,ExpressApp	proc getMaxInflightAsyncRequests(app: ExpressApp): int		837
+nim	getInflightAsyncRequests	nim_express/app.html#getInflightAsyncRequests,ExpressApp	proc getInflightAsyncRequests(app: ExpressApp): int		841
+nim	setContextPoolPrewarm	nim_express/app.html#setContextPoolPrewarm,ExpressApp,int	proc setContextPoolPrewarm(app: ExpressApp; entries: int)		845
+nim	getContextPoolPrewarm	nim_express/app.html#getContextPoolPrewarm,ExpressApp	proc getContextPoolPrewarm(app: ExpressApp): int		849
+nim	setAsyncPumpIntervalMs	nim_express/app.html#setAsyncPumpIntervalMs,ExpressApp,int	proc setAsyncPumpIntervalMs(app: ExpressApp; intervalMs: int)		853
+nim	getAsyncPumpIntervalMs	nim_express/app.html#getAsyncPumpIntervalMs,ExpressApp	proc getAsyncPumpIntervalMs(app: ExpressApp): int		857
+nim	setMaxBodySize	nim_express/app.html#setMaxBodySize,ExpressApp,int	proc setMaxBodySize(app: ExpressApp; bytes: int)		861
+nim	setMaxRequestMemory	nim_express/app.html#setMaxRequestMemory,ExpressApp,int	proc setMaxRequestMemory(app: ExpressApp; bytes: int)		866
+nim	setConnectionTimeout	nim_express/app.html#setConnectionTimeout,ExpressApp,int	proc setConnectionTimeout(app: ExpressApp; seconds: int)		870
+nim	setMaxConnections	nim_express/app.html#setMaxConnections,ExpressApp,int	proc setMaxConnections(app: ExpressApp; maxConnections: int)		874
+nim	setMaxPendingBytesPerSocket	nim_express/app.html#setMaxPendingBytesPerSocket,ExpressApp,int	proc setMaxPendingBytesPerSocket(app: ExpressApp; bytes: int)		879
+nim	setWsKeepaliveInterval	nim_express/app.html#setWsKeepaliveInterval,ExpressApp,int	proc setWsKeepaliveInterval(app: ExpressApp; intervalMs: int)		883
+nim	setWsIdleTimeout	nim_express/app.html#setWsIdleTimeout,ExpressApp,int	proc setWsIdleTimeout(app: ExpressApp; seconds: int)		887
+nim	setWsMaxBackpressure	nim_express/app.html#setWsMaxBackpressure,ExpressApp,int	proc setWsMaxBackpressure(app: ExpressApp; bytes: int)		891
+nim	setWsBackpressureHighWater	nim_express/app.html#setWsBackpressureHighWater,ExpressApp,int	proc setWsBackpressureHighWater(app: ExpressApp; bytes: int)		895
+nim	setWsBackpressureHighWaterAction	nim_express/app.html#setWsBackpressureHighWaterAction,ExpressApp,BackpressureHighWaterAction	proc setWsBackpressureHighWaterAction(app: ExpressApp;\n                                 action: BackpressureHighWaterAction)		899
+nim	setWsDynamicBackpressure	nim_express/app.html#setWsDynamicBackpressure,ExpressApp,bool,int,int,int,BackpressureHighWaterAction,bool	proc setWsDynamicBackpressure(app: ExpressApp; enabled: bool;\n                         expectedConnections: int; messageBytes: int;\n                         queueBudgetBytes: int;\n                         action: BackpressureHighWaterAction = bhwDropNewest;\n                         closeOnBackpressureLimit: bool = false)		903
+nim	setWsCloseOnBackpressureLimit	nim_express/app.html#setWsCloseOnBackpressureLimit,ExpressApp,bool	proc setWsCloseOnBackpressureLimit(app: ExpressApp; enabled: bool)		922
+nim	setWsResetIdleTimeoutOnSend	nim_express/app.html#setWsResetIdleTimeoutOnSend,ExpressApp,bool	proc setWsResetIdleTimeoutOnSend(app: ExpressApp; enabled: bool)		926
+nim	setWsCompressionEnabled	nim_express/app.html#setWsCompressionEnabled,ExpressApp,bool	proc setWsCompressionEnabled(app: ExpressApp; enabled: bool)		930
+nim	setWsCompressionThreshold	nim_express/app.html#setWsCompressionThreshold,ExpressApp,int	proc setWsCompressionThreshold(app: ExpressApp; bytes: int)		934
+nim	setWsCompressionMinSavings	nim_express/app.html#setWsCompressionMinSavings,ExpressApp,int	proc setWsCompressionMinSavings(app: ExpressApp; bytes: int)		938
+nim	setWsCompressionBypass	nim_express/app.html#setWsCompressionBypass,ExpressApp,bool,bool	proc setWsCompressionBypass(app: ExpressApp; disableForBinary: bool = false;\n                       disableForText: bool = false)		942
+nim	setWsCompressionBackpressureBypass	nim_express/app.html#setWsCompressionBackpressureBypass,ExpressApp,int	proc setWsCompressionBackpressureBypass(app: ExpressApp; bytes: int)		950
+nim	setWsWriteCoalesceLimits	nim_express/app.html#setWsWriteCoalesceLimits,ExpressApp,int,int	proc setWsWriteCoalesceLimits(app: ExpressApp; maxBytes: int; maxFrames: int)		954
+nim	setWsSocketTunables	nim_express/app.html#setWsSocketTunables,ExpressApp,int,int,int	proc setWsSocketTunables(app: ExpressApp; recvBufferBytes: int = 0;\n                    sendBufferBytes: int = 0; notSentLowWaterBytes: int = 0)		958
+nim	broadcastWs	nim_express/app.html#broadcastWs,ExpressApp,string,bool	proc broadcastWs(app: ExpressApp; data: string; binary: bool = false): int		967
+nim	broadcastPreparedWs	nim_express/app.html#broadcastPreparedWs,ExpressApp,PreparedWsMessage	proc broadcastPreparedWs(app: ExpressApp; msg: PreparedWsMessage): int		974
+nim	setMinimalHeaderParsing	nim_express/app.html#setMinimalHeaderParsing,ExpressApp,bool	proc setMinimalHeaderParsing(app: ExpressApp; enabled: bool)		980
+nim	setGracefulShutdown	nim_express/app.html#setGracefulShutdown,ExpressApp,bool	proc setGracefulShutdown(app: ExpressApp; enabled: bool)		984
+nim	setMacosHighQos	nim_express/app.html#setMacosHighQos,ExpressApp,bool	proc setMacosHighQos(app: ExpressApp; enabled: bool)		988
+nim	setTlsFlattenThreshold	nim_express/app.html#setTlsFlattenThreshold,ExpressApp,int	proc setTlsFlattenThreshold(app: ExpressApp; bytes: int)		992
+nim	setWriteCoalesceLimits	nim_express/app.html#setWriteCoalesceLimits,ExpressApp,int,int	proc setWriteCoalesceLimits(app: ExpressApp; maxBytes: int; maxResponses: int)		996
+nim	setWriteCoalesceMode	nim_express/app.html#setWriteCoalesceMode,ExpressApp,WriteCoalesceMode	proc setWriteCoalesceMode(app: ExpressApp; mode: WriteCoalesceMode)		1000
+nim	setWriteCoalesceLatencyLimits	nim_express/app.html#setWriteCoalesceLatencyLimits,ExpressApp,int,int	proc setWriteCoalesceLatencyLimits(app: ExpressApp; maxBytes: int; maxResponses: int)		1004
+nim	setWriteCoalesceThroughputLimits	nim_express/app.html#setWriteCoalesceThroughputLimits,ExpressApp,int,int	proc setWriteCoalesceThroughputLimits(app: ExpressApp; maxBytes: int;\n                                 maxResponses: int)		1008
+nim	setWriteCoalescePayloadThresholds	nim_express/app.html#setWriteCoalescePayloadThresholds,ExpressApp,int,int	proc setWriteCoalescePayloadThresholds(app: ExpressApp; smallPayloadBytes: int;\n                                  largePayloadBytes: int)		1012
+nim	setWriteCoalesceP99Guard	nim_express/app.html#setWriteCoalesceP99Guard,ExpressApp,int,int	proc setWriteCoalesceP99Guard(app: ExpressApp; pendingBytes: int;\n                         pendingResponses: int)		1016
+nim	setLoopWriteBatching	nim_express/app.html#setLoopWriteBatching,ExpressApp,bool	proc setLoopWriteBatching(app: ExpressApp; enabled: bool)		1020
+nim	setAdaptiveReadBuffer	nim_express/app.html#setAdaptiveReadBuffer,ExpressApp,int,int,int	proc setAdaptiveReadBuffer(app: ExpressApp; minCapacity: int; maxCapacity: int;\n                      shrinkPercent: int = 25)		1024
+nim	setParseFairnessBudget	nim_express/app.html#setParseFairnessBudget,ExpressApp,int,int	proc setParseFairnessBudget(app: ExpressApp; requestsPerRead: int; bytesPerRead: int)		1033
+nim	setLoopDispatchFairnessBudget	nim_express/app.html#setLoopDispatchFairnessBudget,ExpressApp,int,int	proc setLoopDispatchFairnessBudget(app: ExpressApp; requestsPerLoop: int;\n                              bytesPerLoop: int)		1037
+nim	setWriteFairnessBudget	nim_express/app.html#setWriteFairnessBudget,ExpressApp,int,int	proc setWriteFairnessBudget(app: ExpressApp; iterationsPerFlush: int;\n                       bytesPerFlush: int)		1041
+nim	setLoopWriteFairnessBudget	nim_express/app.html#setLoopWriteFairnessBudget,ExpressApp,int	proc setLoopWriteFairnessBudget(app: ExpressApp; bytesPerLoop: int)		1045
+nim	setBodySpillToDisk	nim_express/app.html#setBodySpillToDisk,ExpressApp,int,string	proc setBodySpillToDisk(app: ExpressApp; thresholdBytes: int; spillDir: string = "")		1049
+nim	setPageBufferPoolPolicy	nim_express/app.html#setPageBufferPoolPolicy,ExpressApp,int,int64,bool,int,int64	proc setPageBufferPoolPolicy(app: ExpressApp;\n                        maxRetainedPages: int = DefaultPagePoolLimit;\n                        maxRetainedBytes: int64 = 0'i64; trimNow: bool = false;\n                        trimTargetPages: int = -1;\n                        trimTargetBytes: int64 = -1'i64): int		1053
+nim	trimPageBufferPool	nim_express/app.html#trimPageBufferPool,ExpressApp,int,int64	proc trimPageBufferPool(app: ExpressApp; retainPages: int = -1;\n                   retainBytes: int64 = -1'i64): int		1073
+nim	pageBufferPoolMetrics	nim_express/app.html#pageBufferPoolMetrics,ExpressApp	proc pageBufferPoolMetrics(app: ExpressApp): PagePoolMetrics		1079
+nim	setOverloadController	nim_express/app.html#setOverloadController,ExpressApp,int,int,bool	proc setOverloadController(app: ExpressApp; maxBacklogBytes: int = 0;\n                      maxPendingResponses: int = 0; closeOnReject: bool = false)		1084
+nim	setAdaptiveOverloadController	nim_express/app.html#setAdaptiveOverloadController,ExpressApp,bool,int,int,int,int,int,int,int	proc setAdaptiveOverloadController(app: ExpressApp; enabled: bool = true;\n                              minBacklogBytes: int = 256 * 1024;\n                              maxBacklogBytes: int = 0;\n                              minPendingResponses: int = 64;\n                              maxPendingResponses: int = 0;\n                              tightenStepPercent: int = 20;\n                              relaxStepPercent: int = 10;\n                              cooldownRequests: int = 64)		1093
+nim	setSocketTunables	nim_express/app.html#setSocketTunables,ExpressApp,bool,bool,int,bool,int,int,int,int,int,bool,bool,bool	proc setSocketTunables(app: ExpressApp; noDelay: bool = true; keepAlive: bool = true;\n                  keepAliveSeconds: int = 60; fastOpen: bool = false;\n                  sendBufferBytes: int = 0; recvBufferBytes: int = 0;\n                  notSentLowWaterBytes: int = 0; deferAcceptSeconds: int = 0;\n                  incomingCpu: int = -1; exclusivePort: bool = false;\n                  epollExclusive: bool = false; epollEdgeTrigger: bool = false)		1116
+nim	applyLinuxThroughputProfile	nim_express/app.html#applyLinuxThroughputProfile,ExpressApp	proc applyLinuxThroughputProfile(app: ExpressApp)		1147
+nim	applyAppEnvConfig	nim_express/app.html#applyAppEnvConfig,ExpressApp,AppEnvConfig	proc applyAppEnvConfig(app: ExpressApp; cfg: AppEnvConfig)		1350
+nim	optimizationMetricsJson	nim_express/app.html#optimizationMetricsJson,ExpressApp	proc optimizationMetricsJson(app: ExpressApp): string		1448
+nim	parserErrorCount	nim_express/app.html#parserErrorCount,ExpressApp	proc parserErrorCount(app: ExpressApp): int64		1488
+nim	overloadRejectCount	nim_express/app.html#overloadRejectCount,ExpressApp	proc overloadRejectCount(app: ExpressApp): int64		1492
+nim	overloadRejectBacklogCount	nim_express/app.html#overloadRejectBacklogCount,ExpressApp	proc overloadRejectBacklogCount(app: ExpressApp): int64		1496
+nim	overloadRejectPendingCount	nim_express/app.html#overloadRejectPendingCount,ExpressApp	proc overloadRejectPendingCount(app: ExpressApp): int64		1500
+nim	writeRetryCount	nim_express/app.html#writeRetryCount,ExpressApp	proc writeRetryCount(app: ExpressApp): int64		1504
+nim	backpressureDropCount	nim_express/app.html#backpressureDropCount,ExpressApp	proc backpressureDropCount(app: ExpressApp): int64		1508
+nim	backpressureHighWaterCount	nim_express/app.html#backpressureHighWaterCount,ExpressApp	proc backpressureHighWaterCount(app: ExpressApp): int64		1512
+nim	shutdownDrainedConnectionCount	nim_express/app.html#shutdownDrainedConnectionCount,ExpressApp	proc shutdownDrainedConnectionCount(app: ExpressApp): int64		1516
+nim	shutdownForcedConnectionCount	nim_express/app.html#shutdownForcedConnectionCount,ExpressApp	proc shutdownForcedConnectionCount(app: ExpressApp): int64		1520
+nim	use	nim_express/app.html#use,ExpressApp,AsyncMiddleware	proc use(app: ExpressApp; middleware: AsyncMiddleware)		1556
+nim	asAsyncMiddleware	nim_express/app.html#asAsyncMiddleware,SyncNextMiddleware	proc asAsyncMiddleware(middleware: SyncNextMiddleware): AsyncMiddleware		1562
+nim	useSync	nim_express/app.html#useSync,ExpressApp,SyncNextMiddleware	proc useSync(app: ExpressApp; middleware: SyncNextMiddleware)		1565
+nim	asAsyncHandler	nim_express/app.html#asAsyncHandler,SyncHandler	proc asAsyncHandler(handler: SyncHandler): AsyncHandler		1571
+nim	sharedAsyncNext	nim_express/app.html#sharedAsyncNext	let sharedAsyncNext		1588
+nim	use	nim_express/app.html#use,ExpressApp,SyncNextMiddleware	proc use(app: ExpressApp; middleware: SyncNextMiddleware)		1602
+nim	use	nim_express/app.html#use,ExpressApp,string,AsyncMiddleware	proc use(app: ExpressApp; path: string; middleware: AsyncMiddleware)		1617
+nim	use	nim_express/app.html#use,ExpressApp,string,SyncNextMiddleware	proc use(app: ExpressApp; path: string; middleware: SyncNextMiddleware)		1628
+nim	group	nim_express/app.html#group,ExpressApp,string,varargs[AsyncMiddleware]	proc group(app: ExpressApp; prefix: string; middlewares: varargs[AsyncMiddleware]): RouteGroup		1653
+nim	group	nim_express/app.html#group,RouteGroup,string,varargs[AsyncMiddleware]	proc group(group: RouteGroup; prefix: string; middlewares: varargs[AsyncMiddleware]): RouteGroup		1663
+nim	use	nim_express/app.html#use,RouteGroup,AsyncMiddleware	proc use(group: RouteGroup; middleware: AsyncMiddleware)		1672
+nim	use	nim_express/app.html#use,RouteGroup,SyncNextMiddleware	proc use(group: RouteGroup; middleware: SyncNextMiddleware)		1678
+nim	getAsync	nim_express/app.html#getAsync,ExpressApp,string,AsyncHandler	proc getAsync(app: ExpressApp; pattern: string; handler: AsyncHandler)		1730
+nim	getAsync	nim_express/app.html#getAsync,ExpressApp,string,SyncHandler	proc getAsync(app: ExpressApp; pattern: string; handler: SyncHandler)		1734
+nim	postAsync	nim_express/app.html#postAsync,ExpressApp,string,AsyncHandler	proc postAsync(app: ExpressApp; pattern: string; handler: AsyncHandler)		1738
+nim	postAsync	nim_express/app.html#postAsync,ExpressApp,string,SyncHandler	proc postAsync(app: ExpressApp; pattern: string; handler: SyncHandler)		1742
+nim	putAsync	nim_express/app.html#putAsync,ExpressApp,string,AsyncHandler	proc putAsync(app: ExpressApp; pattern: string; handler: AsyncHandler)		1746
+nim	putAsync	nim_express/app.html#putAsync,ExpressApp,string,SyncHandler	proc putAsync(app: ExpressApp; pattern: string; handler: SyncHandler)		1750
+nim	deleteAsync	nim_express/app.html#deleteAsync,ExpressApp,string,AsyncHandler	proc deleteAsync(app: ExpressApp; pattern: string; handler: AsyncHandler)		1754
+nim	deleteAsync	nim_express/app.html#deleteAsync,ExpressApp,string,SyncHandler	proc deleteAsync(app: ExpressApp; pattern: string; handler: SyncHandler)		1758
+nim	patchAsync	nim_express/app.html#patchAsync,ExpressApp,string,AsyncHandler	proc patchAsync(app: ExpressApp; pattern: string; handler: AsyncHandler)		1762
+nim	patchAsync	nim_express/app.html#patchAsync,ExpressApp,string,SyncHandler	proc patchAsync(app: ExpressApp; pattern: string; handler: SyncHandler)		1766
+nim	headAsync	nim_express/app.html#headAsync,ExpressApp,string,AsyncHandler	proc headAsync(app: ExpressApp; pattern: string; handler: AsyncHandler)		1770
+nim	headAsync	nim_express/app.html#headAsync,ExpressApp,string,SyncHandler	proc headAsync(app: ExpressApp; pattern: string; handler: SyncHandler)		1774
+nim	optionsAsync	nim_express/app.html#optionsAsync,ExpressApp,string,AsyncHandler	proc optionsAsync(app: ExpressApp; pattern: string; handler: AsyncHandler)		1778
+nim	optionsAsync	nim_express/app.html#optionsAsync,ExpressApp,string,SyncHandler	proc optionsAsync(app: ExpressApp; pattern: string; handler: SyncHandler)		1782
+nim	get	nim_express/app.html#get,ExpressApp,string,SyncHandler	proc get(app: ExpressApp; pattern: string; handler: SyncHandler)		1807
+nim	post	nim_express/app.html#post,ExpressApp,string,SyncHandler	proc post(app: ExpressApp; pattern: string; handler: SyncHandler)		1811
+nim	put	nim_express/app.html#put,ExpressApp,string,SyncHandler	proc put(app: ExpressApp; pattern: string; handler: SyncHandler)		1815
+nim	delete	nim_express/app.html#delete,ExpressApp,string,SyncHandler	proc delete(app: ExpressApp; pattern: string; handler: SyncHandler)		1819
+nim	patch	nim_express/app.html#patch,ExpressApp,string,SyncHandler	proc patch(app: ExpressApp; pattern: string; handler: SyncHandler)		1823
+nim	head	nim_express/app.html#head,ExpressApp,string,SyncHandler	proc head(app: ExpressApp; pattern: string; handler: SyncHandler)		1827
+nim	options	nim_express/app.html#options,ExpressApp,string,SyncHandler	proc options(app: ExpressApp; pattern: string; handler: SyncHandler)		1831
+nim	allAsync	nim_express/app.html#allAsync,ExpressApp,string,AsyncHandler	proc allAsync(app: ExpressApp; pattern: string; handler: AsyncHandler)		1835
+nim	all	nim_express/app.html#all,ExpressApp,string,SyncHandler	proc all(app: ExpressApp; pattern: string; handler: SyncHandler)		1837
+nim	getAsync	nim_express/app.html#getAsync,RouteGroup,string,AsyncHandler	proc getAsync(group: RouteGroup; pattern: string; handler: AsyncHandler)		1840
+nim	getAsync	nim_express/app.html#getAsync,RouteGroup,string,SyncHandler	proc getAsync(group: RouteGroup; pattern: string; handler: SyncHandler)		1846
+nim	postAsync	nim_express/app.html#postAsync,RouteGroup,string,AsyncHandler	proc postAsync(group: RouteGroup; pattern: string; handler: AsyncHandler)		1852
+nim	postAsync	nim_express/app.html#postAsync,RouteGroup,string,SyncHandler	proc postAsync(group: RouteGroup; pattern: string; handler: SyncHandler)		1858
+nim	putAsync	nim_express/app.html#putAsync,RouteGroup,string,AsyncHandler	proc putAsync(group: RouteGroup; pattern: string; handler: AsyncHandler)		1864
+nim	putAsync	nim_express/app.html#putAsync,RouteGroup,string,SyncHandler	proc putAsync(group: RouteGroup; pattern: string; handler: SyncHandler)		1870
+nim	deleteAsync	nim_express/app.html#deleteAsync,RouteGroup,string,AsyncHandler	proc deleteAsync(group: RouteGroup; pattern: string; handler: AsyncHandler)		1876
+nim	deleteAsync	nim_express/app.html#deleteAsync,RouteGroup,string,SyncHandler	proc deleteAsync(group: RouteGroup; pattern: string; handler: SyncHandler)		1882
+nim	patchAsync	nim_express/app.html#patchAsync,RouteGroup,string,AsyncHandler	proc patchAsync(group: RouteGroup; pattern: string; handler: AsyncHandler)		1888
+nim	patchAsync	nim_express/app.html#patchAsync,RouteGroup,string,SyncHandler	proc patchAsync(group: RouteGroup; pattern: string; handler: SyncHandler)		1894
+nim	headAsync	nim_express/app.html#headAsync,RouteGroup,string,AsyncHandler	proc headAsync(group: RouteGroup; pattern: string; handler: AsyncHandler)		1900
+nim	headAsync	nim_express/app.html#headAsync,RouteGroup,string,SyncHandler	proc headAsync(group: RouteGroup; pattern: string; handler: SyncHandler)		1906
+nim	optionsAsync	nim_express/app.html#optionsAsync,RouteGroup,string,AsyncHandler	proc optionsAsync(group: RouteGroup; pattern: string; handler: AsyncHandler)		1912
+nim	optionsAsync	nim_express/app.html#optionsAsync,RouteGroup,string,SyncHandler	proc optionsAsync(group: RouteGroup; pattern: string; handler: SyncHandler)		1918
+nim	get	nim_express/app.html#get,RouteGroup,string,SyncHandler	proc get(group: RouteGroup; pattern: string; handler: SyncHandler)		1924
+nim	post	nim_express/app.html#post,RouteGroup,string,SyncHandler	proc post(group: RouteGroup; pattern: string; handler: SyncHandler)		1930
+nim	put	nim_express/app.html#put,RouteGroup,string,SyncHandler	proc put(group: RouteGroup; pattern: string; handler: SyncHandler)		1936
+nim	delete	nim_express/app.html#delete,RouteGroup,string,SyncHandler	proc delete(group: RouteGroup; pattern: string; handler: SyncHandler)		1942
+nim	patch	nim_express/app.html#patch,RouteGroup,string,SyncHandler	proc patch(group: RouteGroup; pattern: string; handler: SyncHandler)		1948
+nim	head	nim_express/app.html#head,RouteGroup,string,SyncHandler	proc head(group: RouteGroup; pattern: string; handler: SyncHandler)		1954
+nim	options	nim_express/app.html#options,RouteGroup,string,SyncHandler	proc options(group: RouteGroup; pattern: string; handler: SyncHandler)		1960
+nim	allAsync	nim_express/app.html#allAsync,RouteGroup,string,AsyncHandler	proc allAsync(group: RouteGroup; pattern: string; handler: AsyncHandler)		1966
+nim	allAsync	nim_express/app.html#allAsync,RouteGroup,string,SyncHandler	proc allAsync(group: RouteGroup; pattern: string; handler: SyncHandler)		1972
+nim	all	nim_express/app.html#all,RouteGroup,string,SyncHandler	proc all(group: RouteGroup; pattern: string; handler: SyncHandler)		1978
+nim	allAsync	nim_express/app.html#allAsync,ExpressApp,string,SyncHandler	proc allAsync(app: ExpressApp; pattern: string; handler: SyncHandler)		1989
+nim	onError	nim_express/app.html#onError,ExpressApp,AsyncErrorHandler	proc onError(app: ExpressApp; handler: AsyncErrorHandler)		1999
+nim	onConnectionOpen	nim_express/app.html#onConnectionOpen,ExpressApp,ConnectionOpenHook	proc onConnectionOpen(app: ExpressApp; hook: ConnectionOpenHook)		2005
+nim	onConnectionClose	nim_express/app.html#onConnectionClose,ExpressApp,ConnectionCloseHook	proc onConnectionClose(app: ExpressApp; hook: ConnectionCloseHook)		2016
+nim	onRequestStartHook	nim_express/app.html#onRequestStartHook,ExpressApp,RequestStartHook	proc onRequestStartHook(app: ExpressApp; hook: RequestStartHook)		2034
+nim	onRequestEndHook	nim_express/app.html#onRequestEndHook,ExpressApp,RequestEndHook	proc onRequestEndHook(app: ExpressApp; hook: RequestEndHook)		2039
+nim	onRouteMatched	nim_express/app.html#onRouteMatched,ExpressApp,RouteMatchedHook	proc onRouteMatched(app: ExpressApp; hook: RouteMatchedHook)		2044
+nim	onTimeoutHook	nim_express/app.html#onTimeoutHook,ExpressApp,TimeoutHook	proc onTimeoutHook(app: ExpressApp; hook: TimeoutHook)		2049
+nim	onTimeoutMetadataHook	nim_express/app.html#onTimeoutMetadataHook,ExpressApp,TimeoutMetadataHook	proc onTimeoutMetadataHook(app: ExpressApp; hook: TimeoutMetadataHook)		2069
+nim	onProtocolErrorHook	nim_express/app.html#onProtocolErrorHook,ExpressApp,ProtocolErrorHook	proc onProtocolErrorHook(app: ExpressApp; hook: ProtocolErrorHook)		2095
+nim	onErrorHook	nim_express/app.html#onErrorHook,ExpressApp,ErrorHook	proc onErrorHook(app: ExpressApp; hook: ErrorHook)		2099
+nim	onPanicHook	nim_express/app.html#onPanicHook,ExpressApp,PanicHook	proc onPanicHook(app: ExpressApp; hook: PanicHook)		2110
+nim	onBeforeHeaders	nim_express/app.html#onBeforeHeaders,ExpressApp,BeforeHeadersHook	proc onBeforeHeaders(app: ExpressApp; hook: BeforeHeadersHook)		2123
+nim	onBeforeWrite	nim_express/app.html#onBeforeWrite,ExpressApp,BeforeWriteHook	proc onBeforeWrite(app: ExpressApp; hook: BeforeWriteHook)		2148
+nim	onAfterWrite	nim_express/app.html#onAfterWrite,ExpressApp,AfterWriteHook	proc onAfterWrite(app: ExpressApp; hook: AfterWriteHook)		2161
+nim	onBackpressure	nim_express/app.html#onBackpressure,ExpressApp,BackpressureHook	proc onBackpressure(app: ExpressApp; hook: BackpressureHook)		2174
+nim	setCompressionEnabled	nim_express/app.html#setCompressionEnabled,ExpressApp,bool	proc setCompressionEnabled(app: ExpressApp; enabled: bool)		2187
+nim	setCompressionMinBytes	nim_express/app.html#setCompressionMinBytes,ExpressApp,int	proc setCompressionMinBytes(app: ExpressApp; bytes: int)		2191
+nim	setCompressionMinSavingsRatio	nim_express/app.html#setCompressionMinSavingsRatio,ExpressApp,float	proc setCompressionMinSavingsRatio(app: ExpressApp; ratio: float)		2195
+nim	setCompressionLevel	nim_express/app.html#setCompressionLevel,ExpressApp,int	proc setCompressionLevel(app: ExpressApp; level: int)		2199
+nim	setCompressionBackpressureThreshold	nim_express/app.html#setCompressionBackpressureThreshold,ExpressApp,int	proc setCompressionBackpressureThreshold(app: ExpressApp; bytes: int)		2203
+nim	setCompressionOffloadThreshold	nim_express/app.html#setCompressionOffloadThreshold,ExpressApp,int	proc setCompressionOffloadThreshold(app: ExpressApp; bytes: int)		2207
+nim	getTrustProxy	nim_express/app.html#getTrustProxy,ExpressApp	proc getTrustProxy(app: ExpressApp): bool		2215
+nim	getTrustedProxyHops	nim_express/app.html#getTrustedProxyHops,ExpressApp	proc getTrustedProxyHops(app: ExpressApp): int		2223
+nim	getTrustedProxyAllowlist	nim_express/app.html#getTrustedProxyAllowlist,ExpressApp	proc getTrustedProxyAllowlist(app: ExpressApp): string		2235
+nim	setAllowedHosts	nim_express/app.html#setAllowedHosts,ExpressApp,seq[string]	proc setAllowedHosts(app: ExpressApp; hosts: seq[string])		2287
+nim	shouldCompressWith	nim_express/app.html#shouldCompressWith,ExpressApp,ShouldCompressHook	proc shouldCompressWith(app: ExpressApp; hook: ShouldCompressHook)		2319
+nim	selectCompressionProfileWith	nim_express/app.html#selectCompressionProfileWith,ExpressApp,SelectCompressionProfileHook	proc selectCompressionProfileWith(app: ExpressApp; hook: SelectCompressionProfileHook)		2323
+nim	onCompressionResult	nim_express/app.html#onCompressionResult,ExpressApp,CompressionResultHook	proc onCompressionResult(app: ExpressApp; hook: CompressionResultHook)		2327
+nim	onCompressionBypass	nim_express/app.html#onCompressionBypass,ExpressApp,CompressionBypassHook	proc onCompressionBypass(app: ExpressApp; hook: CompressionBypassHook)		2331
+nim	emitOffloadOutcome	nim_express/app.html#emitOffloadOutcome,ExpressApp,OffloadOutcome[T]	proc emitOffloadOutcome[T](app: ExpressApp; outcome: OffloadOutcome[T])		2335
+nim	onStart	nim_express/app.html#onStart,ExpressApp,proc)	proc onStart(app: ExpressApp; handler: proc ())		2341
+nim	onShutdown	nim_express/app.html#onShutdown,ExpressApp,proc)	proc onShutdown(app: ExpressApp; handler: proc ())		2346
+nim	onStop	nim_express/app.html#onStop,ExpressApp,proc)	proc onStop(app: ExpressApp; handler: proc ())		2351
+nim	onStartupWarmup	nim_express/app.html#onStartupWarmup,ExpressApp,StartupWarmupHook	proc onStartupWarmup(app: ExpressApp; hook: StartupWarmupHook)		2356
+nim	onStartup	nim_express/app.html#onStartup,ExpressApp,proc(ExpressApp)	proc onStartup(app: ExpressApp; hook: proc (app: ExpressApp) {.closure.})		2362
+nim	runStartupWarmups	nim_express/app.html#runStartupWarmups,ExpressApp	proc runStartupWarmups(app: ExpressApp)		2366
+nim	deferPre	nim_express/app.html#deferPre,ExpressApp,proc)	proc deferPre(app: ExpressApp; callback: proc ())		2388
+nim	`defer`	nim_express/app.html#defer,ExpressApp,proc)	proc `defer`(app: ExpressApp; callback: proc ())		2393
+nim	set	nim_express/app.html#set,ExpressApp,string,string	proc set(app: ExpressApp; key: string; value: string)		2398
+nim	getSetting	nim_express/app.html#getSetting,ExpressApp,string	proc getSetting(app: ExpressApp; key: string): string		2402
+nim	setViewsDir	nim_express/app.html#setViewsDir,ExpressApp,string	proc setViewsDir(app: ExpressApp; dir: string)		2406
+nim	getViewsDir	nim_express/app.html#getViewsDir,ExpressApp	proc getViewsDir(app: ExpressApp): string		2410
+nim	setViewExtension	nim_express/app.html#setViewExtension,ExpressApp,string	proc setViewExtension(app: ExpressApp; ext: string)		2414
+nim	getViewExtension	nim_express/app.html#getViewExtension,ExpressApp	proc getViewExtension(app: ExpressApp): string		2423
+nim	setViewCache	nim_express/app.html#setViewCache,ExpressApp,bool	proc setViewCache(app: ExpressApp; enabled: bool)		2427
+nim	embedView	nim_express/app.html#embedView,ExpressApp,string,string	proc embedView(app: ExpressApp; name: string; content: string)		2431
+nim	embedView	nim_express/app.html#embedView,ExpressApp,string,string,openArray[]	proc embedView(app: ExpressApp; name: string; content: string;\n          pairs: openArray[(string, string)])		2444
+nim	embedViewDir	nim_express/app.html#embedViewDir,ExpressApp,string	proc embedViewDir(app: ExpressApp; dir: string)		2458
+nim	staticEmbedViewDir	nim_express/app.html#staticEmbedViewDir.m,ExpressApp,static[string]	macro staticEmbedViewDir(app: ExpressApp; dir: static[string]): untyped		2468
+nim	getViewCache	nim_express/app.html#getViewCache,ExpressApp	proc getViewCache(app: ExpressApp): bool		2481
+nim	setEnvironment	nim_express/app.html#setEnvironment,ExpressApp,string	proc setEnvironment(app: ExpressApp; env: string)		2486
+nim	getEnvironment	nim_express/app.html#getEnvironment,ExpressApp	proc getEnvironment(app: ExpressApp): string		2492
+nim	isDevelopment	nim_express/app.html#isDevelopment,ExpressApp	proc isDevelopment(app: ExpressApp): bool		2496
+nim	isProduction	nim_express/app.html#isProduction,ExpressApp	proc isProduction(app: ExpressApp): bool		2501
+nim	prewarmContextPoolsOnStartup	nim_express/app.html#prewarmContextPoolsOnStartup,ExpressApp,int,int	proc prewarmContextPoolsOnStartup(app: ExpressApp; requestCount: int = -1;\n                             responseCount: int = -1)		2505
+nim	precompileViewsOnStartup	nim_express/app.html#precompileViewsOnStartup,ExpressApp,openArray[string]	proc precompileViewsOnStartup(app: ExpressApp; viewNames: openArray[string]): int		2520
+nim	ws	nim_express/app.html#ws,ExpressApp,WsHandler	proc ws(app: ExpressApp; handler: WsHandler)		2536
+nim	wsRaw	nim_express/app.html#wsRaw,ExpressApp,WsRawHandler	proc wsRaw(app: ExpressApp; handler: WsRawHandler)		2540
+nim	onWsOpen	nim_express/app.html#onWsOpen,ExpressApp,WsOpenHandler	proc onWsOpen(app: ExpressApp; handler: WsOpenHandler)		2546
+nim	onWsClose	nim_express/app.html#onWsClose,ExpressApp,WsCloseHandler	proc onWsClose(app: ExpressApp; handler: WsCloseHandler)		2550
+nim	onWsDrain	nim_express/app.html#onWsDrain,ExpressApp,WsDrainHandler	proc onWsDrain(app: ExpressApp; handler: WsDrainHandler)		2554
+nim	onWsDropped	nim_express/app.html#onWsDropped,ExpressApp,WsDroppedHandler	proc onWsDropped(app: ExpressApp; handler: WsDroppedHandler)		2558
+nim	onWsHighWater	nim_express/app.html#onWsHighWater,ExpressApp,WsHighWaterHandler	proc onWsHighWater(app: ExpressApp; handler: WsHighWaterHandler)		2562
+nim	setWsUpgradeValidator	nim_express/app.html#setWsUpgradeValidator,ExpressApp,WsUpgradeValidator	proc setWsUpgradeValidator(app: ExpressApp; validator: WsUpgradeValidator)		2566
+nim	allowWsOrigin	nim_express/app.html#allowWsOrigin,ExpressApp,string	proc allowWsOrigin(app: ExpressApp; origin: string)		2570
+nim	allowWsPath	nim_express/app.html#allowWsPath,ExpressApp,string	proc allowWsPath(app: ExpressApp; path: string)		2579
+nim	clearWsOriginAllowlist	nim_express/app.html#clearWsOriginAllowlist,ExpressApp	proc clearWsOriginAllowlist(app: ExpressApp)		2590
+nim	clearWsPathAllowlist	nim_express/app.html#clearWsPathAllowlist,ExpressApp	proc clearWsPathAllowlist(app: ExpressApp)		2595
+nim	publish	nim_express/app.html#publish,ExpressApp,string,string,bool	proc publish(app: ExpressApp; topic: string; message: string; binary: bool = false): int		2675
+nim	publishPrepared	nim_express/app.html#publishPrepared,ExpressApp,string,PreparedWsMessage	proc publishPrepared(app: ExpressApp; topic: string; msg: PreparedWsMessage): int		2679
+nim	setInterval	nim_express/app.html#setInterval,ExpressApp,proc),int	proc setInterval(app: ExpressApp; callback: proc (); intervalMs: int)		2683
+nim	getAsync	nim_express/app.html#getAsync,Router,string,AsyncHandler	proc getAsync(router: Router; pattern: string; handler: AsyncHandler)		2730
+nim	postAsync	nim_express/app.html#postAsync,Router,string,AsyncHandler	proc postAsync(router: Router; pattern: string; handler: AsyncHandler)		2734
+nim	putAsync	nim_express/app.html#putAsync,Router,string,AsyncHandler	proc putAsync(router: Router; pattern: string; handler: AsyncHandler)		2738
+nim	deleteAsync	nim_express/app.html#deleteAsync,Router,string,AsyncHandler	proc deleteAsync(router: Router; pattern: string; handler: AsyncHandler)		2742
+nim	get	nim_express/app.html#get,Router,string,SyncHandler	proc get(router: Router; pattern: string; handler: SyncHandler)		2746
+nim	post	nim_express/app.html#post,Router,string,SyncHandler	proc post(router: Router; pattern: string; handler: SyncHandler)		2750
+nim	put	nim_express/app.html#put,Router,string,SyncHandler	proc put(router: Router; pattern: string; handler: SyncHandler)		2754
+nim	delete	nim_express/app.html#delete,Router,string,SyncHandler	proc delete(router: Router; pattern: string; handler: SyncHandler)		2758
+nim	use	nim_express/app.html#use,Router,AsyncMiddleware	proc use(router: Router; middleware: AsyncMiddleware)		2762
+nim	compileRouterArtifacts	nim_express/app.html#compileRouterArtifacts,Router	proc compileRouterArtifacts(router: Router)		2802
+nim	findRouteForMethod	nim_express/app.html#findRouteForMethod,Router,,string,FastMap[string]	proc findRouteForMethod(router: Router; methodKind: nim_usockets.HttpMethod;\n                   path: string; params: var FastMap[string]): ptr Route		2999
+nim	routeManifestEntries	nim_express/app.html#routeManifestEntries,ExpressApp	proc routeManifestEntries(app: ExpressApp): seq[RouteManifestEntry]		3105
+nim	routeManifestJson	nim_express/app.html#routeManifestJson,ExpressApp	proc routeManifestJson(app: ExpressApp): string		3123
+nim	setRouteManifestOnStartup	nim_express/app.html#setRouteManifestOnStartup,ExpressApp,bool	proc setRouteManifestOnStartup(app: ExpressApp; enabled: bool = true)		3141
+nim	getRouteManifestOnStartup	nim_express/app.html#getRouteManifestOnStartup,ExpressApp	proc getRouteManifestOnStartup(app: ExpressApp): bool		3147
+nim	registerActiveAsyncRequestForTest	nim_express/app.html#registerActiveAsyncRequestForTest,Request,Response	proc registerActiveAsyncRequestForTest(req: Request; res: Response = nil)		3351
+nim	unregisterActiveAsyncRequestForTest	nim_express/app.html#unregisterActiveAsyncRequestForTest,Request	proc unregisterActiveAsyncRequestForTest(req: Request)		3355
+nim	notifyAsyncDisconnectByRemoteIpForTest	nim_express/app.html#notifyAsyncDisconnectByRemoteIpForTest,string	proc notifyAsyncDisconnectByRemoteIpForTest(remoteIp: string)		3359
+nim	notifyAsyncDisconnectForTest	nim_express/app.html#notifyAsyncDisconnectForTest,string,uint64,uint64	proc notifyAsyncDisconnectForTest(remoteIp: string; requestSeq: uint64;\n                             socketKey: uint64)		3363
+nim	invokeRequestStartHook	nim_express/app.html#invokeRequestStartHook,ExpressApp,Request	proc invokeRequestStartHook(app: ExpressApp; req: Request)		3560
+nim	invokeRouteMatchedHook	nim_express/app.html#invokeRouteMatchedHook,ExpressApp,string,Request	proc invokeRouteMatchedHook(app: ExpressApp; pattern: string; req: Request)		3569
+nim	invokeRequestEndHook	nim_express/app.html#invokeRequestEndHook,ExpressApp,Request,Response,int64	proc invokeRequestEndHook(app: ExpressApp; req: Request; res: Response;\n                     durationMicros: int64)		3578
+nim	invokeProtocolErrorTransform	nim_express/app.html#invokeProtocolErrorTransform,ExpressApp,int,string	proc invokeProtocolErrorTransform(app: ExpressApp; statusCode: int; remoteIp: string): tuple[\n    statusCode: int, body: string, closeConnection: bool]		3587
+nim	handleRequestForTest	nim_express/app.html#handleRequestForTest,ExpressApp,Request,Response	proc handleRequestForTest(app: ExpressApp; req: Request; res: Response): Future[void]		3707
+nim	scheduleExistingAsyncFutureForTest	nim_express/app.html#scheduleExistingAsyncFutureForTest,ExpressApp,Request,Response,Future[void]	proc scheduleExistingAsyncFutureForTest(app: ExpressApp; req: Request; res: Response;\n                                   fut: Future[void]): bool		3785
+nim	setupHandlersForTest	nim_express/app.html#setupHandlersForTest,ExpressApp	proc setupHandlersForTest(app: ExpressApp)		4074
+nim	getEventLoop	nim_express/app.html#getEventLoop,ExpressApp	proc getEventLoop(app: ExpressApp): UsLoopPtr		4109
+nim	close	nim_express/app.html#close,ExpressApp	proc close(app: ExpressApp)		4115
+nim	createHttpClient	nim_express/app.html#createHttpClient,ExpressApp,string,int,int,int,int,int,bool	proc createHttpClient(app: ExpressApp; name: string = "default";\n                 maxConnsPerHost: int = 16; requestTimeoutMs: int = 30000;\n                 connectTimeoutMs: int = 5000; keepAliveTimeoutMs: int = 60000;\n                 maxRetries: int = 0; preferH2: bool = false): ptr http_clients.HttpClient		4136
+nim	httpClient	nim_express/app.html#httpClient,ExpressApp,string	proc httpClient(app: ExpressApp; name: string = "default"): ptr http_clients.HttpClient		4168
+nim	getHttpClient	nim_express/app.html#getHttpClient,ExpressApp,string	proc getHttpClient(app: ExpressApp; name: string): ptr http_clients.HttpClient		4175
+nim	initHttpClients	nim_express/app.html#initHttpClients,ExpressApp,string	proc initHttpClients(app: ExpressApp; configPath: string = "config.json")		4179
+nim	listen	nim_express/app.html#listen,ExpressApp,string,int,proc(bool)	proc listen(app: ExpressApp; host: string; port: int; callback: proc (success: bool))		4198
+nim	listen	nim_express/app.html#listen,ExpressApp,int,proc(bool)	proc listen(app: ExpressApp; port: int; callback: proc (success: bool))		4210
+nim	listen	nim_express/app.html#listen,ExpressApp,AppEnvConfig,proc(bool)	proc listen(app: ExpressApp; cfg: AppEnvConfig; callback: proc (success: bool))		4214
+nim	run	nim_express/app.html#run,ExpressApp,string,int	proc run(app: ExpressApp; host: string; port: int)		4220
+nim	run	nim_express/app.html#run,ExpressApp,int	proc run(app: ExpressApp; port: int)		4230
+nim	run	nim_express/app.html#run,ExpressApp,AppEnvConfig	proc run(app: ExpressApp; cfg: AppEnvConfig)		4234
+nim	AppFactory	nim_express/app.html#AppFactory	type AppFactory		4245
+nim	runThreaded	nim_express/app.html#runThreaded,AppFactory,int,int	proc runThreaded(factory: AppFactory; port: int; numThreads: int = 0)		4275
+nim	DefaultClusterWorkerShutdownGraceMs	nim_express/app.html#DefaultClusterWorkerShutdownGraceMs	const DefaultClusterWorkerShutdownGraceMs		4324
+nim	ClusterSupervisionPolicy	nim_express/app.html#ClusterSupervisionPolicy	object ClusterSupervisionPolicy		4331
+nim	resetClusterParentSignalFlags	nim_express/app.html#resetClusterParentSignalFlags	proc resetClusterParentSignalFlags()		4348
+nim	clusterParentShutdownRequested	nim_express/app.html#clusterParentShutdownRequested	proc clusterParentShutdownRequested(): bool		4353
+nim	markClusterParentShutdownForTest	nim_express/app.html#markClusterParentShutdownForTest	proc markClusterParentShutdownForTest()		4357
+nim	defaultClusterSupervisionPolicy	nim_express/app.html#defaultClusterSupervisionPolicy	proc defaultClusterSupervisionPolicy(): ClusterSupervisionPolicy		4416
+nim	respawnJitterMs	nim_express/app.html#respawnJitterMs,int	proc respawnJitterMs(jitterCap: int): int		4434
+nim	pruneRestartStormTimestamps	nim_express/app.html#pruneRestartStormTimestamps,seq[int64],int64,int	proc pruneRestartStormTimestamps(restartTimestampsMs: var seq[int64]; nowMs: int64;\n                            windowMs: int)		4448
+nim	rollingRestartCount	nim_express/app.html#rollingRestartCount,ClusterSupervisionPolicy,seq[int64],int64	proc rollingRestartCount(policy: ClusterSupervisionPolicy;\n                    restartTimestampsMs: var seq[int64]; nowMs: int64): int		4469
+nim	canRespawnWorker	nim_express/app.html#canRespawnWorker,ClusterSupervisionPolicy,seq[int64],int64	proc canRespawnWorker(policy: ClusterSupervisionPolicy;\n                 restartTimestampsMs: var seq[int64]; nowMs: int64): bool		4478
+nim	withinHardRespawnBudget	nim_express/app.html#withinHardRespawnBudget,ClusterSupervisionPolicy,seq[int64],int64	proc withinHardRespawnBudget(policy: ClusterSupervisionPolicy;\n                        respawnTimestampsMs: var seq[int64]; nowMs: int64): bool		4488
+nim	boundedRespawnDelayMs	nim_express/app.html#boundedRespawnDelayMs,ClusterSupervisionPolicy,int	proc boundedRespawnDelayMs(policy: ClusterSupervisionPolicy; restartCount: int): int		4498
+nim	canRespawnWorker	nim_express/app.html#canRespawnWorker,ClusterSupervisionPolicy,int	proc canRespawnWorker(policy: ClusterSupervisionPolicy; restartCount: int): bool		4513
+nim	formatWorkerFailureEvent	nim_express/app.html#formatWorkerFailureEvent,int,Pid,cint,int	proc formatWorkerFailureEvent(workerSlot: int; pid: Pid; status: cint;\n                         restartCount: int): string		4527
+nim	runCluster	nim_express/app.html#runCluster,AppFactory,int,int	proc runCluster(factory: AppFactory; port: int; numWorkers: int = 0)		4552
+nim	runAuto	nim_express/app.html#runAuto,AppFactory,int,int	proc runAuto(factory: AppFactory; port: int; numWorkers: int = 0)		4695
+nimgrp	options	nim_express/app.html#options-procs-all	proc		1831
+nimgrp	putasync	nim_express/app.html#putAsync-procs-all	proc		1746
+nimgrp	embedview	nim_express/app.html#embedView-procs-all	proc		2431
+nimgrp	patch	nim_express/app.html#patch-procs-all	proc		1823
+nimgrp	group	nim_express/app.html#group-procs-all	proc		1653
+nimgrp	post	nim_express/app.html#post-procs-all	proc		1811
+nimgrp	head	nim_express/app.html#head-procs-all	proc		1827
+nimgrp	deleteasync	nim_express/app.html#deleteAsync-procs-all	proc		1754
+nimgrp	postasync	nim_express/app.html#postAsync-procs-all	proc		1738
+nimgrp	headasync	nim_express/app.html#headAsync-procs-all	proc		1770
+nimgrp	getasync	nim_express/app.html#getAsync-procs-all	proc		1730
+nimgrp	canrespawnworker	nim_express/app.html#canRespawnWorker-procs-all	proc		4478
+nimgrp	put	nim_express/app.html#put-procs-all	proc		1815
+nimgrp	use	nim_express/app.html#use-procs-all	proc		1556
+nimgrp	run	nim_express/app.html#run-procs-all	proc		4220
+nimgrp	optionsasync	nim_express/app.html#optionsAsync-procs-all	proc		1778
+nimgrp	patchasync	nim_express/app.html#patchAsync-procs-all	proc		1762
+nimgrp	all	nim_express/app.html#all-procs-all	proc		1837
+nimgrp	delete	nim_express/app.html#delete-procs-all	proc		1819
+nimgrp	get	nim_express/app.html#get-procs-all	proc		1807
+nimgrp	listen	nim_express/app.html#listen-procs-all	proc		4198
+nimgrp	allasync	nim_express/app.html#allAsync-procs-all	proc		1835

@@ -1,0 +1,8 @@
+nimTitle	windowing	nim_express/windowing.html	module nim_express/windowing		0
+nim	ItemRangeSpec	nim_express/windowing.html#ItemRangeSpec	object ItemRangeSpec		6
+nim	WindowedItemsDecision	nim_express/windowing.html#WindowedItemsDecision	object WindowedItemsDecision		13
+nim	parseItemsRangeHeader	nim_express/windowing.html#parseItemsRangeHeader,string	proc parseItemsRangeHeader(headerValue: string): ItemRangeSpec		25
+nim	isWindowingModeEnabled	nim_express/windowing.html#isWindowingModeEnabled,string,string	proc isWindowingModeEnabled(modeValue: string; windowValue: string): bool		69
+nim	contentRangeValue	nim_express/windowing.html#contentRangeValue,string,int,int,int	proc contentRangeValue(unit: string; startPos: int; endPos: int; total: int): string		78
+nim	unsatisfiedContentRangeValue	nim_express/windowing.html#unsatisfiedContentRangeValue,string,int	proc unsatisfiedContentRangeValue(unit: string; total: int): string		82
+nim	resolveWindowedItemsRange	nim_express/windowing.html#resolveWindowedItemsRange,string,int,int	proc resolveWindowedItemsRange(rangeHeaderValue: string; totalItems: int;\n                          maxWindowItems: int = 0): WindowedItemsDecision		86

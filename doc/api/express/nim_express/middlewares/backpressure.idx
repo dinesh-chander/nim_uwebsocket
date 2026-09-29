@@ -1,0 +1,14 @@
+nimTitle	backpressure	nim_express/middlewares/backpressure.html	module nim_express/middlewares/backpressure		0
+nim	LoadMetricsHook	nim_express/middlewares/backpressure.html#LoadMetricsHook	type LoadMetricsHook		8
+nim	BackpressureOptions	nim_express/middlewares/backpressure.html#BackpressureOptions	object BackpressureOptions		10
+nim	BackpressureState	nim_express/middlewares/backpressure.html#BackpressureState	type BackpressureState		17
+nim	defaultBackpressureOptions	nim_express/middlewares/backpressure.html#defaultBackpressureOptions	proc defaultBackpressureOptions(): BackpressureOptions		31
+nim	newBackpressureState	nim_express/middlewares/backpressure.html#newBackpressureState	proc newBackpressureState(): BackpressureState		41
+nim	activeConnectionCount	nim_express/middlewares/backpressure.html#activeConnectionCount,BackpressureState	proc activeConnectionCount(state: BackpressureState): int64		50
+nim	pendingResponseCount	nim_express/middlewares/backpressure.html#pendingResponseCount,BackpressureState	proc pendingResponseCount(state: BackpressureState): int64		55
+nim	shedRequestCount	nim_express/middlewares/backpressure.html#shedRequestCount,BackpressureState	proc shedRequestCount(state: BackpressureState): int64		60
+nim	resetBackpressureState	nim_express/middlewares/backpressure.html#resetBackpressureState,BackpressureState	proc resetBackpressureState(state: BackpressureState)		65
+nim	backpressure	nim_express/middlewares/backpressure.html#backpressure,BackpressureState,BackpressureOptions	proc backpressure(state: BackpressureState;\n             options: BackpressureOptions = defaultBackpressureOptions()): AsyncMiddleware		77
+nim	backpressure	nim_express/middlewares/backpressure.html#backpressure,BackpressureOptions	proc backpressure(options: BackpressureOptions = defaultBackpressureOptions()): AsyncMiddleware		149
+nim	backpressure	nim_express/middlewares/backpressure.html#backpressure,int,int,int,int	proc backpressure(maxConnections: int; maxPendingResponses: int = 5000;\n             maxResponseTimeMs: int = 30000; retryAfterSeconds: int = 5): AsyncMiddleware		156
+nimgrp	backpressure	nim_express/middlewares/backpressure.html#backpressure-procs-all	proc		77

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "metaData": {
+    "url": "https://github.com/nim-lang/checksums",
+    "downloadMethod": "git",
+    "vcsRevision": "0845c735a9746188b2257ee2cff672eb6ec26e8a",
+    "files": [
+      "/checksums/md5.nim",
+      "/checksums/private/sha_utils.nim",
+      "/checksums/docutils.nim",
+      "/checksums/sha2.nim",
+      "/checksums.nimble",
+      "/checksums/bcrypt.nim",
+      "/checksums/sha1.nim",
+      "/checksums/sha3.nim"
+    ],
+    "binaries": [],
+    "specialVersions": [
+      "0.2.2"
+    ]
+  }
+}

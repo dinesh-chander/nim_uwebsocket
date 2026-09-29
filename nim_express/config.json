@@ -1,0 +1,37 @@
+{
+  "profile": "linux-throughput",
+  "server": {
+    "host": "0.0.0.0",
+    "port": 3000,
+    "trustProxy": false
+  },
+  "runtime": {
+    "asyncPumpIntervalMs": 1,
+    "maxInflightAsyncRequests": 8192
+  },
+  "socket": {
+    "noDelay": true,
+    "keepAlive": true,
+    "sendBufferBytes": 524288,
+    "recvBufferBytes": 524288,
+    "notSentLowWaterBytes": 16384
+  },
+  "coalesce": {
+    "mode": "throughput"
+  },
+  "overload": {
+    "maxBacklogBytes": 8388608,
+    "maxPendingResponses": 4096,
+    "adaptive": {
+      "enabled": true,
+      "minBacklogBytes": 262144,
+      "minPendingResponses": 64
+    }
+  },
+  "websocket": {
+    "compression": {
+      "enabled": true,
+      "thresholdBytes": 1024
+    }
+  }
+}

@@ -1,0 +1,6 @@
+nimTitle	file_helpers	nim_express/middlewares/file_helpers.html	module nim_express/middlewares/file_helpers		0
+nim	DefaultStaticFallbackMaxBytes	nim_express/middlewares/file_helpers.html#DefaultStaticFallbackMaxBytes	const DefaultStaticFallbackMaxBytes		8
+nim	DefaultStaticFallbackOversizeStatus	nim_express/middlewares/file_helpers.html#DefaultStaticFallbackOversizeStatus	const DefaultStaticFallbackOversizeStatus		9
+nim	getMimeType	nim_express/middlewares/file_helpers.html#getMimeType,string	proc getMimeType(filename: string): string		53
+nim	sendFile	nim_express/middlewares/file_helpers.html#sendFile,Res,Req,string,string	proc sendFile(res: Res; req: Req; filePath: string; trustedRoot: string = ""): Future[\n    void]		280
+nim	download	nim_express/middlewares/file_helpers.html#download,Res,Req,string,string	proc download(res: Res; req: Req; filePath: string; filename: string = ""): Future[\n    void]		344

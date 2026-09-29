@@ -1,0 +1,10 @@
+{
+  "name": "benchmark",
+  "version": "1.0.0",
+  "description": "Benchmark ultimate-express",
+  "main": "bench_ultimate_express.js",
+  "dependencies": {
+    "ultimate-express": "^2.0.0",
+    "ws": "^8.20.0"
+  }
+}

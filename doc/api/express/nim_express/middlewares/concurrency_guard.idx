@@ -1,0 +1,11 @@
+nimTitle	concurrency_guard	nim_express/middlewares/concurrency_guard.html	module nim_express/middlewares/concurrency_guard		0
+nim	ConcurrencyGuardState	nim_express/middlewares/concurrency_guard.html#ConcurrencyGuardState	type ConcurrencyGuardState		18
+nim	newConcurrencyGuardState	nim_express/middlewares/concurrency_guard.html#newConcurrencyGuardState,int	proc newConcurrencyGuardState(maxInflight: int = 1024): ConcurrencyGuardState		24
+nim	currentInflight	nim_express/middlewares/concurrency_guard.html#currentInflight,ConcurrencyGuardState	proc currentInflight(state: ConcurrencyGuardState): int64		31
+nim	rejectedCount	nim_express/middlewares/concurrency_guard.html#rejectedCount,ConcurrencyGuardState	proc rejectedCount(state: ConcurrencyGuardState): int64		37
+nim	resetConcurrencyGuardState	nim_express/middlewares/concurrency_guard.html#resetConcurrencyGuardState,ConcurrencyGuardState	proc resetConcurrencyGuardState(state: ConcurrencyGuardState)		43
+nim	concurrencyGuardRejectStatus	nim_express/middlewares/concurrency_guard.html#concurrencyGuardRejectStatus,int	proc concurrencyGuardRejectStatus(statusCode: int): int		55
+nim	concurrencyGuardRetryAfter	nim_express/middlewares/concurrency_guard.html#concurrencyGuardRetryAfter,int	proc concurrencyGuardRetryAfter(retryAfterSeconds: int): int		63
+nim	concurrencyGuard	nim_express/middlewares/concurrency_guard.html#concurrencyGuard,ConcurrencyGuardState,int,int,string,string	proc concurrencyGuard(state: ConcurrencyGuardState; statusCode: int = 503;\n                 retryAfterSeconds: int = 1; message: string = "Server busy";\n                 contentType: string = "text/plain; charset=utf-8"): AsyncMiddleware		67
+nim	concurrencyGuard	nim_express/middlewares/concurrency_guard.html#concurrencyGuard,int,int,int,string,string	proc concurrencyGuard(maxInflight: int = 1024; statusCode: int = 503;\n                 retryAfterSeconds: int = 1; message: string = "Server busy";\n                 contentType: string = "text/plain; charset=utf-8"): AsyncMiddleware		104
+nimgrp	concurrencyguard	nim_express/middlewares/concurrency_guard.html#concurrencyGuard-procs-all	proc		67

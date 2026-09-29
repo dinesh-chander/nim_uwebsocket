@@ -1,0 +1,7 @@
+nimTitle	io_helpers	nim_express/middlewares/io_helpers.html	module nim_express/middlewares/io_helpers		0
+nim	DefaultOutboundTimeoutMs	nim_express/middlewares/io_helpers.html#DefaultOutboundTimeoutMs	const DefaultOutboundTimeoutMs		5
+nim	IoTimeoutError	nim_express/middlewares/io_helpers.html#IoTimeoutError	object IoTimeoutError		8
+nim	readFileAsync	nim_express/middlewares/io_helpers.html#readFileAsync,string	proc readFileAsync(path: string): Future[string]		11
+nim	writeFileAsync	nim_express/middlewares/io_helpers.html#writeFileAsync,string,string	proc writeFileAsync(path: string; content: string): Future[void]		23
+nim	fetchAsync	nim_express/middlewares/io_helpers.html#fetchAsync,string,int	proc fetchAsync(url: string; timeoutMs: int = DefaultOutboundTimeoutMs): Future[\n    string]		35
+nim	postAsync	nim_express/middlewares/io_helpers.html#postAsync,string,string,string,int	proc postAsync(url: string; body: string; contentType: string = "application/json";\n          timeoutMs: int = DefaultOutboundTimeoutMs): Future[string]		56

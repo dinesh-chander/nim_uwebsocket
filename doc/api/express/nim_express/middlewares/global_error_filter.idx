@@ -1,0 +1,16 @@
+nimTitle	global_error_filter	nim_express/middlewares/global_error_filter.html	module nim_express/middlewares/global_error_filter		0
+nim	ExceptionFilterProc	nim_express/middlewares/global_error_filter.html#ExceptionFilterProc	type ExceptionFilterProc		18
+nim	ExceptionFilter	nim_express/middlewares/global_error_filter.html#ExceptionFilter	object ExceptionFilter		26
+nim	GlobalErrorFilterOptions	nim_express/middlewares/global_error_filter.html#GlobalErrorFilterOptions	object GlobalErrorFilterOptions		32
+nim	defaultGlobalErrorFilterOptions	nim_express/middlewares/global_error_filter.html#defaultGlobalErrorFilterOptions	proc defaultGlobalErrorFilterOptions(): GlobalErrorFilterOptions		38
+nim	newExceptionFilter	nim_express/middlewares/global_error_filter.html#newExceptionFilter,string,ExceptionFilterProc,int,string	proc newExceptionFilter(name: string; handler: ExceptionFilterProc;\n                   priority: int = 0; exceptionType: string = ""): ExceptionFilter		46
+nim	valueErrorFilter	nim_express/middlewares/global_error_filter.html#valueErrorFilter	proc valueErrorFilter(): ExceptionFilter		61
+nim	keyErrorFilter	nim_express/middlewares/global_error_filter.html#keyErrorFilter	proc keyErrorFilter(): ExceptionFilter		75
+nim	ioErrorFilter	nim_express/middlewares/global_error_filter.html#ioErrorFilter	proc ioErrorFilter(): ExceptionFilter		89
+nim	osErrorFilter	nim_express/middlewares/global_error_filter.html#osErrorFilter	proc osErrorFilter(): ExceptionFilter		103
+nim	jsonParsingErrorFilter	nim_express/middlewares/global_error_filter.html#jsonParsingErrorFilter	proc jsonParsingErrorFilter(): ExceptionFilter		117
+nim	builtinFilters	nim_express/middlewares/global_error_filter.html#builtinFilters	proc builtinFilters(): seq[ExceptionFilter]		131
+nim	globalErrorFilter	nim_express/middlewares/global_error_filter.html#globalErrorFilter,GlobalErrorFilterOptions	proc globalErrorFilter(options: GlobalErrorFilterOptions = defaultGlobalErrorFilterOptions()): AsyncMiddleware		153
+nim	globalErrorFilter	nim_express/middlewares/global_error_filter.html#globalErrorFilter,seq[ExceptionFilter]	proc globalErrorFilter(filters: seq[ExceptionFilter]): AsyncMiddleware		199
+nim	globalErrorFilterWithBuiltins	nim_express/middlewares/global_error_filter.html#globalErrorFilterWithBuiltins,seq[ExceptionFilter]	proc globalErrorFilterWithBuiltins(extraFilters: seq[ExceptionFilter] = @[]): AsyncMiddleware		207
+nimgrp	globalerrorfilter	nim_express/middlewares/global_error_filter.html#globalErrorFilter-procs-all	proc		153

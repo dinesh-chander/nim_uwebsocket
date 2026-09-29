@@ -1,0 +1,3 @@
+nimTitle	common	nim_express/middlewares/common.html	module nim_express/middlewares/common		0
+nim	Req	nim_express/middlewares/common.html#Req	type Req		12
+nim	Res	nim_express/middlewares/common.html#Res	type Res		13

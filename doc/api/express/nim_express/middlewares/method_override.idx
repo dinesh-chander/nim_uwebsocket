@@ -1,0 +1,19 @@
+nimTitle	method_override	nim_express/middlewares/method_override.html	module nim_express/middlewares/method_override		0
+nim	mosHeader	nim_express/middlewares/method_override.html#mosHeader	MethodOverrideSource.mosHeader		9
+nim	mosQuery	nim_express/middlewares/method_override.html#mosQuery	MethodOverrideSource.mosQuery		9
+nim	mosForm	nim_express/middlewares/method_override.html#mosForm	MethodOverrideSource.mosForm		9
+nim	MethodOverrideSource	nim_express/middlewares/method_override.html#MethodOverrideSource	enum MethodOverrideSource		9
+nim	MethodOverrideAuditHook	nim_express/middlewares/method_override.html#MethodOverrideAuditHook	type MethodOverrideAuditHook		14
+nim	MethodOverrideOptions	nim_express/middlewares/method_override.html#MethodOverrideOptions	object MethodOverrideOptions		22
+nim	morkNone	nim_express/middlewares/method_override.html#morkNone	MethodOverrideResolveKind.morkNone		35
+nim	morkInvalidToken	nim_express/middlewares/method_override.html#morkInvalidToken	MethodOverrideResolveKind.morkInvalidToken		35
+nim	morkDisallowedTarget	nim_express/middlewares/method_override.html#morkDisallowedTarget	MethodOverrideResolveKind.morkDisallowedTarget		35
+nim	morkResolved	nim_express/middlewares/method_override.html#morkResolved	MethodOverrideResolveKind.morkResolved		35
+nim	MethodOverrideResolveKind	nim_express/middlewares/method_override.html#MethodOverrideResolveKind	enum MethodOverrideResolveKind		35
+nim	MethodOverrideResolveResult	nim_express/middlewares/method_override.html#MethodOverrideResolveResult	object MethodOverrideResolveResult		41
+nim	DefaultMethodOverrideMaxFormBytes	nim_express/middlewares/method_override.html#DefaultMethodOverrideMaxFormBytes	const DefaultMethodOverrideMaxFormBytes		48
+nim	defaultMethodOverrideOptions	nim_express/middlewares/method_override.html#defaultMethodOverrideOptions	proc defaultMethodOverrideOptions(): MethodOverrideOptions		52
+nim	resolveOverrideMethod	nim_express/middlewares/method_override.html#resolveOverrideMethod,Req,MethodOverrideOptions	proc resolveOverrideMethod(req: Req; options: MethodOverrideOptions = defaultMethodOverrideOptions()): MethodOverrideResolveResult		157
+nim	applyMethodOverride	nim_express/middlewares/method_override.html#applyMethodOverride,Req,MethodOverrideOptions	proc applyMethodOverride(req: Req; options: MethodOverrideOptions = defaultMethodOverrideOptions()): bool		239
+nim	installMethodOverride	nim_express/middlewares/method_override.html#installMethodOverride,ExpressApp,MethodOverrideOptions	proc installMethodOverride(app: ExpressApp; options: MethodOverrideOptions = defaultMethodOverrideOptions())		248
+nim	methodOverride	nim_express/middlewares/method_override.html#methodOverride,ExpressApp,MethodOverrideOptions	proc methodOverride(app: ExpressApp;\n               options: MethodOverrideOptions = defaultMethodOverrideOptions())		272

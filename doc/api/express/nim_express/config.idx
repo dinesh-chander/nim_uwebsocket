@@ -1,0 +1,14 @@
+nimTitle	config	nim_express/config.html	module nim_express/config		0
+nim	DefaultConfigFileName	nim_express/config.html#DefaultConfigFileName	const DefaultConfigFileName		9
+nim	FallbackConfigFileName	nim_express/config.html#FallbackConfigFileName	const FallbackConfigFileName		10
+nim	DefaultEnvHost	nim_express/config.html#DefaultEnvHost	const DefaultEnvHost		11
+nim	DefaultEnvPort	nim_express/config.html#DefaultEnvPort	const DefaultEnvPort		12
+nim	DefaultEnvTrustProxy	nim_express/config.html#DefaultEnvTrustProxy	const DefaultEnvTrustProxy		13
+nim	DefaultEnvAsyncPumpIntervalMs	nim_express/config.html#DefaultEnvAsyncPumpIntervalMs	const DefaultEnvAsyncPumpIntervalMs		14
+nim	DefaultEnvMaxInflightAsyncRequests	nim_express/config.html#DefaultEnvMaxInflightAsyncRequests	const DefaultEnvMaxInflightAsyncRequests		15
+nim	DefaultEnvContextPoolPrewarm	nim_express/config.html#DefaultEnvContextPoolPrewarm	const DefaultEnvContextPoolPrewarm		16
+nim	DefaultEnvRequestResponsePoolingEnabled	nim_express/config.html#DefaultEnvRequestResponsePoolingEnabled	const DefaultEnvRequestResponsePoolingEnabled		17
+nim	DefaultEnvMaxPendingBytesPerSocket	nim_express/config.html#DefaultEnvMaxPendingBytesPerSocket	const DefaultEnvMaxPendingBytesPerSocket		18
+nim	defaultAppEnvConfig	nim_express/config.html#defaultAppEnvConfig	proc defaultAppEnvConfig(): AppEnvConfig		63
+nim	loadAppEnvConfig	nim_express/config.html#loadAppEnvConfig,string,bool	proc loadAppEnvConfig(configPath: string = ""; strictConfig: bool = false): AppEnvConfig		636
+nim	loadAndApplyAppEnvConfig	nim_express/config.html#loadAndApplyAppEnvConfig,ExpressApp,string,bool	proc loadAndApplyAppEnvConfig(app: ExpressApp; configPath: string = "";\n                         strictConfig: bool = false): AppEnvConfig		658

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Artillery Duel — nim_express</title>
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/ws.js"></script>
+<style>
+:root{
+  --bg:#0b1020; --bg2:#0e1526;
+  --glass:rgba(17,24,42,.72); --glass-border:rgba(148,170,220,.14);
+  --txt:#eef2fb; --dim:#8b96b3; --faint:#5a6584;
+  --red:#ff4d5a; --red-soft:rgba(255,77,90,.16);
+  --blue:#4d9fff; --blue-soft:rgba(77,159,255,.16);
+  --gold:#ffc857; --green:#41d98d;
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1100px 500px at 80% -10%, rgba(77,159,255,.10), transparent 60%),
+    radial-gradient(900px 420px at 12% 110%, rgba(255,77,90,.07), transparent 60%),
+    linear-gradient(180deg,var(--bg2),var(--bg));
+  color:var(--txt);
+  font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  display:flex;flex-direction:column;height:100vh;overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+/* ---------- top bar ---------- */
+#top{
+  display:flex;align-items:center;gap:12px;padding:10px 18px;
+  background:var(--glass);backdrop-filter:blur(18px) saturate(140%);
+  border-bottom:1px solid var(--glass-border);z-index:5;flex-wrap:wrap;
+}
+.chip{
+  display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;
+  background:rgba(255,255,255,.045);border:1px solid var(--glass-border);
+  font-weight:700;font-size:15px;letter-spacing:.02em;min-width:118px;
+  transition:box-shadow .25s,background .25s,border-color .25s;
+}
+.chip .dot{width:9px;height:9px;border-radius:50%}
+.chip.p1 .dot{background:var(--red)} .chip.p2 .dot{background:var(--blue)}
+.chip b{font-size:17px;font-variant-numeric:tabular-nums}
+.chip.active{border-color:rgba(255,255,255,.35)}
+.chip.p1.active{background:var(--red-soft);box-shadow:0 0 22px rgba(255,77,90,.35)}
+.chip.p2.active{background:var(--blue-soft);box-shadow:0 0 22px rgba(77,159,255,.35)}
+.pill{
+  display:flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;
+  background:rgba(255,255,255,.04);border:1px solid var(--glass-border);
+  color:var(--dim);font-size:12.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;font-variant-numeric:tabular-nums;
+}
+#wind .arr{color:#7fd1ff;font-size:16px;line-height:1;display:inline-block;
+  transition:transform .3s ease}
+#timer.hot{color:var(--gold)}
+.spacer{flex:1}
+/* ---------- stage ---------- */
+#wrap{flex:1;display:flex;align-items:center;justify-content:center;
+  position:relative;min-height:0;padding:14px}
+#cv{
+  max-width:100%;max-height:100%;border-radius:var(--radius);
+  box-shadow:0 24px 70px rgba(0,0,0,.55),0 0 0 1px rgba(148,170,220,.12);
+  cursor:default;
+}
+#cv.aiming{cursor:crosshair}
+/* ---------- overlays ---------- */
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(6,9,18,.55);backdrop-filter:blur(10px);z-index:10;border-radius:var(--radius)}
+.card{
+  background:var(--glass);backdrop-filter:blur(24px) saturate(150%);
+  border:1px solid var(--glass-border);border-radius:22px;
+  padding:34px 40px;text-align:center;max-width:620px;width:calc(100% - 40px);
+  box-shadow:0 30px 80px rgba(0,0,0,.5);
+}
+h1.title{
+  font-size:34px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px;
+  background:linear-gradient(92deg,#fff 20%,#9fc0ff 55%,#ff9aa5 90%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.tagline{color:var(--dim);margin-bottom:24px;font-size:14.5px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  background:rgba(255,255,255,.06);color:var(--txt);
+  border:1px solid var(--glass-border);border-radius:12px;
+  padding:11px 18px;font:inherit;font-weight:600;cursor:pointer;user-select:none;
+  transition:transform .12s,background .15s,box-shadow .2s,border-color .2s;
+}
+.btn:hover{background:rgba(255,255,255,.11);transform:translateY(-1px);
+  border-color:rgba(148,170,220,.3)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.btn small{display:block;color:var(--dim);font-weight:500;font-size:11px}
+.row{display:flex;gap:10px;justify-content:center;margin:12px 0;flex-wrap:wrap}
+.divider{display:flex;align-items:center;gap:12px;color:var(--faint);
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;margin:18px 0 6px}
+.divider::before,.divider::after{content:"";height:1px;flex:1;
+  background:var(--glass-border)}
+input.code{
+  background:rgba(10,14,26,.7);border:1px solid var(--glass-border);color:var(--txt);
+  border-radius:12px;padding:11px 14px;font:inherit;width:170px;
+  text-transform:uppercase;text-align:center;letter-spacing:.35em;font-weight:700;
+}
+input.code:focus{outline:none;border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(77,159,255,.18)}
+/* got-match fragment (htmx swap target) */
+.got-card{
+  background:rgba(65,217,141,.07);border:1px solid rgba(65,217,141,.25);
+  border-radius:16px;padding:22px;margin-top:8px;
+}
+.got-title{font-weight:700;font-size:16px;margin-bottom:10px}
+.got-code{
+  font-size:30px;font-weight:800;letter-spacing:.3em;font-variant-numeric:tabular-nums;
+  background:linear-gradient(90deg,#fff,#9fc0ff);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.got-link{display:inline-block;margin-top:10px;color:var(--blue);font-size:13px;
+  text-decoration:none;border-bottom:1px dotted rgba(77,159,255,.5)}
+.got-status{margin-top:10px;color:var(--dim);font-size:13px}
+.got-error{
+  background:var(--red-soft);border:1px solid rgba(255,77,90,.35);
+  color:#ffb3b9;border-radius:12px;padding:12px 16px;margin-top:8px;font-weight:600;
+}
+/* draft */
+h2.ctitle{font-size:22px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px}
+.dsub{color:var(--dim);margin-bottom:18px}
+.dsub b{letter-spacing:.02em}
+#pool{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 4px}
+#pool .wcard{
+  background:rgba(255,255,255,.05);border:1.5px solid var(--glass-border);
+  border-radius:14px;padding:14px 10px;cursor:pointer;transition:all .15s;
+  color:var(--txt);font:inherit;
+}
+#pool .wcard:hover:not(:disabled){transform:translateY(-2px);
+  border-color:rgba(148,170,220,.4);background:rgba(255,255,255,.09)}
+#pool .wcard:disabled{opacity:.35;cursor:default}
+#pool .wcard .wm{font-size:24px;display:block;margin-bottom:6px}
+#pool .wcard .wn{font-weight:700;font-size:14px}
+#pool .wcard small{color:var(--dim);font-size:11.5px;display:block;margin-top:4px}
+/* game over */
+.big{
+  font-size:40px;font-weight:900;letter-spacing:-.02em;margin:10px 0 6px;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.big.red{background-image:linear-gradient(90deg,#ff8f98,var(--red))}
+.big.blue{background-image:linear-gradient(90deg,#a8d1ff,var(--blue))}
+.big.draw{background-image:linear-gradient(90deg,#fff,#9aa6c8)}
+.fin{color:var(--dim);font-size:16px;margin-bottom:18px;font-variant-numeric:tabular-nums}
+/* ---------- dock ---------- */
+#dock{
+  display:none;gap:14px;align-items:stretch;justify-content:center;flex-wrap:wrap;
+  padding:12px 18px;background:var(--glass);
+  backdrop-filter:blur(18px) saturate(140%);
+  border-top:1px solid var(--glass-border);z-index:5;
+}
+.mod{
+  display:flex;flex-direction:column;gap:6px;padding:10px 14px;border-radius:14px;
+  background:rgba(255,255,255,.04);border:1px solid var(--glass-border);min-width:150px;
+}
+.mod .mhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.mod .mlbl{color:var(--faint);font-size:10.5px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase}
+.mod .mval{font-weight:800;font-size:16px;font-variant-numeric:tabular-nums}
+.mod .hint{color:var(--faint);font-size:10.5px;text-align:right}
+.bar{height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;width:50%;
+  background:linear-gradient(90deg,#4d9fff,#ffc857 70%,#ff4d5a);
+  transition:width .08s linear}
+#dial{width:30px;height:30px;border-radius:50%;position:relative;
+  background:conic-gradient(from 220deg,rgba(77,159,255,.35),rgba(77,159,255,.05) 70%,transparent);
+  border:1px solid var(--glass-border);flex:none}
+#dial i{position:absolute;left:50%;top:50%;width:12px;height:2.5px;border-radius:2px;
+  background:#9fc0ff;transform-origin:0 50%;transition:transform .05s linear}
+.pips{display:flex;gap:4px}
+.pips i{width:12px;height:6px;border-radius:3px;background:rgba(255,255,255,.1)}
+.pips i.on{background:var(--gold);box-shadow:0 0 8px rgba(255,200,87,.5)}
+.wrow{display:flex;gap:8px}
+.wcard{
+  padding:9px 13px;border-radius:12px;border:1.5px solid var(--glass-border);
+  background:rgba(255,255,255,.045);font:inherit;font-weight:600;font-size:13px;
+  color:var(--txt);cursor:pointer;transition:all .15s;
+}
+.wcard:hover{background:rgba(255,255,255,.09)}
+.wcard.sel{border-color:var(--gold);background:rgba(255,200,87,.12);
+  box-shadow:0 0 16px rgba(255,200,87,.22)}
+.fire{
+  border:none;border-radius:14px;padding:14px 42px;font:inherit;font-weight:800;
+  font-size:16px;letter-spacing:.1em;color:#fff;cursor:pointer;
+  background:linear-gradient(135deg,#ff5a4e,#ff8a3d);
+  box-shadow:0 8px 28px rgba(255,90,60,.35);
+  transition:transform .1s,box-shadow .2s;align-self:center;
+}
+.fire:hover{box-shadow:0 10px 34px rgba(255,90,60,.5)}
+.fire:active{transform:scale(.96)}
+.fire.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 8px 28px rgba(255,90,60,.35)}
+  50%{box-shadow:0 8px 40px rgba(255,90,60,.65)}}
+#conn{position:fixed;bottom:4px;right:10px;font-size:11px;color:var(--faint);z-index:20}
+</style>
+</head>
+<body hx-ext="ws" hx-ws="connect:/ws">
+<header id="top">
+  <span class="chip p1" id="s0"><span class="dot"></span>RED&nbsp;<b>0</b></span>
+  <span class="pill" id="round">&mdash;</span>
+  <span class="pill" id="wind" title="Wind">
+    <span class="arr" id="warr">&#10230;</span><span id="wval">0</span>
+  </span>
+  <span class="pill" id="timer"></span>
+  <span class="spacer"></span>
+  <span class="chip p2" id="s1"><span class="dot"></span>BLUE&nbsp;<b>0</b></span>
+</header>
+
+<main id="wrap">
+  <canvas id="cv" width="1280" height="720"></canvas>
+
+  <div id="lobby" class="overlay"><div class="card">
+    <h1 class="title">Artillery Duel</h1>
+    <p class="tagline">10 rounds &middot; destructible terrain &middot; wind &middot; 6 weapons.<br>
+      Every decision runs in the Nim backend over WebSockets &mdash; this page only draws.</p>
+    <div id="lobby-body">
+      <div class="row">
+        <button class="btn" hx-ws="send" hx-post="ai" hx-vals='{"diff":1}'>
+          &#129523; Easy AI<small>relaxed aiming</small>
+        </button>
+        <button class="btn" hx-ws="send" hx-post="ai" hx-vals='{"diff":2}'>
+          &#129523; Medium AI<small>solid shots</small>
+        </button>
+        <button class="btn" hx-ws="send" hx-post="ai" hx-vals='{"diff":3}'>
+          &#129523; Hard AI<small>deceptive</small>
+        </button>
+      </div>
+      <div class="divider">local duel</div>
+      <div class="row">
+        <button class="btn" hx-ws="send" hx-post="new">
+          &#127922; Create a match
+        </button>
+      </div>
+      <form class="row" hx-ws="send" hx-post="join">
+        <input class="code" id="jcode" name="code" placeholder="CODE" maxlength="6"
+          autocomplete="off">
+        <button class="btn" type="submit">&#128273; Join</button>
+      </form>
+    </div>
+  </div></div>
+
+  <div id="draft" class="overlay" style="display:none"><div class="card">
+    <h2 class="ctitle">&#127893; Weapon Draft</h2>
+    <p class="dsub" id="driftxt"></p>
+    <div id="pool"></div>
+  </div></div>
+
+  <div id="over" class="overlay" style="display:none"><div class="card">
+    <div class="big" id="winTxt"></div>
+    <p class="fin" id="finScores"></p>
+    <div class="row">
+      <button class="btn" hx-ws="send" hx-post="ai" hx-vals='{"diff":2}'>&#8635; Play AI again</button>
+      <button class="btn" hx-ws="send" hx-post="new">&#8635; New match</button>
+    </div>
+  </div></div>
+</main>
+
+<footer id="dock">
+  <div class="mod">
+    <div class="mhead"><span class="mlbl">Angle</span><span class="mval" id="angV"></span>
+      <span class="hint">click / drag &middot; &larr; &rarr;</span></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div id="dial"><i id="dialI"></i></div>
+      <div class="bar" style="flex:1"><i id="angBar" style="width:50%"></i></div>
+    </div>
+  </div>
+  <div class="mod">
+    <div class="mhead"><span class="mlbl">Power</span><span class="mval" id="pwrV"></span>
+      <span class="hint">&uarr; &darr;</span></div>
+    <div class="bar"><i id="pwrBar"></i></div>
+  </div>
+  <div class="mod">
+    <div class="mhead"><span class="mlbl">Move</span>
+      <span class="hint">A / D &middot; uses fuel</span></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="btn" style="padding:7px 13px" onclick="move(-1)">&#9664;</button>
+      <div class="pips" id="pips"></div>
+      <button class="btn" style="padding:7px 13px" onclick="move(1)">&#9654;</button>
+    </div>
+  </div>
+  <div class="mod">
+    <div class="mhead"><span class="mlbl">Weapon</span><span class="hint">1 2 3</span></div>
+    <div class="wrow" id="wcards"></div>
+  </div>
+  <button class="fire" id="fireBtn" onclick="fireNow()">&#128165; FIRE</button>
+</footer>
+<div id="conn"></div>
+<script src="/client.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+nimTitle	compression	nim_express/middlewares/compression.html	module nim_express/middlewares/compression		0
+nim	CompressionOptions	nim_express/middlewares/compression.html#CompressionOptions	object CompressionOptions		31
+nim	CompressionPolicyOptions	nim_express/middlewares/compression.html#CompressionPolicyOptions	object CompressionPolicyOptions		38
+nim	defaultCompressionOptions	nim_express/middlewares/compression.html#defaultCompressionOptions	proc defaultCompressionOptions(): CompressionOptions		52
+nim	defaultCompressionPolicyOptions	nim_express/middlewares/compression.html#defaultCompressionPolicyOptions	proc defaultCompressionPolicyOptions(): CompressionPolicyOptions		62
+nim	isAlreadyCompressed	nim_express/middlewares/compression.html#isAlreadyCompressed,string	proc isAlreadyCompressed(contentEncoding: string): bool		80
+nim	isPrecompressedMime	nim_express/middlewares/compression.html#isPrecompressedMime,string	proc isPrecompressedMime(contentType: string): bool		101
+nim	installCompressionPolicy	nim_express/middlewares/compression.html#installCompressionPolicy,ExpressApp,CompressionPolicyOptions	proc installCompressionPolicy(app: ExpressApp; options: CompressionPolicyOptions = defaultCompressionPolicyOptions())		125
+nim	compression	nim_express/middlewares/compression.html#compression,CompressionOptions	proc compression(options: CompressionOptions = defaultCompressionOptions()): AsyncMiddleware		143

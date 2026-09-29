@@ -1,0 +1,14 @@
+Todo apples-to-apples benchmark
+date: 2026-03-04T10:31:30Z
+host: Darwin dchander-mb 25.3.0 Darwin Kernel Version 25.3.0: Wed Jan 28 20:53:15 PST 2026; root:xnu-12377.81.4~5/RELEASE_ARM64_T6000 arm64
+wrk: wrk 4.2.0 [kqueue] Copyright (C) 2012 Will Glozer
+dotnet: 9.0.311
+settings: wrk -t8 -c200 -d30s --latency
+dataset: 1000 todos each DB
+
+[nim] response_bytes=251663
+  run1: rps=2166.08 latency=92.06ms 4.67ms transfer=521.06MB  total_requests=65192
+  run2: rps=2216.03 latency=89.93ms 3.77ms transfer=533.08MB  total_requests=66689
+[dotnet] response_bytes=251663
+  run1: rps=1696.37 latency=117.56ms 28.26ms transfer=408.00MB  total_requests=51065
+  run2: rps=1686.97 latency=118.14ms 27.56ms transfer=405.73MB  total_requests=50781

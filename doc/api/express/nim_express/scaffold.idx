@@ -1,0 +1,13 @@
+nimTitle	scaffold	nim_express/scaffold.html	module nim_express/scaffold		0
+nim	srkSync	nim_express/scaffold.html#srkSync	ScaffoldRouteKind.srkSync		7
+nim	srkAsync	nim_express/scaffold.html#srkAsync	ScaffoldRouteKind.srkAsync		7
+nim	ScaffoldRouteKind	nim_express/scaffold.html#ScaffoldRouteKind	enum ScaffoldRouteKind		7
+nim	ScaffoldRoute	nim_express/scaffold.html#ScaffoldRoute	object ScaffoldRoute		11
+nim	syncRoute	nim_express/scaffold.html#syncRoute,,string,SyncHandler	proc syncRoute(methodKind: nim_usockets.HttpMethod; pattern: string;\n          handler: SyncHandler): ScaffoldRoute		21
+nim	asyncRoute	nim_express/scaffold.html#asyncRoute,,string,AsyncHandler	proc asyncRoute(methodKind: nim_usockets.HttpMethod; pattern: string;\n           handler: AsyncHandler): ScaffoldRoute		34
+nim	scaffoldMiddlewares	nim_express/scaffold.html#scaffoldMiddlewares,ExpressApp,openArray[AsyncMiddleware]	proc scaffoldMiddlewares(app: ExpressApp; middlewares: openArray[AsyncMiddleware])		91
+nim	scaffoldMiddlewares	nim_express/scaffold.html#scaffoldMiddlewares,RouteGroup,openArray[AsyncMiddleware]	proc scaffoldMiddlewares(group: RouteGroup; middlewares: openArray[AsyncMiddleware])		100
+nim	scaffoldRoutes	nim_express/scaffold.html#scaffoldRoutes,ExpressApp,openArray[ScaffoldRoute]	proc scaffoldRoutes(app: ExpressApp; routes: openArray[ScaffoldRoute])		109
+nim	scaffoldRoutes	nim_express/scaffold.html#scaffoldRoutes,RouteGroup,openArray[ScaffoldRoute]	proc scaffoldRoutes(group: RouteGroup; routes: openArray[ScaffoldRoute])		124
+nimgrp	scaffoldroutes	nim_express/scaffold.html#scaffoldRoutes-procs-all	proc		109
+nimgrp	scaffoldmiddlewares	nim_express/scaffold.html#scaffoldMiddlewares-procs-all	proc		91

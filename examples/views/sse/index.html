@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SSE Example</title>
+  <style>
+    body { font-family: "Courier New", monospace; max-width: 720px; margin: 0 auto; padding: 20px; }
+    #events { border: 1px solid #e2e8f0; border-radius: 8px; min-height: 220px; padding: 10px; background: #f8fafc; }
+  </style>
+</head>
+<body>
+  <h1>Server-Sent Events</h1>
+  <p>The stream pushes one event per second for up to 10 messages.</p>
+  <pre id="events"></pre>
+  <script>
+    const out = document.getElementById("events");
+    const sse = new EventSource("/events");
+    sse.addEventListener("tick", (e) => {
+      out.textContent += e.data + "\n";
+    });
+    sse.onerror = () => {
+      out.textContent += "stream closed\n";
+      sse.close();
+    };
+  </script>
+</body>
+</html>

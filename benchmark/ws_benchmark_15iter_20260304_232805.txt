@@ -1,0 +1,24 @@
+# WebSocket benchmark (15 iterations)
+date=2026-03-04T17:58:05Z
+server=/Users/dinesh.chander/projects/nim/nim_uwebsocket/benchmark/ws_echo_bench
+client=node /Users/dinesh.chander/projects/nim/nim_uwebsocket/benchmark/ws_roundtrip_bench.js ws://127.0.0.1:3400/ws 500 8 64
+
+iter   msg_per_sec  opened   closed   errors   hotspot_hint
+1      72687.125    500      500      0        ws_parse+write
+2      77738.375    500      500      0        ws_parse+write
+3      75395.875    500      500      0        ws_parse+write
+4      70028        500      500      0        ws_parse+write
+5      75395.875    500      500      0        ws_parse+write
+6      55089.375    500      500      0        ws_parse+write
+7      70029.25     500      500      0        ws_parse+write
+8      76421        500      500      0        ws_parse+write
+9      76232.875    500      500      0        ws_parse+write
+10     61875.75     500      500      0        ws_parse+write
+11     66470.75     500      500      0        ws_parse+write
+12     65785.375    500      500      0        ws_parse+write
+13     75997        500      500      0        ws_parse+write
+14     72743.625    500      500      0        ws_parse+write
+15     78225.375    500      500      0        ws_parse+write
+
+best_iter=15
+best_msg_per_sec=78225.375

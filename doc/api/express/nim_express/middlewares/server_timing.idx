@@ -1,0 +1,6 @@
+nimTitle	server_timing	nim_express/middlewares/server_timing.html	module nim_express/middlewares/server_timing		0
+nim	ServerTimingOptions	nim_express/middlewares/server_timing.html#ServerTimingOptions	object ServerTimingOptions		22
+nim	defaultServerTimingOptions	nim_express/middlewares/server_timing.html#defaultServerTimingOptions	proc defaultServerTimingOptions(): ServerTimingOptions		29
+nim	serverTiming	nim_express/middlewares/server_timing.html#serverTiming,ServerTimingOptions	proc serverTiming(options: ServerTimingOptions = defaultServerTimingOptions()): AsyncMiddleware		38
+nim	serverTiming	nim_express/middlewares/server_timing.html#serverTiming,bool	proc serverTiming(productionMode: bool): AsyncMiddleware		61
+nimgrp	servertiming	nim_express/middlewares/server_timing.html#serverTiming-procs-all	proc		38

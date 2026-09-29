@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  production-check:
+    name: production-check (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    env:
+      NIMCACHE_ROOT: ${{ github.workspace }}/.nimcache/verify
+      BENCH_SMOKE_DIR: ${{ github.workspace }}/.nimcache/bench-smoke
+      PGO_DIR: ${{ github.workspace }}/.nimcache/no-pgo
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Nim
+        uses: jiro4989/setup-nim-action@v2.3.0
+        with:
+          nim-version: "2.2.10"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache Nim artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.nimble
+            .nimcache
+            nim_utils/src/nim_utils/nim_fastjson/simdjson/build
+          key: ${{ runner.os }}-nim-${{ hashFiles('**/*.nim', '**/*.nimble', 'Makefile', 'scripts/verify.sh', 'nim_utils/src/nim_utils/nim_fastjson/simdjson/**/*.cpp', 'nim_utils/src/nim_utils/nim_fastjson/simdjson/**/*.h') }}
+          restore-keys: |
+            ${{ runner.os }}-nim-
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config liburing-dev libsqlite3-dev sqlite3
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install pkg-config jemalloc || true
+
+      - name: Production check
+        run: make production-check NATIVE_OPT=0
+
+      - name: Linux compatibility check
+        run: make linux-compat-check NATIVE_OPT=0
+
+      - name: Linux live transport smoke (epoll)
+        if: runner.os == 'Linux'
+        run: USOCKETS_BACKEND=epoll bash scripts/linux_smoke.sh
+
+      - name: Linux live transport smoke (io_uring)
+        if: runner.os == 'Linux'
+        run: USOCKETS_BACKEND=io_uring bash scripts/linux_smoke.sh
+
+      - name: macOS live transport smoke (GCD)
+        if: runner.os == 'macOS'
+        run: bash scripts/macos_smoke.sh
+
+      - name: Docker image build (epoll)
+        if: runner.os == 'Linux'
+        run: docker build --build-arg USOCKETS_BACKEND=epoll --build-arg NIM_VERSION=2.2.10 -t nim-uwebsocket:epoll .
+
+      - name: Docker image smoke (epoll)
+        if: runner.os == 'Linux'
+        run: |
+          docker run -d --rm --name nim-uwebsocket-epoll -e NIM_EXPRESS_SCALE_MODE=auto -e WORKERS=2 -p 3300:3000 nim-uwebsocket:epoll
+          trap 'docker rm -f nim-uwebsocket-epoll >/dev/null 2>&1 || true' EXIT
+          ready=0
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:3300/plaintext >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 0.5
+          done
+          sleep 1
+          docker logs nim-uwebsocket-epoll > /tmp/nim-uwebsocket-epoll.log 2>&1 || true
+          cat /tmp/nim-uwebsocket-epoll.log
+          test "$ready" = "1"
+          grep -q "All 2 workers started" /tmp/nim-uwebsocket-epoll.log
+          ! grep -Eq "failed to start|cluster_worker_exit|Fatal cluster supervision" /tmp/nim-uwebsocket-epoll.log
+
+      - name: Docker image build (io_uring)
+        if: runner.os == 'Linux'
+        run: docker build --build-arg USOCKETS_BACKEND=io_uring --build-arg NIM_VERSION=2.2.10 -t nim-uwebsocket:iouring .
+
+      - name: Docker image smoke (io_uring)
+        if: runner.os == 'Linux'
+        run: |
+          docker run -d --rm --security-opt seccomp=unconfined --name nim-uwebsocket-iouring -e NIM_EXPRESS_SCALE_MODE=auto -e WORKERS=2 -p 3301:3000 nim-uwebsocket:iouring
+          trap 'docker rm -f nim-uwebsocket-iouring >/dev/null 2>&1 || true' EXIT
+          ready=0
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:3301/plaintext >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 0.5
+          done
+          sleep 1
+          docker logs nim-uwebsocket-iouring > /tmp/nim-uwebsocket-iouring.log 2>&1 || true
+          cat /tmp/nim-uwebsocket-iouring.log
+          test "$ready" = "1"
+          grep -q "All 2 workers started" /tmp/nim-uwebsocket-iouring.log
+          ! grep -Eq "failed to start|cluster_worker_exit|Fatal cluster supervision" /tmp/nim-uwebsocket-iouring.log
+
+      - name: Docker image smoke (io_uring default seccomp diagnostic)
+        if: runner.os == 'Linux'
+        run: |
+          set +e
+          docker run -d --rm --name nim-uwebsocket-iouring-default -e NIM_EXPRESS_SCALE_MODE=auto -e WORKERS=2 -p 3302:3000 nim-uwebsocket:iouring
+          start_status=$?
+          ready=0
+          if [ "$start_status" -eq 0 ]; then
+            for i in $(seq 1 20); do
+              if curl -fsS http://127.0.0.1:3302/plaintext >/dev/null; then
+                ready=1
+                break
+              fi
+              sleep 0.5
+            done
+          fi
+          docker logs nim-uwebsocket-iouring-default > /tmp/nim-uwebsocket-iouring-default.log 2>&1 || true
+          docker rm -f nim-uwebsocket-iouring-default >/dev/null 2>&1 || true
+          set -e
+          cat /tmp/nim-uwebsocket-iouring-default.log
+          if [ "$ready" = "1" ]; then
+            exit 0
+          fi
+          grep -Eqi 'operation not permitted|permission denied|seccomp|io_uring' /tmp/nim-uwebsocket-iouring-default.log
+          echo "::notice::io_uring requires an unconfined/custom seccomp profile on this Docker host; epoll remains the default Docker backend."

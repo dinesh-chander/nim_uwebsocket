@@ -1,0 +1,12 @@
+nimTitle	rate_limit	nim_express/middlewares/rate_limit.html	module nim_express/middlewares/rate_limit		0
+nim	DefaultMaxRateLimitTrackedKeys	nim_express/middlewares/rate_limit.html#DefaultMaxRateLimitTrackedKeys	const DefaultMaxRateLimitTrackedKeys		19
+nim	rlpApiDefault	nim_express/middlewares/rate_limit.html#rlpApiDefault	RateLimitPreset.rlpApiDefault		23
+nim	rlpAuthStrict	nim_express/middlewares/rate_limit.html#rlpAuthStrict	RateLimitPreset.rlpAuthStrict		23
+nim	rlpBurst	nim_express/middlewares/rate_limit.html#rlpBurst	RateLimitPreset.rlpBurst		23
+nim	RateLimitPreset	nim_express/middlewares/rate_limit.html#RateLimitPreset	enum RateLimitPreset		23
+nim	rateLimitTrackedKeyCount	nim_express/middlewares/rate_limit.html#rateLimitTrackedKeyCount	proc rateLimitTrackedKeyCount(): int		122
+nim	rateLimitKeyCapacityDrops	nim_express/middlewares/rate_limit.html#rateLimitKeyCapacityDrops	proc rateLimitKeyCapacityDrops(): int64		128
+nim	rateLimitKeyEvictions	nim_express/middlewares/rate_limit.html#rateLimitKeyEvictions	proc rateLimitKeyEvictions(): int64		134
+nim	resetRateLimitStoreForTest	nim_express/middlewares/rate_limit.html#resetRateLimitStoreForTest	proc resetRateLimitStoreForTest()		140
+nim	rateLimit	nim_express/middlewares/rate_limit.html#rateLimit,int,int,bool,int,bool	proc rateLimit(maxRequests: int = 100; windowMs: int = 60000;\n          trustProxy: bool = false;\n          maxTrackedKeys: int = DefaultMaxRateLimitTrackedKeys;\n          rejectNewKeyWhenFull: bool = true): AsyncMiddleware		153
+nim	rateLimitPreset	nim_express/middlewares/rate_limit.html#rateLimitPreset,RateLimitPreset,bool,int	proc rateLimitPreset(preset: RateLimitPreset; trustProxy: bool = false;\n                maxTrackedKeys: int = DefaultMaxRateLimitTrackedKeys): AsyncMiddleware		247

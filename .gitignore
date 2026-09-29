@@ -1,0 +1,134 @@
+# Nim build artifacts
+.nimcache/
+**/.nimcache/
+nimcache/
+**/nimcache/
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.out
+
+# Compiled binaries in bin/ dirs
+**/bin/
+
+# Local binaries
+benchmark/bench_nim_express
+benchmark/bench_nim_express_*
+benchmark/bench_baseline
+benchmark/bench_route_modes
+benchmark/ws_echo_server
+benchmark/http_parser_smoke
+benchmark/linux_transport_*
+nim_express/benchmark/native_simdjson_bench
+nim_express/src/nim_express/app
+nim_utils/nim_fastjson/bench_*
+nim_utils/nim_fastjson/benchmark/bench_*
+!nim_utils/nim_fastjson/benchmark/bench_*.nim
+nim_utils/nim_fastjson/benchmark/cross_runtime_fastjson*
+!nim_utils/nim_fastjson/benchmark/cross_runtime_fastjson*.nim
+nim_utils/nim_fastjson/benchmark/normalize_cross_runtime_payloads
+
+# Benchmark/profiling outputs
+benchmark/profiles/
+benchmark/reports/
+**/profile/
+**/profile_output.txt
+benchmark/.pgo-data/
+benchmark/*.profraw
+benchmark/*.profdata
+benchmark/*.fdata
+benchmark/*.folded
+benchmark/*.svg
+benchmark/*.sample.txt
+
+# Node/npm outputs
+**/node_modules/
+
+# .NET build outputs
+**/bin/
+**/obj/
+benchmark/dotnet_todo/dotnet_todo/out/
+benchmark/dotnet_todo/dotnet_todo/out-*/
+benchmark/dotnet_todo/dotnet_todo/**/out/
+benchmark/dotnet_todo/dotnet_todo/**/out-*/
+
+# Databases / local state
+*.db
+*.db-shm
+*.db-wal
+
+# macOS
+.DS_Store
+
+# Analysis scratch clones / local references
+docs/analysis/tmp/
+docs/analysis/jsony/
+
+# Nim test binaries that mirror source filenames
+nim_express/tests/test_*
+!nim_express/tests/*.nim
+nim_fasthttpclient/tests/test_*
+!nim_fasthttpclient/tests/*.nim
+nim_usockets/tests/test_*
+!nim_usockets/tests/*.nim
+nim_utils/tests/test_*
+!nim_utils/tests/*.nim
+nim_utils/nim_simdjson/tests/test_*
+!nim_utils/nim_simdjson/tests/*.nim
+nim_utils/nim_fastjson/tests/test_*
+!nim_utils/nim_fastjson/tests/*.nim
+
+# Package-local native build artifacts
+nim_simdjson/src/nim_simdjson/build/
+nim_utils/nim_simdjson/src/nim_simdjson/build/
+nim_utils/src/nim_utils/nim_fastjson/build/
+nim_utils/src/nim_utils/nim_fastjson/simdjson/build/
+nim_usockets/usockets/uSockets.a
+nim_usockets/usockets/.uSockets.backend
+
+# Python helper caches
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Git worktrees
+.worktrees/
+
+# V8/Node logs
+*.log
+
+# Editor / IDE
+.vscode/
+.idea/
+.cursor*
+*.swp
+*.swo
+*~
+
+# Flamegraph outputs
+**/flamegraphs/
+
+# Optimization plan scratch
+optimization_plan/
+
+# Local scratch / task state (not for public repo)
+todo.json
+.tmp_*
+ws_probe*.nim
+benchmark/tmp_*.py
+docs/api/
+examples/proxy_benchmark/flamegraph_optimized.svg
+
+# Heavy vendored test fixtures (regenerate upstream if needed)
+vendor/zippy/tests/data/tor-list*
+vendor/zippy/tests/data/tarballs/
+vendor/malebolgia/bench/data/
+
+# Locally-built binaries that were previously committed
+examples/websocket_pubsub_compression_app
+examples/websocket_broadcast
+examples/sse_stream_app
+nim_express/tests/ws_permessage_deflate_integration_server
+nim_utils/src/nim_utils/nim_fastjson/tests/test_fastjson_core

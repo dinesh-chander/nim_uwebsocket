@@ -1,0 +1,14 @@
+nimTitle	etag	nim_express/middlewares/etag.html	module nim_express/middlewares/etag		0
+nim	etWeak	nim_express/middlewares/etag.html#etWeak	ETagMode.etWeak		13
+nim	etStrong	nim_express/middlewares/etag.html#etStrong	ETagMode.etStrong		13
+nim	ETagMode	nim_express/middlewares/etag.html#ETagMode	enum ETagMode		13
+nim	ETagOptions	nim_express/middlewares/etag.html#ETagOptions	object ETagOptions		17
+nim	EtagLocalEnabled	nim_express/middlewares/etag.html#EtagLocalEnabled	const EtagLocalEnabled		23
+nim	EtagLocalMode	nim_express/middlewares/etag.html#EtagLocalMode	const EtagLocalMode		24
+nim	EtagLocalAllowedMethods	nim_express/middlewares/etag.html#EtagLocalAllowedMethods	const EtagLocalAllowedMethods		25
+nim	EtagLocalRespectExisting	nim_express/middlewares/etag.html#EtagLocalRespectExisting	const EtagLocalRespectExisting		26
+nim	defaultETagOptions	nim_express/middlewares/etag.html#defaultETagOptions	proc defaultETagOptions(): ETagOptions		28
+nim	generateETag	nim_express/middlewares/etag.html#generateETag,string,ETagMode	proc generateETag(content: string; mode: ETagMode): string		46
+nim	generateETag	nim_express/middlewares/etag.html#generateETag,string	proc generateETag(content: string): string		57
+nim	etag	nim_express/middlewares/etag.html#etag,ETagOptions	proc etag(options: ETagOptions = defaultETagOptions()): AsyncMiddleware		60
+nimgrp	generateetag	nim_express/middlewares/etag.html#generateETag-procs-all	proc		46

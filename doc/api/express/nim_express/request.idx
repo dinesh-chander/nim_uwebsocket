@@ -1,0 +1,66 @@
+nimTitle	request	nim_express/request.html	module nim_express/request		0
+nim	WindowRangeResolveResult	nim_express/request.html#WindowRangeResolveResult	object WindowRangeResolveResult		13
+nim	UploadedFile	nim_express/request.html#UploadedFile	object UploadedFile		22
+nim	forwardedHeadersTrusted	nim_express/request.html#forwardedHeadersTrusted,Request,bool	proc forwardedHeadersTrusted(req: Request;\n                        trustProxyEnabled: bool = req.trustProxyEnabled): bool		177
+nim	trustedClientIp	nim_express/request.html#trustedClientIp,Request,bool	proc trustedClientIp(req: Request; trustProxyEnabled: bool = req.trustProxyEnabled): string		199
+nim	rawQuery	nim_express/request.html#rawQuery,Request	proc rawQuery(req: Request): lent string		318
+nim	getView	nim_express/request.html#getView,Request,string	proc getView(req: Request; header: string): fast_map.FastStringView		322
+nim	get	nim_express/request.html#get,Request,string	proc get(req: Request; header: string): string		327
+nim	param	nim_express/request.html#param,Request,string	proc param(req: Request; name: string): string		332
+nim	queryParam	nim_express/request.html#queryParam,Request,string,string	proc queryParam(req: Request; name: string; default: string = ""): string		336
+nim	local	nim_express/request.html#local,Request,string,string	proc local(req: Request; name: string; default: string = ""): string		414
+nim	setLocal	nim_express/request.html#setLocal,Request,string,string	proc setLocal(req: Request; name: string; value: string)		420
+nim	form	nim_express/request.html#form,Request,string,string	proc form(req: Request; name: string; default: string = ""): string		426
+nim	uploadFile	nim_express/request.html#uploadFile,Request,string	proc uploadFile(req: Request; field: string): UploadedFile		432
+nim	hasUploadFile	nim_express/request.html#hasUploadFile,Request,string	proc hasUploadFile(req: Request; field: string): bool		456
+nim	bodyText	nim_express/request.html#bodyText,Request,string	proc bodyText(req: Request; default: string = ""): string		460
+nim	bodyRaw	nim_express/request.html#bodyRaw,Request,string	proc bodyRaw(req: Request; default: string = ""): string		466
+nim	setLocal	nim_express/request.html#setLocal,Request,string,int	proc setLocal(req: Request; name: string; value: int)		472
+nim	setLocal	nim_express/request.html#setLocal,Request,string,bool	proc setLocal(req: Request; name: string; value: bool)		476
+nim	detachPath	nim_express/request.html#detachPath,Request	proc detachPath(req: Request): string		488
+nim	detachQueryStringRaw	nim_express/request.html#detachQueryStringRaw,Request	proc detachQueryStringRaw(req: Request): string		494
+nim	detachBody	nim_express/request.html#detachBody,Request	proc detachBody(req: Request): string		500
+nim	detachHeaders	nim_express/request.html#detachHeaders,Request	proc detachHeaders(req: Request): FastMap[string]		507
+nim	detachParams	nim_express/request.html#detachParams,Request	proc detachParams(req: Request): FastMap[string]		514
+nim	detachQuery	nim_express/request.html#detachQuery,Request	proc detachQuery(req: Request): FastMap[string]		520
+nim	detachCookies	nim_express/request.html#detachCookies,Request	proc detachCookies(req: Request): FastMap[string]		527
+nim	detachLocals	nim_express/request.html#detachLocals,Request	proc detachLocals(req: Request): FastMap[string]		534
+nim	snapshot	nim_express/request.html#snapshot,Request,bool,bool,bool,bool	proc snapshot(req: Request; includeBody: bool = false; includeHeaders: bool = true;\n         includeCookies: bool = true; includeLocals: bool = true): RequestSnapshot		541
+nim	onAbort	nim_express/request.html#onAbort,Request,proc(Request,RequestCancelReason)	proc onAbort(req: Request;\n        hook: proc (req: Request; reason: RequestCancelReason) {.closure.})		572
+nim	onAbort	nim_express/request.html#onAbort,Request,proc(RequestCancelReason)	proc onAbort(req: Request; hook: proc (reason: RequestCancelReason) {.closure.})		579
+nim	aborted	nim_express/request.html#aborted,Request	proc aborted(req: Request): bool		590
+nim	abortReason	nim_express/request.html#abortReason,Request	proc abortReason(req: Request): RequestCancelReason		594
+nim	hasWindowSemantics	nim_express/request.html#hasWindowSemantics,Request,string,string,string,string,string	proc hasWindowSemantics(req: Request; modeParam: string = "mode";\n                   windowParam: string = "window";\n                   rangeHeader: string = "range";\n                   offsetParam: string = "offset"; limitParam: string = "limit"): bool		600
+nim	cookie	nim_express/request.html#cookie,Request,string	proc cookie(req: Request; name: string): string		620
+nim	jsonBody	nim_express/request.html#jsonBody,Request	proc jsonBody(req: Request): JsonNode		624
+nim	isXhr	nim_express/request.html#isXhr,Request	proc isXhr(req: Request): bool		628
+nim	isJson	nim_express/request.html#isJson,Request	proc isJson(req: Request): bool		632
+nim	isHtmx	nim_express/request.html#isHtmx,Request	proc isHtmx(req: Request): bool		636
+nim	accepts	nim_express/request.html#accepts,Request,varargs[string]	proc accepts(req: Request; types: varargs[string]): string		640
+nim	acceptsJson	nim_express/request.html#acceptsJson,Request	proc acceptsJson(req: Request): bool		708
+nim	acceptsHtml	nim_express/request.html#acceptsHtml,Request	proc acceptsHtml(req: Request): bool		712
+nim	protocol	nim_express/request.html#protocol,Request	proc protocol(req: Request): string		716
+nim	secure	nim_express/request.html#secure,Request	proc secure(req: Request): bool		726
+nim	hostname	nim_express/request.html#hostname,Request	proc hostname(req: Request): string		730
+nim	fresh	nim_express/request.html#fresh,Request,string,string	proc fresh(req: Request; etag: string = ""; lastModified: string = ""): bool		739
+nim	requireField	nim_express/request.html#requireField,Request,RequestFieldSource,string	proc requireField(req: Request; source: RequestFieldSource; name: string): CoercionResult[\n    string]		810
+nim	coerceIntField	nim_express/request.html#coerceIntField,Request,RequestFieldSource,string,bool,int,int,int	proc coerceIntField(req: Request; source: RequestFieldSource; name: string;\n               required: bool = true; defaultValue: int = 0;\n               minValue: int = low(int); maxValue: int = high(int)): CoercionResult[\n    int]		824
+nim	coerceBoolField	nim_express/request.html#coerceBoolField,Request,RequestFieldSource,string,bool,bool	proc coerceBoolField(req: Request; source: RequestFieldSource; name: string;\n                required: bool = true; defaultValue: bool = false): CoercionResult[\n    bool]		856
+nim	queryRequired	nim_express/request.html#queryRequired,Request,string	proc queryRequired(req: Request; name: string): CoercionResult[string]		882
+nim	paramRequired	nim_express/request.html#paramRequired,Request,string	proc paramRequired(req: Request; name: string): CoercionResult[string]		886
+nim	queryInt	nim_express/request.html#queryInt,Request,string,bool,int,int,int	proc queryInt(req: Request; name: string; required: bool = true;\n         defaultValue: int = 0; minValue: int = low(int);\n         maxValue: int = high(int)): CoercionResult[int]		890
+nim	paramInt	nim_express/request.html#paramInt,Request,string,bool,int,int,int	proc paramInt(req: Request; name: string; required: bool = true;\n         defaultValue: int = 0; minValue: int = low(int);\n         maxValue: int = high(int)): CoercionResult[int]		908
+nim	resolveWindowRangeHeader	nim_express/request.html#resolveWindowRangeHeader,Request,string,string,string,string,int,int,int,int,int	proc resolveWindowRangeHeader(req: Request; unit: string = "items";\n                         rangeHeader: string = "range";\n                         offsetParam: string = "offset";\n                         limitParam: string = "limit"; defaultOffset: int = 0;\n                         defaultLimit: int = 64; minOffset: int = 0;\n                         minLimit: int = 1; maxLimit: int = high(int)): WindowRangeResolveResult		929
+nim	queryBool	nim_express/request.html#queryBool,Request,string,bool,bool	proc queryBool(req: Request; name: string; required: bool = true;\n          defaultValue: bool = false): CoercionResult[bool]		976
+nim	paramBool	nim_express/request.html#paramBool,Request,string,bool,bool	proc paramBool(req: Request; name: string; required: bool = true;\n          defaultValue: bool = false): CoercionResult[bool]		990
+nim	localRequired	nim_express/request.html#localRequired,Request,string	proc localRequired(req: Request; name: string): CoercionResult[string]		1004
+nim	localInt	nim_express/request.html#localInt,Request,string,bool,int,int,int	proc localInt(req: Request; name: string; required: bool = true;\n         defaultValue: int = 0; minValue: int = low(int);\n         maxValue: int = high(int)): CoercionResult[int]		1008
+nim	localBool	nim_express/request.html#localBool,Request,string,bool,bool	proc localBool(req: Request; name: string; required: bool = true;\n          defaultValue: bool = false): CoercionResult[bool]		1026
+nim	extract	nim_express/request.html#extract,Request,RequestFieldSource,string,bool,T	proc extract[T](req: Request; source: RequestFieldSource; name: string;\n           required: bool = true; defaultValue: T = default(T)): CoercionResult[\n    T]		1041
+nim	queryAs	nim_express/request.html#queryAs,Request,string,bool,T	proc queryAs[T](req: Request; name: string; required: bool = true;\n           defaultValue: T = default(T)): CoercionResult[T]		1069
+nim	paramAs	nim_express/request.html#paramAs,Request,string,bool,T	proc paramAs[T](req: Request; name: string; required: bool = true;\n           defaultValue: T = default(T)): CoercionResult[T]		1078
+nim	headerAs	nim_express/request.html#headerAs,Request,string,bool,T	proc headerAs[T](req: Request; name: string; required: bool = true;\n            defaultValue: T = default(T)): CoercionResult[T]		1087
+nim	cookieAs	nim_express/request.html#cookieAs,Request,string,bool,T	proc cookieAs[T](req: Request; name: string; required: bool = true;\n            defaultValue: T = default(T)): CoercionResult[T]		1096
+nim	localAs	nim_express/request.html#localAs,Request,string,bool,T	proc localAs[T](req: Request; name: string; required: bool = true;\n           defaultValue: T = default(T)): CoercionResult[T]		1105
+nimgrp	setlocal	nim_express/request.html#setLocal-procs-all	proc		420
+nimgrp	onabort	nim_express/request.html#onAbort-procs-all	proc		572

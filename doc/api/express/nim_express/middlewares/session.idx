@@ -1,0 +1,23 @@
+nimTitle	session	nim_express/middlewares/session.html	module nim_express/middlewares/session		0
+nim	SessionData	nim_express/middlewares/session.html#SessionData	type SessionData		7
+nim	SessionStoreLoadProc	nim_express/middlewares/session.html#SessionStoreLoadProc	type SessionStoreLoadProc		9
+nim	SessionStoreSaveProc	nim_express/middlewares/session.html#SessionStoreSaveProc	type SessionStoreSaveProc		10
+nim	SessionStoreDeleteProc	nim_express/middlewares/session.html#SessionStoreDeleteProc	type SessionStoreDeleteProc		11
+nim	SessionStore	nim_express/middlewares/session.html#SessionStore	object SessionStore		13
+nim	SessionOptions	nim_express/middlewares/session.html#SessionOptions	object SessionOptions		18
+nim	SessionIdLocal	nim_express/middlewares/session.html#SessionIdLocal	const SessionIdLocal		36
+nim	SessionDestroyLocal	nim_express/middlewares/session.html#SessionDestroyLocal	const SessionDestroyLocal		37
+nim	MaxInMemorySessions	nim_express/middlewares/session.html#MaxInMemorySessions	const MaxInMemorySessions		40
+nim	SessionCreationRateLimit	nim_express/middlewares/session.html#SessionCreationRateLimit	const SessionCreationRateLimit		41
+nim	SessionCreationRateWindowSeconds	nim_express/middlewares/session.html#SessionCreationRateWindowSeconds	const SessionCreationRateWindowSeconds		42
+nim	DefaultMaxSessionValueLen	nim_express/middlewares/session.html#DefaultMaxSessionValueLen	const DefaultMaxSessionValueLen		43
+nim	DefaultMaxSessionSize	nim_express/middlewares/session.html#DefaultMaxSessionSize	const DefaultMaxSessionSize		44
+nim	inMemorySessionStore	nim_express/middlewares/session.html#inMemorySessionStore	proc inMemorySessionStore(): SessionStore		167
+nim	defaultSessionOptions	nim_express/middlewares/session.html#defaultSessionOptions	proc defaultSessionOptions(): SessionOptions		173
+nim	normalizeSessionOptions	nim_express/middlewares/session.html#normalizeSessionOptions,SessionOptions	proc normalizeSessionOptions(options: SessionOptions): SessionOptions		192
+nim	sessionGet	nim_express/middlewares/session.html#sessionGet,Req,string,string	proc sessionGet(req: Req; key: string; default: string = ""): string		256
+nim	sessionSet	nim_express/middlewares/session.html#sessionSet,Req,string,string	proc sessionSet(req: Req; key: string; value: string)		262
+nim	sessionDelete	nim_express/middlewares/session.html#sessionDelete,Req,string	proc sessionDelete(req: Req; key: string)		280
+nim	destroySession	nim_express/middlewares/session.html#destroySession,Req	proc destroySession(req: Req)		286
+nim	regenerateSessionId	nim_express/middlewares/session.html#regenerateSessionId,Req,Res,SessionOptions	proc regenerateSessionId(req: Req; res: Res; opts: SessionOptions): bool		315
+nim	session	nim_express/middlewares/session.html#session,SessionOptions	proc session(options: SessionOptions = defaultSessionOptions()): AsyncMiddleware		345

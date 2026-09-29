@@ -1,0 +1,13 @@
+nimTitle	prometheus	nim_express/middlewares/prometheus.html	module nim_express/middlewares/prometheus		0
+nim	MaxRouteCardinality	nim_express/middlewares/prometheus.html#MaxRouteCardinality	const MaxRouteCardinality		5
+nim	DefaultBuckets	nim_express/middlewares/prometheus.html#DefaultBuckets	const DefaultBuckets		7
+nim	MetricsBucket	nim_express/middlewares/prometheus.html#MetricsBucket	object MetricsBucket		11
+nim	RouteMetrics	nim_express/middlewares/prometheus.html#RouteMetrics	object RouteMetrics		15
+nim	PrometheusRegistry	nim_express/middlewares/prometheus.html#PrometheusRegistry	type PrometheusRegistry		21
+nim	PrometheusOptions	nim_express/middlewares/prometheus.html#PrometheusOptions	object PrometheusOptions		28
+nim	defaultPrometheusOptions	nim_express/middlewares/prometheus.html#defaultPrometheusOptions	proc defaultPrometheusOptions(): PrometheusOptions		35
+nim	newPrometheusRegistry	nim_express/middlewares/prometheus.html#newPrometheusRegistry,int	proc newPrometheusRegistry(maxRoutes: int = MaxRouteCardinality): PrometheusRegistry		44
+nim	renderMetrics	nim_express/middlewares/prometheus.html#renderMetrics,PrometheusRegistry	proc renderMetrics(registry: PrometheusRegistry): string		171
+nim	prometheusMetrics	nim_express/middlewares/prometheus.html#prometheusMetrics,PrometheusRegistry,PrometheusOptions	proc prometheusMetrics(registry: PrometheusRegistry;\n                  options: PrometheusOptions = defaultPrometheusOptions()): AsyncMiddleware		286
+nim	prometheusMetrics	nim_express/middlewares/prometheus.html#prometheusMetrics,PrometheusRegistry,string	proc prometheusMetrics(registry: PrometheusRegistry; metricsPath: string): AsyncMiddleware		318
+nimgrp	prometheusmetrics	nim_express/middlewares/prometheus.html#prometheusMetrics-procs-all	proc		286

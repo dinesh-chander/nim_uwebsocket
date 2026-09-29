@@ -1,0 +1,47 @@
+websocketload - WebSocket load tester
+
+Connection & runtime
+  -h, --host HOST       Target (default 127.0.0.1)
+  -p, --port PORT       Port (default 3400)
+  --path PATH           WS path (default /)
+  -c, --concurrency N   Total WebSocket clients (default 100)
+  -d, --duration SECS   Run time (default 10)
+  -t, --threads N       Worker threads (0 = CPU count; capped at 24)
+
+Payload
+  -s, --size N          Message length; sets min/max in static mode (default 64)
+  --len static|dynamic  Static length vs random per send (default static)
+  --min-len N           Min bytes when --len dynamic
+  --max-len N           Max bytes when --len dynamic
+
+Traffic
+  --open-msgs N         Text frames sent right after handshake (default 1; 0 = none)
+  --reply-on-recv 0|1   After each data frame from server, send one frame (default 1)
+  --no-reply-on-recv    Same as --reply-on-recv 0
+  --out-mps R           Per-connection outbound msg/s from timer (0 = off; default 0)
+  --tick-ms MS          Timer step for --out-mps (default 10)
+
+Ramp & reconnect
+  --ramp-sec SEC        Spread bootstrap connects per worker over SEC seconds (default 20; 0 = fastest)
+  --connect-retries N   After retryable failures, reconnect up to N times (default 15)
+  --retry-delay-ms MS   Delay before each reconnect attempt (default 1000)
+
+Client bind (Linux — raises conn ceiling vs one dst IP:port)
+  --bind-loopbacks N    Use 127.0.0.2 … 127.0.0.(N+1); run scripts/ws_scale_linux.sh first
+  --bind-ips LIST       Comma-separated bind IPs (overrides --bind-loopbacks)
+
+Examples
+  # ~1M idle connections: split clients (single process caps ~15000 conn/thread & ~24 threads)
+  bash nim_websocketcli/scripts/ws_parallel_load.sh
+
+  # 100k idle connections (no app frames)
+  websocketload -c 100000 -d 120 -t 16 --open-msgs 0 --no-reply-on-recv --bind-loopbacks 64
+
+  # Echo soak (defaults: 1 open send + reply each recv)
+  websocketload -c 1000 -d 30 -s 256
+
+  # Fixed 50 msg/s per client, static 128 B, no recv-driven replies
+  websocketload -c 500 -d 60 --out-mps 50 --no-reply-on-recv -s 128 --open-msgs 0
+
+  # Random payload 32..512 B, 10 msg/s per client + open burst 3
+  websocketload -c 200 -d 30 --len dynamic --min-len 32 --max-len 512 --out-mps 10 --open-msgs 3

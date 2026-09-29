@@ -1,0 +1,4 @@
+nimTitle	multipart	nim_express/middlewares/multipart.html	module nim_express/middlewares/multipart		0
+nim	MultipartOptions	nim_express/middlewares/multipart.html#MultipartOptions	object MultipartOptions		7
+nim	defaultMultipartOptions	nim_express/middlewares/multipart.html#defaultMultipartOptions	proc defaultMultipartOptions(): MultipartOptions		17
+nim	multipart	nim_express/middlewares/multipart.html#multipart,MultipartOptions	proc multipart(options: MultipartOptions = defaultMultipartOptions()): AsyncMiddleware		381

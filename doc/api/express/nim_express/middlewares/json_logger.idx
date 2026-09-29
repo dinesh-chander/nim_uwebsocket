@@ -1,0 +1,24 @@
+nimTitle	json_logger	nim_express/middlewares/json_logger.html	module nim_express/middlewares/json_logger		0
+nim	DefaultSkipPaths	nim_express/middlewares/json_logger.html#DefaultSkipPaths	const DefaultSkipPaths		7
+nim	MaxErrorTraceLen	nim_express/middlewares/json_logger.html#MaxErrorTraceLen	const MaxErrorTraceLen		8
+nim	JsonLogSink	nim_express/middlewares/json_logger.html#JsonLogSink	type JsonLogSink		11
+nim	jlfTimestamp	nim_express/middlewares/json_logger.html#jlfTimestamp	JsonLogField.jlfTimestamp		13
+nim	jlfMethod	nim_express/middlewares/json_logger.html#jlfMethod	JsonLogField.jlfMethod		13
+nim	jlfPath	nim_express/middlewares/json_logger.html#jlfPath	JsonLogField.jlfPath		13
+nim	jlfStatus	nim_express/middlewares/json_logger.html#jlfStatus	JsonLogField.jlfStatus		13
+nim	jlfDurationMs	nim_express/middlewares/json_logger.html#jlfDurationMs	JsonLogField.jlfDurationMs		13
+nim	jlfRequestId	nim_express/middlewares/json_logger.html#jlfRequestId	JsonLogField.jlfRequestId		13
+nim	jlfTraceId	nim_express/middlewares/json_logger.html#jlfTraceId	JsonLogField.jlfTraceId		13
+nim	jlfRemoteIp	nim_express/middlewares/json_logger.html#jlfRemoteIp	JsonLogField.jlfRemoteIp		13
+nim	jlfUserAgent	nim_express/middlewares/json_logger.html#jlfUserAgent	JsonLogField.jlfUserAgent		13
+nim	jlfContentLength	nim_express/middlewares/json_logger.html#jlfContentLength	JsonLogField.jlfContentLength		13
+nim	jlfError	nim_express/middlewares/json_logger.html#jlfError	JsonLogField.jlfError		13
+nim	JsonLogField	nim_express/middlewares/json_logger.html#JsonLogField	enum JsonLogField		13
+nim	JsonLoggerOptions	nim_express/middlewares/json_logger.html#JsonLoggerOptions	object JsonLoggerOptions		26
+nim	defaultJsonLoggerOptions	nim_express/middlewares/json_logger.html#defaultJsonLoggerOptions	proc defaultJsonLoggerOptions(): JsonLoggerOptions		35
+nim	shouldInclude	nim_express/middlewares/json_logger.html#shouldInclude,JsonLoggerOptions,JsonLogField	proc shouldInclude(opts: JsonLoggerOptions; field: JsonLogField): bool		49
+nim	escapeJsonString	nim_express/middlewares/json_logger.html#escapeJsonString,string	proc escapeJsonString(value: string): string		55
+nim	isHealthPath	nim_express/middlewares/json_logger.html#isHealthPath,string,seq[string]	proc isHealthPath(path: string; skipPaths: seq[string]): bool		77
+nim	appendFloatDec	nim_express/middlewares/json_logger.html#appendFloatDec,string,float,int	proc appendFloatDec(line: var string; value: float; decimals: int = 3)		89
+nim	appendIso8601Ms	nim_express/middlewares/json_logger.html#appendIso8601Ms,string,float	proc appendIso8601Ms(line: var string; epochSec: float)		128
+nim	jsonLogger	nim_express/middlewares/json_logger.html#jsonLogger,JsonLoggerOptions	proc jsonLogger(options: JsonLoggerOptions = defaultJsonLoggerOptions()): AsyncMiddleware		170

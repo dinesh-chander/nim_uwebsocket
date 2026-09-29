@@ -1,0 +1,12 @@
+nimTitle	body_limit	nim_express/middlewares/body_limit.html	module nim_express/middlewares/body_limit		0
+nim	ContentTypeLimitEntry	nim_express/middlewares/body_limit.html#ContentTypeLimitEntry	object ContentTypeLimitEntry		9
+nim	BodyLimitOptions	nim_express/middlewares/body_limit.html#BodyLimitOptions	object BodyLimitOptions		13
+nim	payloadTooLargeBody	nim_express/middlewares/body_limit.html#payloadTooLargeBody	const payloadTooLargeBody		19
+nim	defaultBodyLimitOptions	nim_express/middlewares/body_limit.html#defaultBodyLimitOptions	proc defaultBodyLimitOptions(): BodyLimitOptions		22
+nim	normalizeContentTypeLimits	nim_express/middlewares/body_limit.html#normalizeContentTypeLimits,seq[ContentTypeLimitEntry]	proc normalizeContentTypeLimits(entries: seq[ContentTypeLimitEntry]): seq[\n    ContentTypeLimitEntry]		26
+nim	resolveLimit	nim_express/middlewares/body_limit.html#resolveLimit,seq[ContentTypeLimitEntry],int,string	proc resolveLimit(limits: seq[ContentTypeLimitEntry]; defaultMax: int;\n             contentType: string): int		47
+nim	resolveLimit	nim_express/middlewares/body_limit.html#resolveLimit,seq[ContentTypeLimitEntry],int,	proc resolveLimit(limits: seq[ContentTypeLimitEntry]; defaultMax: int;\n             contentType: fast_map.FastStringView): int		56
+nim	bodyLimit	nim_express/middlewares/body_limit.html#bodyLimit,BodyLimitOptions	proc bodyLimit(options: BodyLimitOptions = defaultBodyLimitOptions()): AsyncMiddleware		90
+nim	bodyLimit	nim_express/middlewares/body_limit.html#bodyLimit,int	proc bodyLimit(maxBytes: int): AsyncMiddleware		167
+nimgrp	resolvelimit	nim_express/middlewares/body_limit.html#resolveLimit-procs-all	proc		47
+nimgrp	bodylimit	nim_express/middlewares/body_limit.html#bodyLimit-procs-all	proc		90
