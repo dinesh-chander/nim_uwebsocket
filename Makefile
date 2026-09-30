@@ -172,7 +172,7 @@ WEBSOCKETLOAD_BIN ?= nim_websocketcli/websocketload
 WS_RANDOM_OBJECT_BENCH_BIN ?= benchmark/ws_random_object_bench
 
 # Build targets
-.PHONY: all build build-all deps check-iouring-deps usockets validate-usockets-backend usockets-gcd usockets-kqueue usockets-epoll usockets-iouring simdjson bench benchmarks bench-gcd bench-kqueue bench-epoll bench-iouring bench-smoke linux-compat-check macos-smoke production-check websocketload ws-echo-bench ws-random-object-bench ws-scale-setup examples build-examples test verify clean clean-examples clean-bench clean-all
+.PHONY: all build build-all deps check-iouring-deps usockets validate-usockets-backend usockets-gcd usockets-kqueue usockets-epoll usockets-iouring simdjson bench benchmarks bench-gcd bench-kqueue bench-epoll bench-iouring bench-smoke linux-compat-check macos-smoke production-check websocketload ws-echo-bench ws-random-object-bench ws-scale-setup examples build-examples test coverage verify clean clean-examples clean-bench clean-all
 
 NIM_PARALLEL ?= --parallelBuild:8
 
@@ -357,6 +357,9 @@ examples build-examples: deps usockets
 
 test: deps usockets
 	NIM_EXTRA_FLAGS="$(NIM_EXTRA_FLAGS)" bash scripts/test_all.sh
+
+coverage:
+	bash scripts/coverage.sh
 
 verify: deps usockets simdjson
 	NIM_EXTRA_FLAGS="$(NIM_EXTRA_FLAGS)" ./scripts/verify.sh

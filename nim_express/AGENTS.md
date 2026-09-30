@@ -15,3 +15,6 @@ Rules:
 - Do not commit test binaries (e.g. `tests/ws_permessage_deflate_integration_server`) — they are git-ignored; build via `make test`.
 - Preserve middleware flow semantics (before/after `next()`) and the sync fast-path dispatch when touching `app.nim`.
 - Every public declaration needs a doc comment (see Documentation rules in the root AGENTS.md).
+
+## Agentic harness (unit guardrails)
+Before changing this package: read `harness/nim_express/AGENTS.md` (ownership + hard rules) and finish only when `bash harness/nim_express/run.sh` exits 0. For work scoped to a single middleware, use `harness/middleware/<name>/AGENTS.md` + `harness/middleware/<name>/run.sh` instead (36 units).

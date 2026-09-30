@@ -1749,6 +1749,8 @@ static uint32_t extract_native_object(
     if (arena == nullptr) {
       std::free(children);
     }
+    out_value->children = nullptr;
+    out_value->children_len = 0;
     return error;
   }
 
@@ -2292,7 +2294,10 @@ uint32_t nim_simdjson_ondemand_project_array_objects(
     return static_cast<uint32_t>(simdjson::SUCCESS);
   }
 
-  const size_t total_entries = item_count * fields_per_item;
+  size_t total_entries = 0;
+  if (!checked_size_mul(item_count, fields_per_item, &total_entries)) {
+    return static_cast<uint32_t>(simdjson::MEMALLOC);
+  }
   for (size_t i = 0; i < total_entries; ++i) {
     reset_ondemand_entry(&entries[i]);
   }
@@ -2536,6 +2541,7 @@ uint32_t nim_simdjson_extract_medium_todo_envelope(
   simdjson::ondemand::array todo_array;
   auto todos_error = root["todos"].get_array().get(todo_array);
   if (todos_error != simdjson::SUCCESS) {
+    release_temp();
     out_envelope->status = static_cast<uint32_t>(todos_error);
     return static_cast<uint32_t>(todos_error);
   }

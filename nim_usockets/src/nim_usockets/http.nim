@@ -793,6 +793,10 @@ type
     wsSocketNotSentLowWaterBytes*: int
     maxRequestMemory*: int
 
+  # GC reference type used to root a SocketData object in
+  # HttpServer.socketDataRoots while its socket is open.
+  SocketDataRef = ref SocketData
+
   HttpServer* = ref object
     # Keep pointer/proc references grouped first to minimize padding on 64-bit.
     loop*: UsLoopPtr
@@ -889,6 +893,7 @@ type
     loopWriteBatchDepth: int
     pendingFlushSockets: seq[PendingFlushEntry]
     closedSocketKeys: Table[uint64, uint64]
+    socketDataRoots: Table[uint64, SocketDataRef]
     loopMaintenanceEpoch: uint64
     nextSocketGeneration: uint64
     loopDispatchRequestsRemaining: int
@@ -1863,7 +1868,15 @@ proc socketDataFor(ssl: cint, s: UsSocketPtr): ptr SocketData {.inline.} =
   let ext = us_socket_ext(ssl, s)
   if ext == nil:
     return nil
-  cast[ptr SocketData](ext)
+  # The C-owned ext slot carries only a raw pointer; the SocketData object
+  # itself lives on the Nim heap and is rooted in HttpServer.socketDataRoots.
+  let p = cast[ptr pointer](ext)[]
+  if p == nil:
+    return nil
+  let sd = cast[ptr SocketData](p)
+  if sd.magic != SocketDataMagic:
+    return nil
+  sd
 
 proc emitServerPanic(server: HttpServer, source, message: string) {.inline.} =
   if server == nil:
@@ -10398,8 +10411,8 @@ proc onSocketOpenImpl(s: UsSocketPtr, isClient: cint, ip: cstring, ipLength: cin
     discard closeSocketTracked(server, server.ssl.toInt, s, "open_reject_shutting_down")
     return s
 
-  let sockData = socketDataFor(server.ssl.toInt, s)
-  if sockData == nil:
+  let ext = us_socket_ext(server.ssl.toInt, s)
+  if ext == nil:
     discard closeSocketTracked(server, server.ssl.toInt, s, "open_reject_missing_socket_data")
     return s
 
@@ -10409,9 +10422,22 @@ proc onSocketOpenImpl(s: UsSocketPtr, isClient: cint, ip: cstring, ipLength: cin
   if server.nextSocketGeneration == 0'u64:
     inc server.nextSocketGeneration
 
-  if sockData.magic == SocketDataMagic and sockData.server != nil:
-    releaseSocketDataRefs(sockData)
-  zeroMem(sockData, sizeof(SocketData))
+  # GC-managed socket state must not live in the C-owned ext region:
+  # collections run on the loop thread while handlers execute and could
+  # reclaim it while C still references the ext. Allocate the object on the
+  # Nim heap and root it in socketDataRoots; the C ext slot only carries the
+  # raw pointer (same pattern as the HTTP client conn data).
+  if server.socketDataRoots.hasKey(openingSocketKey):
+    # An open re-fired without a close for this recycled socket address: the
+    # previous incarnation is still rooted, so releasing it is safe.
+    let oldRef = server.socketDataRoots[openingSocketKey]
+    releaseSocketDataRefs(unsafeAddr oldRef[])
+    server.socketDataRoots.del(openingSocketKey)
+
+  let sdRef = new(SocketData)
+  let sockData = unsafeAddr sdRef[]
+  server.socketDataRoots[openingSocketKey] = sdRef
+  cast[ptr pointer](ext)[] = cast[pointer](sockData)
   sockData.magic = SocketDataMagic
   sockData.server = server
   sockData.generation = server.nextSocketGeneration
@@ -10592,6 +10618,14 @@ proc onSocketCloseImpl(s: UsSocketPtr, code: cint, reason: pointer): UsSocketPtr
       cleanupH2Connection(sockData.h2conn)
     let serverRef = sockData.server
     releaseSocketDataRefs(sockData)
+    # Unroot after the refs are released so the GC may reclaim the object, and
+    # nil the C ext slot so no later resolution can dereference the stale
+    # pointer (a later open on the recycled address installs a fresh pointer
+    # and a fresh root entry).
+    server.socketDataRoots.del(closingSocketKey)
+    let closingExt = us_socket_ext(server.ssl.toInt, s)
+    if closingExt != nil:
+      cast[ptr pointer](closingExt)[] = nil
     if serverRef != nil and serverRef.connectionCloseHandler != nil:
       try:
         serverRef.connectionCloseHandler(closingIp, wasWebSocket, closingRequestSeq, closingSocketKey)
@@ -13292,6 +13326,7 @@ proc newHttpServer*(ssl: SslMode = NoSsl, options: ServerOptions = defaultServer
   result.loopWriteBatchDepth = 0
   result.pendingFlushSockets = @[]
   result.closedSocketKeys = initTable[uint64, uint64]()
+  result.socketDataRoots = initTable[uint64, SocketDataRef]()
   result.loopMaintenanceEpoch = 0'u64
   result.nextSocketGeneration = 0'u64
   result.resetLoopFairnessBudgets()
@@ -14253,6 +14288,7 @@ proc cleanupServer(server: HttpServer) =
   server.topicNames.setLen(0)
   server.topicSubscribers.setLen(0)
   server.wsDrainQueue.setLen(0)
+  server.socketDataRoots.clear()
 
 proc onShutdownPollFire(timer: UsTimerPtr) {.cdecl, used.} =
   try:
@@ -14407,7 +14443,7 @@ proc listen*(server: HttpServer, host: string, port: int, callback: proc(success
     host.cstring,
     port.cint,
     listenOptions,
-    sizeof(SocketData).cint
+    sizeof(pointer).cint
   )
 
   if server.listenSocket == nil:

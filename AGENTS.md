@@ -180,3 +180,9 @@ Use `benchmark/` for performance regressions only after functional correctness i
 - Reuse gathered context and avoid rereading unchanged files unless verifying a fix, resolving uncertainty, or reviewing a new conflicting change.
 - Prefer narrow tests and focused benchmarks for touched paths before running wider suites; expand scope only when the smaller check is insufficient.
 - Defer speculative explorations and side refactors unless they are clearly needed to achieve the current goal or unblock correctness/performance work.
+
+## Agentic harness
+Every package and every `nim_express` middleware has per-unit AI-agent guardrails and an executable gate under `harness/` (see `harness/README.md`):
+- `harness/<package>/AGENTS.md` — ownership + hard rules for that layer; `harness/<package>/run.sh` — gate, exit 0 only when green.
+- `harness/middleware/<name>/AGENTS.md` + `run.sh` — same, per middleware (36 units).
+Agents: read the unit's AGENTS.md before editing, add regression tests, and report done only when the unit's `run.sh` exits 0.

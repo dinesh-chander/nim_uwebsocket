@@ -4086,6 +4086,15 @@ proc normalizedListenHost(host: string): string {.inline.} =
     return "0.0.0.0"
   trimmed
 
+## Resolve the listen host for scaling entry points from the NIM_EXPRESS_HOST
+## or HOST environment variable, matching the env source of AppEnvConfig.host.
+## Returns 0.0.0.0 when neither is set.
+proc scalingEntryListenHost(): string {.used.} =
+  let raw = getEnv("NIM_EXPRESS_HOST", "").strip()
+  if raw.len > 0:
+    return raw
+  normalizedListenHost(getEnv("HOST", ""))
+
 proc runServerLoop(app: ExpressApp) =
   if app == nil:
     return
@@ -4247,6 +4256,7 @@ type
   WorkerArgs = object
     port: int
     workerId: int
+    host: string
     factory: AppFactory
 
 # Thread worker proc - each thread runs its own event loop
@@ -4260,9 +4270,9 @@ proc workerThread(args: WorkerArgs) {.thread.} =
     app.setupHandlers()
 
     # Listen on the same port (SO_REUSEPORT allows this)
-    app.server.listen("0.0.0.0", args.port) do (success: bool):
+    app.server.listen(args.host, args.port) do (success: bool):
       if success:
-        echo "Worker ", args.workerId, " started on port ", args.port
+        echo "Worker ", args.workerId, " started on ", args.host, ":", args.port
       else:
         echo "Worker ", args.workerId, " failed to start"
         quit(1)
@@ -4272,8 +4282,15 @@ proc workerThread(args: WorkerArgs) {.thread.} =
 
 ## Start multiple threads sharing the same port.
 ## Each thread gets its own event loop. Linux epoll recommended.
+## Threads listen on the host from NIM_EXPRESS_HOST or HOST, defaulting to
+## 0.0.0.0. SIGINT and SIGTERM terminate the process with the default action
+## unless the factory registers the graceful_shutdown middleware, which drains
+## in-flight requests in every worker thread first.
 proc runThreaded*(factory: AppFactory, port: int, numThreads: int = 0) =
   var threadCount = if numThreads > 0: numThreads else: defaultThreadCount()
+  let host = scalingEntryListenHost()
+  when defined(posix):
+    installSignalHandlers()
 
   when defined(macosx) and defined(LIBUS_USE_GCD):
     if threadCount > 1:
@@ -4283,18 +4300,18 @@ proc runThreaded*(factory: AppFactory, port: int, numThreads: int = 0) =
     if threadCount == 1:
       let app = factory()
       app.setupHandlers()
-      app.server.listen("0.0.0.0", port) do (success: bool):
+      app.server.listen(host, port) do (success: bool):
         if success:
           when defined(macosx) and compileOption("threads"):
             startMacosAsyncPumpWakeThread(app)
-          echo "Server running at http://localhost:", port
+          echo "Server running at http://", host, ":", port
         else:
           echo "Failed to start server on port ", port
           quit(1)
       app.runServerLoop()
       return
 
-  echo "Starting ", threadCount, " worker threads on port ", port
+  echo "Starting ", threadCount, " worker threads on ", host, ":", port
 
   # Create worker threads
   var threads = newSeq[Thread[WorkerArgs]](threadCount)
@@ -4303,6 +4320,7 @@ proc runThreaded*(factory: AppFactory, port: int, numThreads: int = 0) =
     let args = WorkerArgs(
       port: port,
       workerId: i,
+      host: host,
       factory: factory
     )
     createThread(threads[i], workerThread, args)
@@ -4322,9 +4340,15 @@ when not defined(windows):
     ClusterParentPollMs = 50
     ## Grace period in milliseconds workers get to exit before SIGKILL.
     DefaultClusterWorkerShutdownGraceMs* = 30_000
+    ## Max worker pids tracked for the repeat-signal force-kill path.
+    MaxTrackedClusterWorkers = 256
 
   var clusterParentShutdownFlag: Atomic[bool]
   var clusterParentForceExitFlag: Atomic[bool]
+  ## Worker pids for the repeat-signal force-kill path. Plain Pid array with
+  ## only single-word stores so the signal handler path needs no locks, GC, or
+  ## heap access. A zero entry is a free slot.
+  var clusterWorkerPidTable: array[MaxTrackedClusterWorkers, Pid]
 
   type
     ## Worker respawn supervision policy for cluster mode.
@@ -4358,8 +4382,38 @@ when not defined(windows):
     clusterParentShutdownFlag.store(true, moRelease)
     clusterParentForceExitFlag.store(true, moRelease)
 
+  ## Track a spawned worker pid so the repeat-signal path can force-kill it.
+  ## No-op for non-positive pids or when the tracking table is full.
+  proc registerClusterWorkerPid*(pid: Pid) =
+    if pid <= 0:
+      return
+    for i in 0 ..< MaxTrackedClusterWorkers:
+      if clusterWorkerPidTable[i] == 0:
+        clusterWorkerPidTable[i] = pid
+        return
+
+  ## Stop tracking a reaped worker pid. No-op when the pid is not tracked.
+  proc unregisterClusterWorkerPid*(pid: Pid) =
+    if pid <= 0:
+      return
+    for i in 0 ..< MaxTrackedClusterWorkers:
+      if clusterWorkerPidTable[i] == pid:
+        clusterWorkerPidTable[i] = 0
+        return
+
+  ## Force-kill all tracked worker pids with SIGKILL. Called from the
+  ## repeat-signal handler, so it uses only async-signal-safe calls; the parent
+  ## exits right after and init reaps the killed children.
+  proc forceKillTrackedClusterWorkers*() {.used.} =
+    for pid in clusterWorkerPidTable:
+      if pid > 0:
+        discard kill(pid, SIGKILL)
+
   proc handleClusterParentSignal(sig: cint) {.noconv.} =
     if clusterParentForceExitFlag.load(moAcquire):
+      # Second signal: the graceful pass is over. Force-kill the tracked
+      # workers so the parent exit cannot orphan them on the shared port.
+      forceKillTrackedClusterWorkers()
       if sig == SIGTERM:
         exitnow(143)
       else:
@@ -4372,6 +4426,12 @@ when not defined(windows):
     discard signal(SIGINT, handleClusterParentSignal)
     discard signal(SIGTERM, handleClusterParentSignal)
 
+  # Workers must not inherit the parent's cluster signal handler: after fork
+  # the parent flag state is per-process and nothing inside a worker observes
+  # it, so a forwarded SIGTERM would be ignored until the 30s SIGKILL
+  # escalation. Default action keeps workers exitable; apps that want in-flight
+  # request draining register the graceful_shutdown middleware in the factory,
+  # which installs its own handlers after this reset.
   proc resetWorkerSignalHandlersBeforeListen() {.used.} =
     discard signal(SIGINT, SIG_DFL)
     discard signal(SIGTERM, SIG_DFL)
@@ -4401,6 +4461,7 @@ when not defined(windows):
       let exitedPid = waitpid(Pid(-1), status, WNOHANG)
       if exitedPid > 0 and slotForPid.hasKey(exitedPid):
         slotForPid.del(exitedPid)
+        unregisterClusterWorkerPid(exitedPid)
       else:
         sleep(ClusterParentPollMs)
     if slotForPid.len > 0:
@@ -4409,6 +4470,7 @@ when not defined(windows):
         let exitedPid = waitpid(Pid(-1), status, WNOHANG)
         if exitedPid > 0 and slotForPid.hasKey(exitedPid):
           slotForPid.del(exitedPid)
+          unregisterClusterWorkerPid(exitedPid)
         else:
           sleep(ClusterParentPollMs)
 
@@ -4549,6 +4611,11 @@ when not defined(windows):
 
   ## Start multiple worker processes sharing the same port via SO_REUSEPORT.
   ## Each worker runs an independent event loop. Linux recommended.
+  ## Workers listen on the host from NIM_EXPRESS_HOST or HOST, defaulting to
+  ## 0.0.0.0. Workers reset SIGINT and SIGTERM to the default action before the
+  ## factory runs, so in-flight requests only drain when the factory registers
+  ## the graceful_shutdown middleware. A second SIGINT or SIGTERM to the parent
+  ## force-kills the workers before the parent exits.
   proc runCluster*(factory: AppFactory, port: int, numWorkers: int = 0) =
     var workerCount = if numWorkers > 0: numWorkers else: defaultWorkerCount()
 
@@ -4564,20 +4631,24 @@ when not defined(windows):
         workerCount = 1
 
       # Single process mode on macOS
+      let host = scalingEntryListenHost()
       let app = factory()
       app.setupHandlers()
-      app.server.listen("0.0.0.0", port) do (success: bool):
+      when defined(posix):
+        installSignalHandlers()
+      app.server.listen(host, port) do (success: bool):
         if success:
           when defined(macosx) and compileOption("threads"):
             startMacosAsyncPumpWakeThread(app)
-          echo "Server running at http://localhost:", port
+          echo "Server running at http://", host, ":", port
         else:
           echo "Failed to start server on port ", port
           quit(1)
       app.runServerLoop()
     else:
       # Linux: SO_REUSEPORT works correctly, kernel load-balances
-      echo "Starting ", workerCount, " worker processes on port ", port
+      let host = scalingEntryListenHost()
+      echo "Starting ", workerCount, " worker processes on ", host, ":", port
       let supervisionPolicy = defaultClusterSupervisionPolicy()
 
       proc spawnWorker(slot: int): Pid =
@@ -4597,15 +4668,17 @@ when not defined(windows):
           let app = factory()
           app.server.options.listenExclusivePort = false
           app.setupHandlers()
-          app.server.listen("0.0.0.0", port) do (success: bool):
+          app.server.listen(host, port) do (success: bool):
             if success:
-              echo "Worker ", slot, " (pid ", getpid(), ") started on port ", port
+              echo "Worker ", slot, " (pid ", getpid(), ") started on ", host, ":", port
             else:
               echo "Worker ", slot, " failed to start"
               quit(1)
           app.runServerLoop()
           # A returned run loop is unexpected outside explicit shutdown.
           quit(70)
+        # Parent-only: track the new worker pid for the repeat-signal path.
+        registerClusterWorkerPid(pid)
         pid
 
       var slotForPid = initTable[Pid, int]()
@@ -4653,6 +4726,7 @@ when not defined(windows):
           continue
         let slot = slotForPid[exitedPid]
         slotForPid.del(exitedPid)
+        unregisterClusterWorkerPid(exitedPid)
         if parentShuttingDown:
           echo "Worker ", slot, " (pid ", exitedPid, ") stopped during cluster shutdown."
           continue
@@ -4692,20 +4766,24 @@ when not defined(windows):
 
   ## Auto-select the best scaling strategy for the current platform.
   ## Linux: runCluster or runThreaded. macOS/Windows: single process.
+  ## The listen host comes from NIM_EXPRESS_HOST or HOST, defaulting to 0.0.0.0.
   proc runAuto*(factory: AppFactory, port: int, numWorkers: int = 0) =
     when defined(windows):
       echo "Windows: Running single process"
       let app = factory()
-      app.run(port)
+      app.run(scalingEntryListenHost(), port)
     elif defined(macosx):
       echo "macOS: Running single process (use nginx for scaling)"
+      let host = scalingEntryListenHost()
       let app = factory()
       app.setupHandlers()
-      app.server.listen("0.0.0.0", port) do (success: bool):
+      when defined(posix):
+        installSignalHandlers()
+      app.server.listen(host, port) do (success: bool):
         if success:
           when defined(macosx) and compileOption("threads"):
             startMacosAsyncPumpWakeThread(app)
-          echo "Server running at http://localhost:", port
+          echo "Server running at http://", host, ":", port
         else:
           echo "Failed to start server on port ", port
           quit(1)

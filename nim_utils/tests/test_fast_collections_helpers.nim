@@ -1,6 +1,17 @@
-import std/[algorithm, strutils, unittest]
+import std/[algorithm, os, osproc, strutils, unittest]
 
 import ../src/nim_utils/helpers/[fast_map, fast_set]
+
+# C-side string hash computed by the verstable backend (emitted by fast_map).
+proc nx_fm_hash_n(keyPtr: pointer, keyLen: csize_t): uint64 {.cdecl, importc.}
+
+const F6ProbeKey = "nim-utils-f6-probe"
+
+when isMainModule:
+  # Invoked by the F6 cross-process test to sample the per-process hash seed.
+  if paramCount() >= 2 and paramStr(1) == "--print-hash":
+    echo $fast_map.hashKey(F6ProbeKey)
+    quit(0)
 
 suite "nim_utils fast collections helpers":
   when defined(nimUtilsHashSeedTest):
@@ -20,6 +31,27 @@ suite "nim_utils fast collections helpers":
       check setObj.contains("content-type")
       setObj.close()
       map.close()
+
+    test "F6: C backends hash keys with the per-process seed, not the fixed wyhash seed":
+      # C-side hashing (verstable backend) must agree with the Nim-side
+      # hashKey for the same key; that only holds once syncFastMapCSeed has
+      # installed the process seed into the C translation unit.
+      let nimHash = fast_map.hashKey(F6ProbeKey)
+      var probe = F6ProbeKey
+      let cHash = nx_fm_hash_n(cast[pointer](unsafeAddr probe[0]), csize_t(probe.len))
+      check cHash == nimHash
+      # Historical fixed-seed wyhash outputs for this key; a fixed public
+      # seed would make the C backend return exactly one of these.
+      check cHash != 0x11bc7f8ac023241c'u64 # wyhash(key, 0xca813bf4c7abf0a9)
+      check cHash != 0x5b206422c55c4179'u64 # wyhash(key, 0)
+      # The seed is per-process random: two fresh runs hash the same key
+      # differently (the old code produced one stable value forever).
+      let probeCmd = "\"" & paramStr(0) & "\" --print-hash"
+      let run1 = execCmdEx(probeCmd).output
+      let run2 = execCmdEx(probeCmd).output
+      check run1 != ""
+      check run2 != ""
+      check run1 != run2
 
   test "fast_map survives high load insert delete and resize":
     let map = newFastMap[string](8)

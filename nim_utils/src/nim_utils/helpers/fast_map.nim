@@ -1575,6 +1575,18 @@ proc makeFastMapHashSeed(): uint64 =
 
 let FastMapHashSeed = makeFastMapHashSeed()
 
+proc vt_set_hash_seed(seed: uint64) {.importc: "vt_set_hash_seed", nodecl.}
+
+## Installs the process-wide `FastMapHashSeed` into the C hash backend of the
+## calling translation unit so C-side hashing matches `hashKey` and no longer
+## uses the fixed public wyhash seed.
+## The value is pre-mixed exactly like `nimWyHash` so both sides hash
+## identical keys to identical values.
+proc syncFastMapCSeed*() {.inline.} =
+  vt_set_hash_seed(FastMapHashSeed xor 0xca813bf4c7abf0a9'u64)
+
+syncFastMapCSeed()
+
 when defined(nimUtilsHashSeedTest):
   ## Test-only accessor exposing the process-wide `FastMapHashSeed` value.
   proc fastMapHashSeedForTest*(): uint64 {.inline.} = FastMapHashSeed

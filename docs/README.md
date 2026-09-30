@@ -4,6 +4,7 @@ Curated documentation for the nim_uwebsocket stack.
 
 | Folder / file | Contents |
 |---|---|
+| [`../harness/`](../harness/) | Agentic harness: per-package and per-middleware AI-agent guardrails (`AGENTS.md`) + executable test gates (`run.sh`) |
 | [`analysis/`](analysis/) | Cross-framework research (uWebSockets, Bun, GoFiber, Drogon, activej, tokio, and more) and the lessons extracted from them |
 | [`benchmarks/`](benchmarks/) | Benchmark methodology, results, and per-iteration reports (HTTP + WebSocket, Linux scaling, io_uring) |
 | [`design/`](design/) | Design documents and plans (HTTP/2 client/server, fastjson design, roadmap, vendored uSockets fork history) |

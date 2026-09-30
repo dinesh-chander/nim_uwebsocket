@@ -480,8 +480,15 @@ proc log*(logger: AsyncLogger, level: LogLevel, msg: string) {.inline.} =
       return
     else:
       when compileOption("threads"):
+        var spins = 0
         while logger.head.load(moRelaxed) - logger.tail.load(moAcquire) >= logger.config.bufferSize:
           if logger.closed.load(moAcquire): return
+          # Bounded wait (<=100ms): a stalled flusher must not hang producers
+          # forever; the record is dropped after the window.
+          if spins >= 1000:
+            discard logger.dropped.fetchAdd(1, moRelaxed)
+            return
+          inc spins
           sleepNs(100_000)
       else:
         var fb = initFlushBuf(logger.maxEntry, 64)
@@ -522,8 +529,15 @@ proc log*(logger: AsyncLogger, level: LogLevel, msg: string,
       return
     else:
       when compileOption("threads"):
+        var spins = 0
         while logger.head.load(moRelaxed) - logger.tail.load(moAcquire) >= logger.config.bufferSize:
           if logger.closed.load(moAcquire): return
+          # Bounded wait (<=100ms): a stalled flusher must not hang producers
+          # forever; the record is dropped after the window.
+          if spins >= 1000:
+            discard logger.dropped.fetchAdd(1, moRelaxed)
+            return
+          inc spins
           sleepNs(100_000)
       else:
         var fb = initFlushBuf(logger.maxEntry, 64)
@@ -595,8 +609,15 @@ proc logObj*[T: object | ref object](logger: AsyncLogger, level: LogLevel, msg: 
       return
     else:
       when compileOption("threads"):
+        var spins = 0
         while logger.head.load(moRelaxed) - logger.tail.load(moAcquire) >= logger.config.bufferSize:
           if logger.closed.load(moAcquire): return
+          # Bounded wait (<=100ms): a stalled flusher must not hang producers
+          # forever; the record is dropped after the window.
+          if spins >= 1000:
+            discard logger.dropped.fetchAdd(1, moRelaxed)
+            return
+          inc spins
           sleepNs(100_000)
       else:
         var fb = initFlushBuf(logger.maxEntry, 64)
@@ -891,10 +912,18 @@ when compileOption("threads"):
     let sleepDurNs = if rawMs > 2000: 2_000_000_000 else: rawMs * 1_000_000
     var fb = initFlushBuf(logger.maxEntry, 64)
     while not logger.stopFlag.load(moAcquire):
-      drainRing(logger, fb)
+      try:
+        drainRing(logger, fb)
+      except CatchableError:
+        # A failure in the flush thread (e.g. OOM) drops the batch and keeps the
+        # thread alive; it must never take down the host process.
+        discard logger.writeErrors.fetchAdd(1, moRelaxed)
       sleepNs(sleepDurNs)
     for retry in 0..10:
-      drainRing(logger, fb)
+      try:
+        drainRing(logger, fb)
+      except CatchableError:
+        discard
       if logger.head.load(moAcquire) == logger.tail.load(moAcquire): break
       sleepNs(1_000_000)
     deinitFlushBuf(fb)

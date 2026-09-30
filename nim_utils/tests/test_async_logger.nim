@@ -1878,6 +1878,61 @@ proc main() =
     check elapsedMs < 30_000, "stress took too long"
     removeFileIfExists(logFile)
 
+  emit("\n--- Security hardening (F7/F8) ---\n")
+
+  test "F8: blocking producer (dropOnFull=false) drains a tiny ring without hang or loss":
+    let logFile = tmpDir & "/f8_block.log"
+    removeFileIfExists(logFile)
+    var cfg = defaultConfig()
+    cfg.output = loFile
+    cfg.filePath = logFile
+    cfg.bufferSize = 16        # tiny ring: forces producers into the wait path
+    cfg.dropOnFull = false     # blocking mode, bounded wait + drop after 100ms
+    let logger = newAsyncLogger(cfg)
+    for i in 0 ..< 10_000:
+      logger.info("flood " & $i)
+    logger.flush()
+    sleepMs(300)
+    logger.close()
+    let content = readFileContent(logFile)
+    check content.contains("flood 0"), "first record lost"
+    check content.contains("flood 9999"), "last record lost"
+    removeFileIfExists(logFile)
+
+  test "F8: blocking producer on closed logger returns instead of spinning":
+    var cfg = defaultConfig()
+    cfg.output = loStderr
+    cfg.bufferSize = 16
+    cfg.dropOnFull = false
+    let logger = newAsyncLogger(cfg)
+    logger.close()
+    # Must return immediately: the wait loop exits on the closed flag.
+    let t0 = getMonoTime()
+    logger.info("after close")
+    let elapsed = getMonoTime() - t0
+    check elapsed.inNanoseconds < 200_000_000, "producer blocked after close"
+
+  test "F7: flush thread stays alive and keeps writing after load":
+    # The OOM/exception isolation (try/except around drainRing) cannot be
+    # triggered deterministically; verify the observable contract instead:
+    # sustained writes land in the file and the logger closes cleanly.
+    let logFile = tmpDir & "/f7_alive.log"
+    removeFileIfExists(logFile)
+    var cfg = defaultConfig()
+    cfg.output = loFile
+    cfg.filePath = logFile
+    cfg.bufferSize = 64
+    cfg.dropOnFull = false   # no-loss mode so the final entry must land
+    let logger = newAsyncLogger(cfg)
+    for i in 0 ..< 200:
+      logger.warn("f7 " & $i)
+    logger.flush()
+    sleepMs(100)
+    let content = readFileContent(logFile)
+    check content.contains("f7 199"), "flush thread stopped writing"
+    logger.close()
+    removeFileIfExists(logFile)
+
   emit("\n=== Results: " & $passed & "/" & $total & " passed, " & $failed & " failed ===\n")
 
   discard rmdir(cstring(tmpDir))

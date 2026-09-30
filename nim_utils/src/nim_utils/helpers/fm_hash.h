@@ -65,10 +65,14 @@ static inline uint64_t nx_wyr3( const unsigned char *p, size_t k )
 #endif
 #endif
 
+/* Process-wide hash seed, defined in verstable.h (always included after this
+   header by the host C unit) and installed per process via vt_set_hash_seed. */
+static uint64_t vt_wyhash_seed;
+
 static inline uint64_t nx_fm_wyhash( const void *key, size_t len )
 {
   const unsigned char *p = (const unsigned char *)key;
-  uint64_t seed = 0xca813bf4c7abf0a9ull;
+  uint64_t seed = vt_wyhash_seed;
   uint64_t a;
   uint64_t b;
   if( VT_LIKELY( len <= 16 ) )

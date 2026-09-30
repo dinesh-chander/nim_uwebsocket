@@ -13,3 +13,6 @@ Rules:
 - `uSockets.a` is a build artifact and is git-ignored; a fresh clone requires `make usockets` before linking.
 - Keep allocations off the hot socket path; preserve the single-syscall write behavior in `http.nim`.
 - Every public declaration needs a doc comment (see Documentation rules in the root AGENTS.md).
+
+## Agentic harness (unit guardrails)
+Before changing this package: read `harness/nim_usockets/AGENTS.md` (ownership + socket-lifetime hard rules) and finish only when `bash harness/nim_usockets/run.sh` exits 0.

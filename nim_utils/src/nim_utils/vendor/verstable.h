@@ -557,9 +557,20 @@ static inline uint64_t vt_hash_integer( uint64_t key )
 
 // For hashing strings, we use the public-domain Wyhash
 // (https://github.com/wangyi-fudan/wyhash) with the following modifications:
-// * We use a fixed seed and secret (the defaults suggested in the Wyhash repository).
+// * The seed defaults to the constant suggested in the Wyhash repository but is
+//   intended to be replaced per process via vt_set_hash_seed, so the hash of a
+//   known key cannot be predicted by an attacker (hash-flooding defense).
 // * We do not handle endianness, so the result will differ depending on the platform.
 // * We omit the code optimized for 32-bit platforms.
+
+/* Process-wide hash seed for vt_wyhash; each translation unit that includes
+   this header gets its own copy, and host code (e.g. Nim modules) installs a
+   shared per-process value at startup via vt_set_hash_seed. */
+static uint64_t vt_wyhash_seed = 0xca813bf4c7abf0a9ull;
+static inline void vt_set_hash_seed( uint64_t seed )
+{
+  vt_wyhash_seed = seed;
+}
 
 static inline void vt_wymum( uint64_t *a, uint64_t *b )
 {
@@ -617,7 +628,7 @@ static inline uint64_t vt_wyr3( const unsigned char *p, size_t k )
 static inline size_t vt_wyhash( const void *key, size_t len )
 {
   const unsigned char *p = (const unsigned char *)key;
-  uint64_t seed = 0xca813bf4c7abf0a9ull;
+  uint64_t seed = vt_wyhash_seed;
   uint64_t a;
   uint64_t b;
   if( VT_LIKELY( len <= 16 ) )

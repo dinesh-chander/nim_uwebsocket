@@ -14,3 +14,6 @@ Rules:
 - Do not commit native build output under `simdjson/build/` (git-ignored); `make` handles it.
 - Do not commit test binaries (git-ignored by filename rule).
 - Every public declaration needs a doc comment (see Documentation rules in the root AGENTS.md).
+
+## Agentic harness (unit guardrails)
+Before changing this package: read `harness/nim_utils/AGENTS.md` (ownership + hash-seed/invariant hard rules) and finish only when `bash harness/nim_utils/run.sh` exits 0.

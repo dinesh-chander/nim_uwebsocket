@@ -3,7 +3,11 @@
 
 import std/os
 import std/bitops
-from ./fast_map import hashBytes
+from ./fast_map import hashBytes, syncFastMapCSeed
+
+# Install the shared per-process seed into this module's C translation unit
+# (each TU keeps its own copy of the verstable seed variable).
+syncFastMapCSeed()
 
 const
   ThisDir = currentSourcePath().splitFile.dir

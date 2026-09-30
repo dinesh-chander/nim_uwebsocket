@@ -30,6 +30,10 @@ nim_utils/nim_fastjson/benchmark/cross_runtime_fastjson*
 !nim_utils/nim_fastjson/benchmark/cross_runtime_fastjson*.nim
 nim_utils/nim_fastjson/benchmark/normalize_cross_runtime_payloads
 
+# Coverage tooling outputs
+coverage/
+*.profraw
+
 # Benchmark/profiling outputs
 benchmark/profiles/
 benchmark/reports/
