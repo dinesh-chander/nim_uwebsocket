@@ -18,6 +18,105 @@ struct nim_simdjson_doc {
 
 struct nim_simdjson_arena;
 
+// Reused per-call ondemand parser (amortizes internal tape allocation) and the
+// caller-configured depth cap applied to fresh ondemand parses.
+thread_local simdjson::ondemand::parser g_ondemand_scratch_parser{};
+thread_local size_t g_ondemand_max_depth = static_cast<size_t>(simdjson::DEFAULT_MAX_DEPTH);
+
+extern "C" uint32_t nim_simdjson_set_ondemand_max_depth(size_t limit) {
+  g_ondemand_max_depth =
+      limit == 0 ? static_cast<size_t>(simdjson::DEFAULT_MAX_DEPTH) : limit;
+  return static_cast<uint32_t>(simdjson::SUCCESS);
+}
+
+namespace {
+// Force consumption of every token so lazy syntax errors surface. Cheaper than a
+// DOM parse (no element materialization) and runs on the warm thread-local parser.
+uint32_t validate_ondemand_value(simdjson::ondemand::value v);
+
+uint32_t validate_ondemand_object(simdjson::ondemand::object object) {
+  for (auto pair_result : object) {
+    if (pair_result.error()) {
+      return static_cast<uint32_t>(pair_result.error());
+    }
+    auto pair = pair_result.value_unsafe();
+    (void)pair.key(); // consuming the key advances and validates the key token
+    uint32_t error = validate_ondemand_value(pair.value());
+    if (error != simdjson::SUCCESS) {
+      return error;
+    }
+  }
+  return static_cast<uint32_t>(simdjson::SUCCESS);
+}
+
+uint32_t validate_ondemand_array(simdjson::ondemand::array array) {
+  for (auto item_result : array) {
+    if (item_result.error()) {
+      return static_cast<uint32_t>(item_result.error());
+    }
+    uint32_t error = validate_ondemand_value(item_result.value_unsafe());
+    if (error != simdjson::SUCCESS) {
+      return error;
+    }
+  }
+  return static_cast<uint32_t>(simdjson::SUCCESS);
+}
+
+uint32_t validate_ondemand_value(simdjson::ondemand::value v) {
+  auto type_result = v.type();
+  if (type_result.error()) {
+    return static_cast<uint32_t>(type_result.error());
+  }
+  auto type = type_result.value_unsafe();
+  switch (type) {
+    case simdjson::ondemand::json_type::object: {
+      auto object_result = v.get_object();
+      if (object_result.error()) {
+        return static_cast<uint32_t>(object_result.error());
+      }
+      return validate_ondemand_object(object_result.value_unsafe());
+    }
+    case simdjson::ondemand::json_type::array: {
+      auto array_result = v.get_array();
+      if (array_result.error()) {
+        return static_cast<uint32_t>(array_result.error());
+      }
+      return validate_ondemand_array(array_result.value_unsafe());
+    }
+    default: {
+      // Scalar: `type()` above already validated the token; consume it.
+      (void)v.raw_json_token();
+      return static_cast<uint32_t>(simdjson::SUCCESS);
+    }
+  }
+}
+} // namespace
+
+extern "C" uint32_t nim_simdjson_ondemand_validate(const char *data, size_t len) {
+  if (data == nullptr) {
+    return static_cast<uint32_t>(simdjson::TAPE_ERROR);
+  }
+  simdjson::padded_string json(data, len);
+  auto &parser = g_ondemand_scratch_parser;
+  parser.set_max_depth(g_ondemand_max_depth);
+  auto doc_result = parser.iterate(json);
+  if (doc_result.error()) {
+    return static_cast<uint32_t>(doc_result.error());
+  }
+  auto doc = std::move(doc_result.value_unsafe());
+  auto object_result = doc.get_object();
+  if (!object_result.error()) {
+    return validate_ondemand_object(object_result.value_unsafe());
+  }
+  auto array_result = doc.get_array();
+  if (!array_result.error()) {
+    return validate_ondemand_array(array_result.value_unsafe());
+  }
+  // Scalar root: force token consumption so syntax errors surface.
+  (void)doc.raw_json();
+  return static_cast<uint32_t>(simdjson::SUCCESS);
+}
+
 namespace {
 constexpr size_t kDocPoolLimit = 32;
 
@@ -2113,7 +2212,8 @@ uint32_t nim_simdjson_ondemand_capture(
   reset_ondemand_value(out_value);
 
   simdjson::padded_string json(data, len);
-  simdjson::ondemand::parser parser{};
+  auto &parser = g_ondemand_scratch_parser;
+  parser.set_max_depth(g_ondemand_max_depth);
   auto doc_result = parser.iterate(json);
   if (doc_result.error()) {
     out_value->status = static_cast<uint32_t>(doc_result.error());
@@ -2239,7 +2339,8 @@ uint32_t nim_simdjson_ondemand_project_object(
   }
 
   simdjson::padded_string json(data, len);
-  simdjson::ondemand::parser parser{};
+  auto &parser = g_ondemand_scratch_parser;
+  parser.set_max_depth(g_ondemand_max_depth);
   auto doc_result = parser.iterate(json);
   if (doc_result.error()) {
     return static_cast<uint32_t>(doc_result.error());
@@ -2303,7 +2404,8 @@ uint32_t nim_simdjson_ondemand_project_array_objects(
   }
 
   simdjson::padded_string json(data, len);
-  simdjson::ondemand::parser parser{};
+  auto &parser = g_ondemand_scratch_parser;
+  parser.set_max_depth(g_ondemand_max_depth);
   auto doc_result = parser.iterate(json);
   if (doc_result.error()) {
     return static_cast<uint32_t>(doc_result.error());
@@ -2371,7 +2473,8 @@ uint32_t nim_simdjson_ondemand_array_length(
   }
 
   simdjson::padded_string json(data, len);
-  simdjson::ondemand::parser parser{};
+  auto &parser = g_ondemand_scratch_parser;
+  parser.set_max_depth(g_ondemand_max_depth);
   auto doc_result = parser.iterate(json);
   if (doc_result.error()) {
     return static_cast<uint32_t>(doc_result.error());
@@ -2405,7 +2508,8 @@ uint32_t nim_simdjson_ondemand_capture_array(
   }
 
   simdjson::padded_string json(data, len);
-  simdjson::ondemand::parser parser{};
+  auto &parser = g_ondemand_scratch_parser;
+  parser.set_max_depth(g_ondemand_max_depth);
   auto doc_result = parser.iterate(json);
   if (doc_result.error()) {
     return static_cast<uint32_t>(doc_result.error());

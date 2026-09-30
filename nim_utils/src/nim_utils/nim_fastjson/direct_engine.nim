@@ -64,6 +64,8 @@ const
   MaxJsonParseDepth = 512
 
 var jsonParseDepth {.threadvar.}: int
+# Zero means the default `MaxJsonParseDepth` (threadvars cannot be initialized).
+var jsonParseDepthLimit {.threadvar.}: int
 var jsonMaxArrayItems {.threadvar.}: int
 
 ## Sets the per-thread seq parse item limit; a non-positive limit disables it and returns the previous value.
@@ -75,11 +77,20 @@ proc setJsonArrayItemLimit*(limit: int): int =
 proc currentJsonArrayItemLimit(): int {.inline.} =
   if jsonMaxArrayItems <= 0: high(int) else: jsonMaxArrayItems
 
+## Sets the per-thread parse depth limit and returns the previous value.
+## A non-positive limit falls back to `MaxJsonParseDepth`.
+proc setJsonParseDepthLimit*(limit: int): int {.inline.} =
+  result = jsonParseDepthLimit
+  jsonParseDepthLimit = if limit > 0: limit else: MaxJsonParseDepth
+
+template effectiveParseDepthLimit(): int =
+  if jsonParseDepthLimit > 0: jsonParseDepthLimit else: MaxJsonParseDepth
+
 template incJsonDepth() =
   inc jsonParseDepth
-  if jsonParseDepth > MaxJsonParseDepth:
+  if jsonParseDepth > effectiveParseDepthLimit():
     dec jsonParseDepth
-    raise newException(JsonError, "JSON nesting depth exceeds " & $MaxJsonParseDepth)
+    raise newException(JsonError, "JSON nesting depth exceeds " & $effectiveParseDepthLimit())
 
 template decJsonDepth() =
   dec jsonParseDepth

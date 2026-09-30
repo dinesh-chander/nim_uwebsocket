@@ -110,36 +110,6 @@ proc validateSerializeOptions(fj: FastJson) =
   if opts.fieldNamingPolicy != fjfnpPreserve: unsupportedOption("fieldNamingPolicy")
   if opts.enumStyle != fjesString: unsupportedOption("enumStyle")
 
-proc validateJsonDepth(json: string; maxDepth: int) =
-  if maxDepth <= 0:
-    raise newException(direct_engine.JsonError, "FastJson option 'maxDepth' must be positive")
-
-  var depth = 0
-  var inString = false
-  var escaped = false
-  for idx, ch in json:
-    if inString:
-      if escaped:
-        escaped = false
-      elif ch == '\\':
-        escaped = true
-      elif ch == '"':
-        inString = false
-    else:
-      case ch
-      of '"':
-        inString = true
-      of '{', '[':
-        inc depth
-        if depth > maxDepth:
-          raise newException(direct_engine.JsonError,
-            "JSON nesting depth exceeds " & $maxDepth & " at byte " & $idx)
-      of '}', ']':
-        if depth > 0:
-          dec depth
-      else:
-        discard
-
 proc validateDeserializeOptions(fj: FastJson; json: string) =
   let opts = fj.options
   if opts.unknownFieldPolicy != fjufpIgnore: unsupportedOption("unknownFieldPolicy")
@@ -157,7 +127,6 @@ proc validateDeserializeOptions(fj: FastJson; json: string) =
   if opts.maxArrayItems < 0:
     raise newException(direct_engine.JsonError,
       "FastJson option 'maxArrayItems' must be non-negative")
-  validateJsonDepth(json, opts.maxDepth)
 
 proc readStreamLimited(stream: Stream; maxInputBytes: int): string =
   if maxInputBytes <= 0:
@@ -240,13 +209,20 @@ proc serializeToStream*[T](fj: FastJson; stream: StringStream; value: T) =
 proc deserialize*[T](fj: FastJson; json: string; _: typedesc[T]): T =
   fj.validateDeserializeOptions(json)
   let previousArrayLimit = direct_engine.setJsonArrayItemLimit(fj.options.maxArrayItems)
+  let previousDepthLimit = direct_engine.setJsonParseDepthLimit(fj.options.maxDepth)
+  discard simdjson_ffi.simdjsonSetOndemandMaxDepth(fj.options.maxDepth.csize_t)
   defer:
     discard direct_engine.setJsonArrayItemLimit(previousArrayLimit)
+    discard direct_engine.setJsonParseDepthLimit(previousDepthLimit)
   when simd_backend.borrowedTypedDecodeSupported(T) or simd_backend.directLeafDecodeSupported(T):
     try:
       if fj.options.useSimdWhenAvailable:
-        if not simdjson_backend.isValidJson(json):
-          raise newException(direct_engine.JsonError, "invalid JSON input")
+        # Full-document validity + depth are enforced by one ondemand token walk
+        # (cheaper than the old DOM validation parse; depth is enforced natively).
+        let vcode = simdjson_ffi.simdjsonOndemandValidate(json.cstring, json.len.csize_t)
+        if vcode != simdjson_ffi.simdjsonSuccessCode():
+          raise newException(direct_engine.JsonError,
+            $simdjson_ffi.simdjsonErrorMessage(vcode))
         return simd_backend.deserializeViaSimd(json, T)
       else:
         when simd_backend.borrowedTypedDecodeSupported(T):

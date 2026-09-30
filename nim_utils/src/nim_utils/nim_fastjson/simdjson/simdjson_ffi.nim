@@ -253,6 +253,17 @@ proc simdjsonIsValid*(data: cstring, len: csize_t): bool {.
   importc: "nim_simdjson_is_valid",
   header: "simdjson_shim.h"
 .}
+## Sets the per-thread nesting depth limit for ondemand parses; zero restores the library default.
+proc simdjsonSetOndemandMaxDepth*(limit: csize_t): uint32 {.
+  importc: "nim_simdjson_set_ondemand_max_depth",
+  header: "simdjson_shim.h"
+.}
+## Validates the entire document via a full ondemand token walk (no DOM materialization).
+## Returns the success code when valid, or the first simdjson error encountered.
+proc simdjsonOndemandValidate*(data: cstring, len: csize_t): uint32 {.
+  importc: "nim_simdjson_ondemand_validate",
+  header: "simdjson_shim.h"
+.}
 ## Releases a `CDoc` previously returned by `simdjsonParse`.
 proc simdjsonDocFree*(doc: ptr CDoc) {.
   importc: "nim_simdjson_doc_free",

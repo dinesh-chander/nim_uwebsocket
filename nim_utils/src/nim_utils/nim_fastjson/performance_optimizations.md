@@ -469,3 +469,81 @@ its current state:
 - historical serialize roughly `1.86x -> 3.8x+`
 - deserialize improved materially too, especially after the parse hot-path and
   dispatch fixes
+
+## 8. Deserialize path rework
+
+Before this change, `deserialize` paid for up to three full passes over the
+input:
+
+1. a Nim byte scan for depth validation (`validateJsonDepth`),
+2. a full simdjson **DOM** parse as an up-front validity pre-check
+   (`isValidJson`),
+3. the actual simdjson **ondemand** decode.
+
+ondemand parse validation is lazy: token errors only surface when the token is
+consumed, so targeted field access never sees malformed bytes in unvisited
+regions. The full-document check was therefore mandatory — but it did not have
+to be a DOM parse.
+
+### DESER-001: ondemand token-walk validation instead of DOM pre-parse
+
+Changed:
+
+- added `nim_simdjson_ondemand_validate` to the C shim: one recursive
+  ondemand walk that forces consumption of every token (keys, values,
+  scalars), returning the first simdjson error if any
+- the wrapper now calls that walk as its sole pre-pass before
+  `deserializeViaSimd`
+- removed `validateJsonDepth` (the Nim byte scan) and the `isValidJson` DOM
+  pre-check from the wrapper; the direct engine's own depth counter is now
+  bounded per call via `setJsonParseDepthLimit` (a threadvar, restored via
+  defer)
+
+Why it helped:
+
+- ondemand walking builds the tape but does not materialize DOM elements, so
+  the validation pass is cheaper than the DOM parse it replaced
+- the Nim-side depth scan is gone entirely (depth is enforced natively by the
+  parser on both backends)
+
+Observed effect (506KB string-heavy nested payload, release build, 5-round
+interleaved A/B):
+
+- simd-path deserialize: 548.9us -> 397.3us (1.38x, -28%)
+- direct-path deserialize (76KB): 121.8us -> 98.8us (1.23x, -19%)
+- serialize: unchanged (122.6us -> 125.2us, within noise)
+
+### DESER-002: thread-local ondemand scratch parser reuse
+
+Changed:
+
+- the shim reuses one `simdjson::ondemand::parser` per thread
+  (`g_ondemand_scratch_parser`) across the capture, projection, validate, and
+  typed-decode entry points instead of constructing a fresh parser for every
+  call
+
+Why it helped:
+
+- parser construction allocates a JSON implementation and its tape buffers on
+  the heap every time; reuse keeps them warm and avoids the per-call
+  allocation traffic
+
+### DESER-003: native ondemand depth limit
+
+Changed:
+
+- patched the vendored `simdjson.h` to expose `set_max_depth` on the ondemand
+  parser (7 declaration sites + 7 definition sites; upstream only ships it on
+  the DOM parser)
+- the shim applies the wrapper's `maxDepth` option to the ondemand parser
+  before each parse; `maxDepth=0` restores the simdjson default
+
+Effect:
+
+- depth bombs are rejected natively by the ondemand backend (previously the
+  DOM pre-parse did that work)
+- `nim_fastjson` depth semantics now hold on both backends
+
+Security note: the no-pre-parse behavior is NOT "parse without validation".
+Every simd-backed `deserialize` still validates the full document (the
+ondemand walk) before decoding; only the validation mechanism changed.

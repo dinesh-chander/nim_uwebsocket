@@ -4931,6 +4931,7 @@ public:
    * @return Maximum depth, in bytes.
    */
   simdjson_inline size_t max_depth() const noexcept;
+  simdjson_inline void set_max_depth(size_t max_depth) noexcept;
 
   /**
    * Set max_capacity. This is the largest document this parser can automatically support.
@@ -7715,6 +7716,11 @@ simdjson_inline size_t parser::max_capacity() const noexcept {
 }
 simdjson_inline size_t parser::max_depth() const noexcept {
   return implementation ? implementation->max_depth() : DEFAULT_MAX_DEPTH;
+}
+
+
+simdjson_inline void parser::set_max_depth(size_t max_depth) noexcept {
+  if (implementation) { implementation->set_max_depth(max_depth); }
 }
 
 simdjson_warn_unused
@@ -28670,6 +28676,7 @@ public:
    * depth and limit it if desired.
    */
   simdjson_inline size_t max_depth() const noexcept;
+  simdjson_inline void set_max_depth(size_t max_depth) noexcept;
 
   /**
    * Ensure this parser has enough memory to process JSON documents up to `capacity` bytes in length
@@ -34036,6 +34043,10 @@ simdjson_inline size_t parser::max_depth() const noexcept {
   return _max_depth;
 }
 
+simdjson_inline void parser::set_max_depth(size_t max_depth) noexcept {
+  _max_depth = max_depth;
+}
+
 simdjson_inline void parser::set_max_capacity(size_t max_capacity) noexcept {
   if(max_capacity < dom::MINIMAL_DOCUMENT_CAPACITY) {
     _max_capacity = max_capacity;
@@ -38976,6 +38987,7 @@ public:
    * depth and limit it if desired.
    */
   simdjson_inline size_t max_depth() const noexcept;
+  simdjson_inline void set_max_depth(size_t max_depth) noexcept;
 
   /**
    * Ensure this parser has enough memory to process JSON documents up to `capacity` bytes in length
@@ -44340,6 +44352,10 @@ simdjson_inline size_t parser::max_capacity() const noexcept {
 }
 simdjson_inline size_t parser::max_depth() const noexcept {
   return _max_depth;
+}
+
+simdjson_inline void parser::set_max_depth(size_t max_depth) noexcept {
+  _max_depth = max_depth;
 }
 
 simdjson_inline void parser::set_max_capacity(size_t max_capacity) noexcept {
@@ -49774,6 +49790,7 @@ public:
    * depth and limit it if desired.
    */
   simdjson_inline size_t max_depth() const noexcept;
+  simdjson_inline void set_max_depth(size_t max_depth) noexcept;
 
   /**
    * Ensure this parser has enough memory to process JSON documents up to `capacity` bytes in length
@@ -55138,6 +55155,10 @@ simdjson_inline size_t parser::max_capacity() const noexcept {
 }
 simdjson_inline size_t parser::max_depth() const noexcept {
   return _max_depth;
+}
+
+simdjson_inline void parser::set_max_depth(size_t max_depth) noexcept {
+  _max_depth = max_depth;
 }
 
 simdjson_inline void parser::set_max_capacity(size_t max_capacity) noexcept {
@@ -60571,6 +60592,7 @@ public:
    * depth and limit it if desired.
    */
   simdjson_inline size_t max_depth() const noexcept;
+  simdjson_inline void set_max_depth(size_t max_depth) noexcept;
 
   /**
    * Ensure this parser has enough memory to process JSON documents up to `capacity` bytes in length
@@ -65935,6 +65957,10 @@ simdjson_inline size_t parser::max_capacity() const noexcept {
 }
 simdjson_inline size_t parser::max_depth() const noexcept {
   return _max_depth;
+}
+
+simdjson_inline void parser::set_max_depth(size_t max_depth) noexcept {
+  _max_depth = max_depth;
 }
 
 simdjson_inline void parser::set_max_capacity(size_t max_capacity) noexcept {
@@ -71483,6 +71509,7 @@ public:
    * depth and limit it if desired.
    */
   simdjson_inline size_t max_depth() const noexcept;
+  simdjson_inline void set_max_depth(size_t max_depth) noexcept;
 
   /**
    * Ensure this parser has enough memory to process JSON documents up to `capacity` bytes in length
@@ -76847,6 +76874,10 @@ simdjson_inline size_t parser::max_capacity() const noexcept {
 }
 simdjson_inline size_t parser::max_depth() const noexcept {
   return _max_depth;
+}
+
+simdjson_inline void parser::set_max_depth(size_t max_depth) noexcept {
+  _max_depth = max_depth;
 }
 
 simdjson_inline void parser::set_max_capacity(size_t max_capacity) noexcept {
@@ -82718,6 +82749,7 @@ public:
    * depth and limit it if desired.
    */
   simdjson_inline size_t max_depth() const noexcept;
+  simdjson_inline void set_max_depth(size_t max_depth) noexcept;
 
   /**
    * Ensure this parser has enough memory to process JSON documents up to `capacity` bytes in length
@@ -88082,6 +88114,10 @@ simdjson_inline size_t parser::max_capacity() const noexcept {
 }
 simdjson_inline size_t parser::max_depth() const noexcept {
   return _max_depth;
+}
+
+simdjson_inline void parser::set_max_depth(size_t max_depth) noexcept {
+  _max_depth = max_depth;
 }
 
 simdjson_inline void parser::set_max_capacity(size_t max_capacity) noexcept {
