@@ -548,6 +548,57 @@ Security note: the no-pre-parse behavior is NOT "parse without validation".
 Every simd-backed `deserialize` still validates the full document (the
 ondemand walk) before decoding; only the validation mechanism changed.
 
+## Option A (single-pass zero-copy capture) — investigated, NOT merged
+
+The per-level parser pool + borrowed tape views below were built and validated
+on `perf/nim-json-singlepass`; measured parity with the baseline at realistic
+sizes, so the complexity was not merged. Findings kept here for the record.
+
+Design: the simdjson shim keeps one thread-local ondemand parser per decode
+depth (level 0 = root, levels 1..3 = nested sub-slices). The root tape stays
+alive while nested decodes run, so captured strings and sub-slice views
+**borrow pointers into the owning parser's tape** instead of malloc+memcpy.
+A `flags` field on every captured value/entry records ownership
+(`NIM_SIMDJSON_DATA_OWNED`); release functions skip `free` for borrowed
+views. `level` is threaded through all 6 C entry points, the FFI, 18 decode
+overloads, and the 3 projection macros (root = 0, nested fields = level + 1).
+
+### Measured effect (A/B, 5 alternating passes, best-of-30 per size)
+
+Payload: 1000-item tweet envelope ≈ 294 KB, 4000 items ≈ 1.2 MB.
+
+| items | bytes | baseline 85747c7 | singlepass | verdict |
+|-------|-------|------------------|------------|---------|
+| 10    | 2.8 KB   | 2.75–8.75 µs | 2.75 µs | within noise, trend positive |
+| 100   | 29 KB    | 28.2–48.2 µs | 28.0–28.5 µs | ~1.7x on cold runs, parity warm |
+| 1000  | 294 KB   | 278–284 µs | 280–284 µs | **parity** |
+| 2000  | 595 KB   | 433–564 µs | 435–564 µs | **parity** (system bimodality in both) |
+| 4000  | 1.2 MB   | 872–889 µs | 873–890 µs | **parity** |
+
+Honest conclusion: eliminating the C-side string/sub-slice copies does not
+move end-to-end time at realistic sizes, because the Nim side still copies
+every string once (`copyCString`) and the C pipeline was already ~50% of the
+total (C: ~226 µs, Nim materialization: ~210 µs at 595 KB). The complexity
+(level threading, ownership flags, parser pool) is a prerequisite for
+Option B (schema-recursive single-pass C decode with no Nim-side copy),
+which is the only design that can close the remaining gap.
+
+### Correctness
+
+- all 5 fastjson suites green (core, comprehensive, conformance, standard,
+  simdjson security) plus 4 new escaped-string regression tests for nested
+  seq-of-object fields (unicode, mention-level, control/quote, surrogate
+  pair)
+- no debug instrumentation left in the tree (direct_engine.nim has zero diff)
+
+Test-authoring pitfall discovered while validating: Nim **triple-quoted
+strings treat backslashes as literal** (`"""\u0041"""` is a real backslash
+at runtime, i.e. a genuine JSON escape; `"""\\u0041"""` is a JSON-escaped
+backslash + literal `u0041`). Regular strings do the opposite (`"\\u0041"`
+is a real backslash). When writing escape tests, build or self-check the
+runtime document (e.g. `check doc[pos] == '\\'`) instead of trusting the
+literal.
+
 ## Option B investigation (schema-recursive C decode routing) — `perf/nim-json-optb`
 
 Hypothesis: routing arbitrary nested object/seq-of-object shapes to the

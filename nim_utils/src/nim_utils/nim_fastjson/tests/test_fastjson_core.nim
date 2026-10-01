@@ -1,4 +1,4 @@
-import std/[sequtils, streams, strutils, tables, unittest]
+import std/[sequtils, streams, strutils, tables, unittest, unicode]
 import jsony
 
 import ../../nim_fastjson
@@ -360,3 +360,44 @@ suite "simd native plan security limits":
     let doc = """{"a":[{"b":[{"c":1}]},{"b":[{"c":2}]},{"b":[{"c":3}]}]}"""
     expect nim_fastjson.JsonError:
       discard configured.deserialize(doc, DeepEnv)
+suite "escaped string regression (nested seq-of-object fields)":
+  type
+    Mention = object
+      screenName*: string
+      id*: int64
+    Tweet = object
+      id*: int64
+      text*: string
+      mentions*: seq[Mention]
+    Envelope = object
+      cursor*: string
+      statuses*: seq[Tweet]
+
+  # Documents built so the runtime JSON text contains real escape sequences
+  # (single backslash). Triple-quoted Nim strings treat backslashes as
+  # literal, so the literals below hold exactly one backslash per escape.
+  # A self-check asserts the runtime document content before decoding.
+  let fj = initFastJson()
+  let esc = '\\' & "u0041"
+
+  test "unicode escape in nested item string field":
+    let doc = """{"cursor":"abc","statuses":[{"id":1,"text":"hello """ & esc & """ world","mentions":[]}]}"""
+    check doc[doc.find("hello ") + 6] == '\\'
+    let e = fj.deserialize(doc, Envelope)
+    check e.cursor == "abc"
+    check e.statuses[0].text == "hello A world"
+
+  test "unicode escape in nested mention string field":
+    let doc = """{"cursor":"","statuses":[{"id":1,"text":"x","mentions":[{"screenName":"al""" & '\\' & """u0069ce","id":10}]}]}"""
+    let e = fj.deserialize(doc, Envelope)
+    check e.statuses[0].mentions[0].screenName == "alice"
+
+  test "backslash and control escapes in nested item string field":
+    let doc = """{"cursor":"","statuses":[{"id":7,"text":"tab\there \\ slash \"quoted\"","mentions":[]}]}"""
+    let e = fj.deserialize(doc, Envelope)
+    check e.statuses[0].text == "tab\there \\ slash \"quoted\""
+
+  test "surrogate pair escape in nested item string field":
+    let doc = """{"cursor":"","statuses":[{"id":9,"text":"emoji """ & '\\' & """uD83D""" & '\\' & """uDD12 end","mentions":[]}]}"""
+    let e = fj.deserialize(doc, Envelope)
+    check e.statuses[0].text == "emoji " & $Rune(0x1F512) & " end"
