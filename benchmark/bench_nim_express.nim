@@ -70,6 +70,11 @@ proc createApp(): ExpressApp =
     app.get("/plaintext") do (req: Request, res: Response):
       res.text(PlainBody)
 
+    let staticBody = readFile("bench-results/static16k.bin")
+    app.get("/static") do (req: Request, res: Response):
+      res.contentType("application/octet-stream")
+      res.send(staticBody)
+
     if cfg.profile.len > 0:
       echo "profile: ", cfg.profile
     app

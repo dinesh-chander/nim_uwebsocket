@@ -1,0 +1,13 @@
+label=base-single bin=benchmark/bench_nim_express args= date=2026-10-01T13:44:26+05:30
+  pass1 /json tps=309877.87 p99=1.57ms
+  pass2 /json tps=313934.70 p99=1.51ms
+  pass3 /json tps=318437.08 p99=1.49ms
+BEST /json tps=318437.08 p99=1.49ms
+  pass1 /plaintext tps=328984.73 p99=1.45ms
+  pass2 /plaintext tps=334581.07 p99=1.45ms
+  pass3 /plaintext tps=322318.86 p99=1.46ms
+BEST /plaintext tps=334581.07 p99=1.45ms
+  pass1 /static tps=169935.08 p99=2.85ms
+  pass2 /static tps=172238.34 p99=2.82ms
+  pass3 /static tps=165234.44 p99=2.95ms
+BEST /static tps=172238.34 p99=2.82ms

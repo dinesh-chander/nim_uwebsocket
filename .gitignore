@@ -149,3 +149,5 @@ benchmark/sample_iter*.txt
 */benchmark/sample_iter*.txt
 examples/*/flamegraph_*.svg
 examples/*/*_flamegraph_raw.txt
+benchmark/bench_pg
+benchmark/ws_echo_pg

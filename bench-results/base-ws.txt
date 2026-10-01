@@ -1,0 +1,4 @@
+label=base-ws conns=200 payload=32B
+{"url":"ws://127.0.0.1:3400/ws","connections":200,"durationSec":10,"payloadLen":32,"opened":200,"closed":200,"sendCount":2783214,"recvCount":2783214,"msgPerSec":278321.4,"errors":0}
+{"url":"ws://127.0.0.1:3400/ws","connections":200,"durationSec":10,"payloadLen":32,"opened":200,"closed":200,"sendCount":2808390,"recvCount":2808390,"msgPerSec":280839,"errors":0}
+{"url":"ws://127.0.0.1:3400/ws","connections":200,"durationSec":10,"payloadLen":32,"opened":200,"closed":200,"sendCount":2849968,"recvCount":2849968,"msgPerSec":284996.8,"errors":0}
