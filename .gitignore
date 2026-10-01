@@ -136,3 +136,16 @@ examples/websocket_broadcast
 examples/sse_stream_app
 nim_express/tests/ws_permessage_deflate_integration_server
 nim_utils/src/nim_utils/nim_fastjson/tests/test_fastjson_core
+
+# Benchmark run outputs / captures / flamegraphs
+benchmark/*_capture_*.txt
+benchmark/*_fragment_run*.txt
+benchmark/*_fragment_warmup*.txt
+benchmark/todo_apples_*.txt
+benchmark/ws_benchmark_*iter*.txt
+benchmark/flamegraph_*.svg
+benchmark/sample_iter*.txt
+*/benchmark/flamegraph_*.svg
+*/benchmark/sample_iter*.txt
+examples/*/flamegraph_*.svg
+examples/*/*_flamegraph_raw.txt

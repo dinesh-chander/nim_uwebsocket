@@ -1,8 +1,0 @@
-Running 30s test @ http://127.0.0.1:3010/todos/fragment
-  8 threads and 200 connections
-  Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   124.41ms   30.37ms 343.06ms   73.69%
-    Req/Sec   201.35     54.75   330.00     72.98%
-  48235 requests in 30.10s, 11.33GB read
-Requests/sec:   1602.56
-Transfer/sec:    385.43MB
