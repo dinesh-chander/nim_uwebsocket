@@ -145,3 +145,7 @@ macro isSimdBackendPreferred*(T: typedesc): untyped =
 ## Deserialize a JSON string into T via the simdjson backend.
 proc deserializeViaSimd*[T](json: string, _: typedesc[T]): T =
   simdjson.deserialize(json, T)
+
+## True when T routes to the simdjson full-schema single-pass native plan.
+macro nativePlanDecodeSupported*(typeNode: typedesc): untyped =
+  newLit(simdjson.nativePlanSupportedRootTypeNode(typeNode))

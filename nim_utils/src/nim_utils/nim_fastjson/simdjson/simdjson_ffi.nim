@@ -258,6 +258,11 @@ proc simdjsonSetOndemandMaxDepth*(limit: csize_t): uint32 {.
   importc: "nim_simdjson_set_ondemand_max_depth",
   header: "simdjson_shim.h"
 .}
+## Sets the per-thread maximum number of items allowed in any decoded array; zero removes the limit.
+proc simdjsonSetOndemandMaxArrayItems*(limit: csize_t): uint32 {.
+  importc: "nim_simdjson_set_ondemand_max_array_items",
+  header: "simdjson_shim.h"
+.}
 ## Validates the entire document via a full ondemand token walk (no DOM materialization).
 ## Returns the success code when valid, or the first simdjson error encountered.
 proc simdjsonOndemandValidate*(data: cstring, len: csize_t): uint32 {.

@@ -547,3 +547,51 @@ Effect:
 Security note: the no-pre-parse behavior is NOT "parse without validation".
 Every simd-backed `deserialize` still validates the full document (the
 ondemand walk) before decoding; only the validation mechanism changed.
+
+## Option B investigation (schema-recursive C decode routing) — `perf/nim-json-optb`
+
+Hypothesis: routing arbitrary nested object/seq-of-object shapes to the
+simdjson single-pass native plan (C tree extraction, ~226 µs C-side at 595 KB)
+would beat the pure-Nim direct engine.
+
+Measured A/B (best-of-30, 5 alternating passes), same payload shape:
+
+| items | bytes | direct engine (main) | native plan routing | verdict |
+|-------|-------|----------------------|---------------------|---------|
+| 10    | 2.8 KB   | 3.5 µs   | 6.0 µs    | 1.7x slower |
+| 100   | 29 KB    | 28.3 µs  | 62.8 µs   | 2.2x slower |
+| 500   | 147 KB   | 139 µs   | 401 µs    | 2.9x slower |
+| 1000  | 294 KB   | 280 µs   | 721 µs    | 2.6x slower |
+| 2000  | 595 KB   | 563 µs   | 1523 µs   | 2.7x slower |
+| 4000  | 1.2 MB   | 907 µs   | 3143 µs   | 3.5x slower |
+
+The C-side 226 µs extraction ceiling was real, but Nim-side materialization
+of the C value tree (~70 ns/node of macro dispatch per item field) dominates:
+4000 items × ~10 fields ≈ 40k nodes ≈ 2.8 s/1000 decodes. Beating the direct
+engine would require the C side to write directly into Nim object memory
+(zero materialization), which is a far larger architecture change with no
+evidence it wins on this hardware.
+
+Decision: **routing reverted** — the pure-Nim direct engine stays the champion
+for general shapes; the simd macro path stays pre-pass-validated for
+leaf/borrowed shapes; the special envelope shapes keep their dedicated paths.
+
+What this branch **keeps** (security, previously unenforced on the simd side):
+
+- `maxDepth` is enforced on every simd decode entry. Vendored simdjson's
+  ondemand `set_max_depth` is a no-op for enforcement (dev-checks only), so
+  the shim now tracks plan depth in the native-plan extraction recursion and
+  per-level depth in both special envelope paths, returning `DEPTH_ERROR`.
+  Semantics: `maxDepth` must be ≥ the type's nesting depth (root object = 1).
+- `maxArrayItems` is enforced on the native-plan + special paths via a new
+  `NIM_SIMDJSON_ERR_ARRAY_TOO_LARGE` error code
+  (`nim_simdjson_set_ondemand_max_array_items`); the wrapper sets it from
+  `fj.options.maxArrayItems` for every deserialize.
+- The native plan's parser now applies `set_max_depth` per parse
+  (`typed_decode_parser()`), matching the other ondemand entries.
+- New regression tests: native-plan depth + array-limit enforcement.
+
+Known remaining gap (pre-existing, out of scope): the simd **macro** path
+(leaf shapes) has no per-array item-count cap of its own; it relies on the
+token-walk pre-pass for syntax and on the direct engine's limit when
+`useSimdWhenAvailable=false`.

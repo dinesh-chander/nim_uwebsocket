@@ -211,19 +211,26 @@ proc deserialize*[T](fj: FastJson; json: string; _: typedesc[T]): T =
   let previousArrayLimit = direct_engine.setJsonArrayItemLimit(fj.options.maxArrayItems)
   let previousDepthLimit = direct_engine.setJsonParseDepthLimit(fj.options.maxDepth)
   discard simdjson_ffi.simdjsonSetOndemandMaxDepth(fj.options.maxDepth.csize_t)
+  discard simdjson_ffi.simdjsonSetOndemandMaxArrayItems(fj.options.maxArrayItems.csize_t)
   defer:
     discard direct_engine.setJsonArrayItemLimit(previousArrayLimit)
     discard direct_engine.setJsonParseDepthLimit(previousDepthLimit)
   when simd_backend.borrowedTypedDecodeSupported(T) or simd_backend.directLeafDecodeSupported(T):
     try:
       if fj.options.useSimdWhenAvailable:
-        # Full-document validity + depth are enforced by one ondemand token walk
-        # (cheaper than the old DOM validation parse; depth is enforced natively).
-        let vcode = simdjson_ffi.simdjsonOndemandValidate(json.cstring, json.len.csize_t)
-        if vcode != simdjson_ffi.simdjsonSuccessCode():
-          raise newException(direct_engine.JsonError,
-            $simdjson_ffi.simdjsonErrorMessage(vcode))
-        return simd_backend.deserializeViaSimd(json, T)
+        when simd_backend.nativePlanDecodeSupported(T):
+          # The native plan walks every token of the document in one pass,
+          # so no separate validation pre-pass is needed.
+          return simd_backend.deserializeViaSimd(json, T)
+        else:
+          # Projection (macro) paths skip unknown values without fully
+          # validating every token, so keep the one-pass token-walk pre-pass
+          # to guarantee full-document validity + depth enforcement.
+          let vcode = simdjson_ffi.simdjsonOndemandValidate(json.cstring, json.len.csize_t)
+          if vcode != simdjson_ffi.simdjsonSuccessCode():
+            raise newException(direct_engine.JsonError,
+              $simdjson_ffi.simdjsonErrorMessage(vcode))
+          return simd_backend.deserializeViaSimd(json, T)
       else:
         when simd_backend.borrowedTypedDecodeSupported(T):
           unsupportedOption("useSimdWhenAvailable")

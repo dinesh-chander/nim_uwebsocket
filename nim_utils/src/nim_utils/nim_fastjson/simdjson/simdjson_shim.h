@@ -343,6 +343,9 @@ void nim_simdjson_native_value_release(nim_simdjson_native_value *value);
 
 uint32_t nim_simdjson_ondemand_validate(const char *data, size_t len);
 uint32_t nim_simdjson_set_ondemand_max_depth(size_t limit);
+// Error code returned when a decoded array exceeds the configured item limit.
+#define NIM_SIMDJSON_ERR_ARRAY_TOO_LARGE 0x53494441u
+uint32_t nim_simdjson_set_ondemand_max_array_items(size_t limit);
 const char *nim_simdjson_error_message(uint32_t code);
 uint32_t nim_simdjson_success_code(void);
 uint32_t nim_simdjson_no_such_field_code(void);

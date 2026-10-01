@@ -335,3 +335,28 @@ suite "nim_fastjson core":
     ]
     check fj.serialize(rows) == jsony.toJson(rows)
     check debugSerializeStringOnlySeqDirect(rows) == jsony.toJson(rows)
+
+suite "simd native plan security limits":
+  type
+    Inner3 = object
+      c*: int
+    Inner2 = object
+      b*: seq[Inner3]
+    DeepEnv = object
+      a*: seq[Inner2]
+
+  test "maxDepth is enforced on the native plan decode path":
+    var options = defaultFastJsonOptions()
+    options.maxDepth = 2
+    let configured = initFastJson(options)
+    let doc = """{"a":[{"b":[{"c":1}]}]}"""
+    expect nim_fastjson.JsonError:
+      discard configured.deserialize(doc, DeepEnv)
+
+  test "maxArrayItems is enforced on the native plan decode path":
+    var options = defaultFastJsonOptions()
+    options.maxArrayItems = 2
+    let configured = initFastJson(options)
+    let doc = """{"a":[{"b":[{"c":1}]},{"b":[{"c":2}]},{"b":[{"c":3}]}]}"""
+    expect nim_fastjson.JsonError:
+      discard configured.deserialize(doc, DeepEnv)

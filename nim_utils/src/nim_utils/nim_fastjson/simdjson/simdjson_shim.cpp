@@ -123,6 +123,17 @@ constexpr size_t kDocPoolLimit = 32;
 thread_local std::vector<nim_simdjson_doc *> g_doc_pool{};
 thread_local simdjson::dom::parser g_validator_parser{};
 thread_local simdjson::ondemand::parser g_typed_decode_parser{};
+thread_local size_t g_ondemand_max_array_items = 0; // 0 = no limit
+
+inline simdjson::ondemand::parser &typed_decode_parser() {
+  g_typed_decode_parser.set_max_depth(g_ondemand_max_depth);
+  return g_typed_decode_parser;
+}
+
+extern "C" uint32_t nim_simdjson_set_ondemand_max_array_items(size_t limit) {
+  g_ondemand_max_array_items = limit;
+  return static_cast<uint32_t>(simdjson::SUCCESS);
+}
 struct nim_simdjson_retained_ondemand_state {
   simdjson::padded_string padded;
   nim_simdjson_arena *native_arena;
@@ -1465,7 +1476,8 @@ static uint32_t extract_nested_task(
 
 static uint32_t extract_nested_project(
   simdjson::ondemand::object project,
-  nim_simdjson_nested_project_item *out_item
+  nim_simdjson_nested_project_item *out_item,
+  size_t *max_depth_out
 ) {
   if (out_item == nullptr) {
     return static_cast<uint32_t>(simdjson::TAPE_ERROR);
@@ -1504,7 +1516,9 @@ static uint32_t extract_nested_project(
     return static_cast<uint32_t>(owners_error);
   }
   size_t owners_capacity = 0;
+  if (max_depth_out != nullptr) { *max_depth_out = 4; }
   for (auto owner_value : owners) {
+    if (max_depth_out != nullptr) { *max_depth_out = 5; }
     simdjson::ondemand::object owner;
     auto owner_error = owner_value.get_object().get(owner);
     if (owner_error != simdjson::SUCCESS) {
@@ -1721,7 +1735,8 @@ static uint32_t extract_native_node(
   const nim_simdjson_native_plan_node *plan,
   size_t plan_len,
   size_t node_index,
-  nim_simdjson_native_value *out_value
+  nim_simdjson_native_value *out_value,
+  size_t depth
 );
 
 static uint32_t extract_native_object(
@@ -1730,8 +1745,13 @@ static uint32_t extract_native_object(
   const nim_simdjson_native_plan_node *plan,
   size_t plan_len,
   size_t node_index,
-  nim_simdjson_native_value *out_value
+  nim_simdjson_native_value *out_value,
+  size_t depth
 ) {
+  if (g_ondemand_max_depth != 0 && depth > g_ondemand_max_depth) {
+    out_value->status = static_cast<uint32_t>(simdjson::DEPTH_ERROR);
+    return static_cast<uint32_t>(simdjson::DEPTH_ERROR);
+  }
   if (out_value == nullptr || plan == nullptr || node_index >= plan_len) {
     return static_cast<uint32_t>(simdjson::TAPE_ERROR);
   }
@@ -1801,7 +1821,8 @@ static uint32_t extract_native_object(
           plan,
           plan_len,
           next_child_plan_index,
-          &children[next_ordinal]
+          &children[next_ordinal],
+          depth + 1
         );
         if (error != simdjson::SUCCESS) {
           return error;
@@ -1826,7 +1847,8 @@ static uint32_t extract_native_object(
             plan,
             plan_len,
             child_plan_index,
-            &children[ordinal]
+            &children[ordinal],
+            depth + 1
           );
           if (error != simdjson::SUCCESS) {
             return error;
@@ -1862,8 +1884,13 @@ static uint32_t extract_native_seq_object(
   const nim_simdjson_native_plan_node *plan,
   size_t plan_len,
   size_t node_index,
-  nim_simdjson_native_value *out_value
+  nim_simdjson_native_value *out_value,
+  size_t depth
 ) {
+  if (g_ondemand_max_depth != 0 && depth > g_ondemand_max_depth) {
+    out_value->status = static_cast<uint32_t>(simdjson::DEPTH_ERROR);
+    return static_cast<uint32_t>(simdjson::DEPTH_ERROR);
+  }
   if (out_value == nullptr || plan == nullptr || node_index >= plan_len) {
     return static_cast<uint32_t>(simdjson::TAPE_ERROR);
   }
@@ -1884,6 +1911,13 @@ static uint32_t extract_native_seq_object(
     std::vector<nim_simdjson_native_value> temp_children{};
     temp_children.reserve(8);
     for (auto value_result : array) {
+      if (g_ondemand_max_array_items != 0 && temp_children.size() >= g_ondemand_max_array_items) {
+        out_value->status = NIM_SIMDJSON_ERR_ARRAY_TOO_LARGE;
+        for (auto &child : temp_children) {
+          release_native_value(&child, false);
+        }
+        return NIM_SIMDJSON_ERR_ARRAY_TOO_LARGE;
+      }
       if (value_result.error()) {
         out_value->status = static_cast<uint32_t>(value_result.error());
         for (auto &child : temp_children) {
@@ -1900,7 +1934,8 @@ static uint32_t extract_native_seq_object(
         plan,
         plan_len,
         node_index + 1,
-        &temp_children.back()
+        &temp_children.back(),
+        depth + 1
       );
       if (error != simdjson::SUCCESS) {
         out_value->status = error;
@@ -1938,6 +1973,14 @@ static uint32_t extract_native_seq_object(
   } else {
     size_t capacity = 0;
     for (auto value_result : array) {
+      if (g_ondemand_max_array_items != 0 && count >= g_ondemand_max_array_items) {
+        out_value->status = NIM_SIMDJSON_ERR_ARRAY_TOO_LARGE;
+        for (size_t i = 0; i < count; ++i) {
+          release_native_value(&children[i], true);
+        }
+        std::free(children);
+        return NIM_SIMDJSON_ERR_ARRAY_TOO_LARGE;
+      }
       if (value_result.error()) {
         out_value->status = static_cast<uint32_t>(value_result.error());
         for (size_t i = 0; i < count; ++i) {
@@ -1979,7 +2022,8 @@ static uint32_t extract_native_seq_object(
         plan,
         plan_len,
         node_index + 1,
-        &children[count]
+        &children[count],
+        depth + 1
       );
       if (error != simdjson::SUCCESS) {
         out_value->status = error;
@@ -2007,7 +2051,8 @@ static uint32_t extract_native_node(
   const nim_simdjson_native_plan_node *plan,
   size_t plan_len,
   size_t node_index,
-  nim_simdjson_native_value *out_value
+  nim_simdjson_native_value *out_value,
+  size_t depth
 ) {
   if (out_value == nullptr || plan == nullptr || node_index >= plan_len) {
     return static_cast<uint32_t>(simdjson::TAPE_ERROR);
@@ -2028,7 +2073,8 @@ static uint32_t extract_native_node(
         plan,
         plan_len,
         node_index,
-        out_value
+        out_value,
+        depth
       );
     }
     case NIM_SIMDJSON_NATIVE_PLAN_SEQ_OBJECT: {
@@ -2038,7 +2084,7 @@ static uint32_t extract_native_node(
         out_value->status = static_cast<uint32_t>(array_result.error());
         return static_cast<uint32_t>(array_result.error());
       }
-      return extract_native_seq_object(array_result.value_unsafe(), arena, plan, plan_len, node_index, out_value);
+      return extract_native_seq_object(array_result.value_unsafe(), arena, plan, plan_len, node_index, out_value, depth);
     }
     case NIM_SIMDJSON_NATIVE_PLAN_STRING: {
       reset_native_value(out_value);
@@ -2596,7 +2642,7 @@ uint32_t nim_simdjson_extract_medium_todo_envelope(
   }
   out_envelope->arena_state = state;
   simdjson::ondemand::document doc;
-  auto parse_error = g_typed_decode_parser.iterate(state->padded).get(doc);
+  auto parse_error = typed_decode_parser().iterate(state->padded).get(doc);
   if (parse_error != simdjson::SUCCESS) {
     release_medium_todo_envelope(out_envelope);
     out_envelope->status = static_cast<uint32_t>(parse_error);
@@ -2650,7 +2696,9 @@ uint32_t nim_simdjson_extract_medium_todo_envelope(
     return static_cast<uint32_t>(todos_error);
   }
 
+  size_t medium_max_depth = 2;
   for (auto todo_value : todo_array) {
+    medium_max_depth = 3;
     simdjson::ondemand::object todo;
     auto todo_error = todo_value.get_object().get(todo);
     if (todo_error != simdjson::SUCCESS) {
@@ -2708,6 +2756,11 @@ uint32_t nim_simdjson_extract_medium_todo_envelope(
   }
 
   out_envelope->todos = todos;
+  if (g_ondemand_max_depth != 0 && medium_max_depth > g_ondemand_max_depth) {
+    release_medium_todo_envelope(out_envelope);
+    out_envelope->status = static_cast<uint32_t>(simdjson::DEPTH_ERROR);
+    return static_cast<uint32_t>(simdjson::DEPTH_ERROR);
+  }
   out_envelope->todos_len = todo_count;
 
   out_envelope->status = static_cast<uint32_t>(simdjson::SUCCESS);
@@ -2736,7 +2789,7 @@ uint32_t nim_simdjson_extract_nested_project_envelope(
   out_envelope->arena_state = state;
 
   simdjson::ondemand::document doc;
-  auto parse_error = g_typed_decode_parser.iterate(state->padded).get(doc);
+  auto parse_error = typed_decode_parser().iterate(state->padded).get(doc);
   if (parse_error != simdjson::SUCCESS) {
     release_nested_project_envelope(out_envelope);
     out_envelope->status = static_cast<uint32_t>(parse_error);
@@ -2781,7 +2834,9 @@ uint32_t nim_simdjson_extract_nested_project_envelope(
 
   size_t projects_capacity = 0;
 
+  size_t nested_max_depth = 2;
   for (auto project_value : projects) {
+    nested_max_depth = 3;
     simdjson::ondemand::object project;
     auto project_error = project_value.get_object().get(project);
     if (project_error != simdjson::SUCCESS) {
@@ -2801,7 +2856,7 @@ uint32_t nim_simdjson_extract_nested_project_envelope(
       out_envelope->status = append_error;
       return append_error;
     }
-    auto error = extract_nested_project(project, slot);
+    auto error = extract_nested_project(project, slot, &nested_max_depth);
     if (error != simdjson::SUCCESS) {
       release_nested_project_envelope(out_envelope);
       out_envelope->status = error;
@@ -2809,6 +2864,11 @@ uint32_t nim_simdjson_extract_nested_project_envelope(
     }
   }
 
+  if (g_ondemand_max_depth != 0 && nested_max_depth > g_ondemand_max_depth) {
+    release_nested_project_envelope(out_envelope);
+    out_envelope->status = static_cast<uint32_t>(simdjson::DEPTH_ERROR);
+    return static_cast<uint32_t>(simdjson::DEPTH_ERROR);
+  }
   out_envelope->status = static_cast<uint32_t>(simdjson::SUCCESS);
   return static_cast<uint32_t>(simdjson::SUCCESS);
 }
@@ -2840,7 +2900,7 @@ uint32_t nim_simdjson_extract_native_plan(
     return static_cast<uint32_t>(simdjson::MEMALLOC);
   }
   simdjson::ondemand::document doc;
-  auto parse_error = g_typed_decode_parser.iterate(state->padded).get(doc);
+  auto parse_error = typed_decode_parser().iterate(state->padded).get(doc);
   if (parse_error != simdjson::SUCCESS) {
     delete state;
     out_root->status = static_cast<uint32_t>(parse_error);
@@ -2860,7 +2920,8 @@ uint32_t nim_simdjson_extract_native_plan(
     plan,
     plan_len,
     0,
-    out_root
+    out_root,
+    1
   );
   if (error != simdjson::SUCCESS) {
     release_native_value(out_root, false);
@@ -2878,6 +2939,12 @@ void nim_simdjson_native_value_release(nim_simdjson_native_value *value) {
 }
 
 const char *nim_simdjson_error_message(uint32_t code) {
+  if (code == NIM_SIMDJSON_ERR_ARRAY_TOO_LARGE) {
+    return "JSON array item limit exceeded";
+  }
+  if (code >= static_cast<uint32_t>(simdjson::NUM_ERROR_CODES)) {
+    return "unknown simdjson error";
+  }
   return simdjson::error_message(static_cast<simdjson::error_code>(code));
 }
 

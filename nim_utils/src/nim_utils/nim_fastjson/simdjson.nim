@@ -1070,7 +1070,10 @@ proc nativePlanFieldSupportedTypeNode(typeNode: NimNode): bool =
   else:
     false
 
-proc nativePlanSupportedRootTypeNode(typeNode: NimNode): bool =
+## True when the full-schema single-pass native plan can decode this type:
+## an object root whose fields are scalars, borrowed strings, nested
+## objects, or seq of object (recursively), with at least one seq-of-object.
+proc nativePlanSupportedRootTypeNode*(typeNode: NimNode): bool =
   let concrete = unwrapTypedescNode(typeNode)
   let recList = supportedObjectRecList(concrete)
   if recList.kind != nnkRecList:
