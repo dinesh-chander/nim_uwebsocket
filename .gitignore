@@ -120,8 +120,9 @@ optimization_plan/
 # Local agent / tooling state
 .pi/
 
-# Benchmark run outputs (bench-results/ fixtures stay tracked)
-bench-results/base-*.txt
+# Benchmark run outputs / scratch
+bench-results/
+benchmark/_solo_*.log
 
 # Local scratch / task state (not for public repo)
 todo.json
