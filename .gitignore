@@ -137,6 +137,7 @@ vendor/zippy/tests/data/tarballs/
 vendor/malebolgia/bench/data/
 
 # Locally-built binaries that were previously committed
+examples/artillery_app
 examples/websocket_pubsub_compression_app
 examples/websocket_broadcast
 examples/sse_stream_app
