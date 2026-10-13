@@ -2477,6 +2477,27 @@ macro staticEmbedViewDir*(app: ExpressApp, dir: static[string]): untyped =
     result.add quote do:
       `app`.embedView(`nameLit`, `contentLit`)
 
+## Compile-time macro that embeds the single file ``file`` as the view ``name``.
+##
+## Relative paths resolve against the project path first, then the current
+## working directory (compile-time `PWD` environment variable, POSIX).
+macro staticEmbedView*(app: ExpressApp, name: static[string], file: static[string]): untyped =
+  result = newStmtList()
+  let envCwd = getEnv("PWD")
+  let absFile = if file.isAbsolute:
+    file
+  elif (getProjectPath() / file).fileExists():
+    getProjectPath() / file
+  elif envCwd.len > 0 and (envCwd / file).fileExists():
+    envCwd / file
+  else:
+    file
+  let content = slurp(absFile)
+  let nameLit = newStrLitNode(name)
+  let contentLit = newStrLitNode(content)
+  result.add quote do:
+    `app`.embedView(`nameLit`, `contentLit`)
+
 ## Whether compiled view template caching is enabled.
 proc getViewCache*(app: ExpressApp): bool =
   let raw = app.settings.get("view_cache", "true")

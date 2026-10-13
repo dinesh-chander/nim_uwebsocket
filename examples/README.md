@@ -25,6 +25,7 @@ examples/
     security/
     websocket_pubsub/
     sse/
+  gpu_dashboard/          # main.nim + collectors.nim + dashboard.html + vendor/ + README.md (assets embedded at compile time)
 ```
 
 Top-level `*.nim` files are thin entrypoints so existing build scripts still work.
@@ -65,6 +66,7 @@ Context pooling is disabled by default.
 | Compression showcase | `compression_showcase_app.nim` | Demonstrates gzip/br/zstd negotiation and policy tuning | `/payload/slow` cooperative cancellation |
 | Proxy + CORS gateway | `proxy_cors_app.nim` | Reverse proxy middleware mounted under `/proxy/upstream/*` with CORS enabled | Upstream proxy work is delegated to middleware |
 | DevX timeout/cancellation | `cancellation_timeout_app.nim` | Timeout middleware + offload behavior | `/work` + `/offload` abort-aware response logic |
+| GPU dashboard (server push) | `gpu_dashboard_app.nim` | Sources in `gpu_dashboard/` (main + collectors + `dashboard.html`): polls `amd-smi`/`nvidia-smi` (and optional llama.cpp engine via `ENGINE_BASE`) on a timer, pushes JSON snapshots over WebSocket to an HTMX page — no frontend polling | Collector ticks run off the event loop via `runOffload`; `/healthz` reports tick state |
 
 ## Quick run commands
 
@@ -124,6 +126,16 @@ PROXY_TARGET=http://127.0.0.1:4001 ./examples/bin/proxy_cors_app
 # timeout/cancellation devx
 nim c -d:release --opt:speed --passL:"$LINK_FLAGS" -o:examples/bin/cancellation_timeout_app examples/cancellation_timeout_app.nim
 ./examples/bin/cancellation_timeout_app
+
+# gpu dashboard (server-push metrics over WebSocket)
+# --threads:on makes runOffload completions land on the event loop (recommended)
+nim c -d:release --opt:speed --mm:arc --threads:on \
+  --path:nim_utils/src --path:nim_usockets/src --path:nim_express/src \
+  --path:vendor/malebolgia/src --passL:"$LINK_FLAGS" \
+  -o:examples/bin/gpu_dashboard_app examples/gpu_dashboard_app.nim
+PORT=8083 GPU_INTERVAL_MS=1000 ./examples/bin/gpu_dashboard_app
+# ENGINE_BASE=http://127.0.0.1:8082 adds llama.cpp engine cards; unset = GPUs only
+# FAKE_SMI_DIR=<dir> replays amd.metric.out / amd.static.out / nvidia.out fixtures
 ```
 
 ## Smoke tests

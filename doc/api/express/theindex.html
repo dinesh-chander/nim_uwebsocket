@@ -1194,12 +1194,6 @@
 <li><a class="reference external"
           data-doc-search-tag="openapi: proc documentPut(registry: OpenApiRegistry; pattern: string; doc: RouteDoc)" href="nim_express/middlewares/openapi.html#documentPut%2COpenApiRegistry%2Cstring%2CRouteDoc">openapi: proc documentPut(registry: OpenApiRegistry; pattern: string; doc: RouteDoc)</a></li>
           </ul></dd>
-<dt><a name="download" href="#download"><span>download:</span></a></dt><dd><ul class="simple">
-<li><a class="reference external"
-          data-doc-search-tag="file_helpers: proc download(res: Res; req: Req; filePath: string; filename: string = &quot;&quot;): Future[
-    void]" href="nim_express/middlewares/file_helpers.html#download%2CRes%2CReq%2Cstring%2Cstring">file_helpers: proc download(res: Res; req: Req; filePath: string; filename: string = &quot;&quot;): Future[
-    void]</a></li>
-          </ul></dd>
 <dt><a name="droppedLateWritesCount" href="#droppedLateWritesCount"><span>droppedLateWritesCount:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="response: proc droppedLateWritesCount(res: Response): int" href="nim_express/response.html#droppedLateWritesCount%2CResponse">response: proc droppedLateWritesCount(res: Response): int</a></li>
@@ -1376,6 +1370,10 @@
     string]" href="nim_express/middlewares/io_helpers.html#fetchAsync%2Cstring%2Cint">io_helpers: proc fetchAsync(url: string; timeoutMs: int = DefaultOutboundTimeoutMs): Future[
     string]</a></li>
           </ul></dd>
+<dt><a name="fileStatusOrNone" href="#fileStatusOrNone"><span>fileStatusOrNone:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="file_helpers: proc fileStatusOrNone(path: string): RawFileStatus" href="nim_express/middlewares/file_helpers.html#fileStatusOrNone%2Cstring">file_helpers: proc fileStatusOrNone(path: string): RawFileStatus</a></li>
+          </ul></dd>
 <dt><a name="findRouteForMethod" href="#findRouteForMethod"><span>findRouteForMethod:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="app: proc findRouteForMethod(router: Router; methodKind: nim_usockets.HttpMethod;
@@ -1405,6 +1403,10 @@
 <dt><a name="forbidden" href="#forbidden"><span>forbidden:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="response: proc forbidden(res: Response; message: string = &quot;Forbidden&quot;)" href="nim_express/response.html#forbidden%2CResponse%2Cstring">response: proc forbidden(res: Response; message: string = &quot;Forbidden&quot;)</a></li>
+          </ul></dd>
+<dt><a name="forceKillTrackedClusterWorkers" href="#forceKillTrackedClusterWorkers"><span>forceKillTrackedClusterWorkers:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="app: proc forceKillTrackedClusterWorkers()" href="nim_express/app.html#forceKillTrackedClusterWorkers">app: proc forceKillTrackedClusterWorkers()</a></li>
           </ul></dd>
 <dt><a name="form" href="#form"><span>form:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
@@ -3068,6 +3070,10 @@
 <li><a class="reference external"
           data-doc-search-tag="types: proc rawBodySizeHint(req: Request): int" href="nim_express/types.html#rawBodySizeHint%2CRequest">types: proc rawBodySizeHint(req: Request): int</a></li>
           </ul></dd>
+<dt><a name="RawFileStatus" href="#RawFileStatus"><span>RawFileStatus:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="file_helpers: object RawFileStatus" href="nim_express/middlewares/file_helpers.html#RawFileStatus">file_helpers: object RawFileStatus</a></li>
+          </ul></dd>
 <dt><a name="RawParserOptions" href="#RawParserOptions"><span>RawParserOptions:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="body_parser: object RawParserOptions" href="nim_express/middlewares/body_parser.html#RawParserOptions">body_parser: object RawParserOptions</a></li>
@@ -3129,6 +3135,10 @@
 <dt><a name="registerActiveAsyncRequestForTest" href="#registerActiveAsyncRequestForTest"><span>registerActiveAsyncRequestForTest:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="app: proc registerActiveAsyncRequestForTest(req: Request; res: Response = nil)" href="nim_express/app.html#registerActiveAsyncRequestForTest%2CRequest%2CResponse">app: proc registerActiveAsyncRequestForTest(req: Request; res: Response = nil)</a></li>
+          </ul></dd>
+<dt><a name="registerClusterWorkerPid" href="#registerClusterWorkerPid"><span>registerClusterWorkerPid:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="app: proc registerClusterWorkerPid(pid: Pid)" href="nim_express/app.html#registerClusterWorkerPid%2CPid">app: proc registerClusterWorkerPid(pid: Pid)</a></li>
           </ul></dd>
 <dt><a name="registerPlugin" href="#registerPlugin"><span>registerPlugin:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
@@ -3591,6 +3601,14 @@
           data-doc-search-tag="file_helpers: proc sendFile(res: Res; req: Req; filePath: string; trustedRoot: string = &quot;&quot;): Future[
     void]" href="nim_express/middlewares/file_helpers.html#sendFile%2CRes%2CReq%2Cstring%2Cstring">file_helpers: proc sendFile(res: Res; req: Req; filePath: string; trustedRoot: string = &quot;&quot;): Future[
     void]</a></li>
+          </ul></dd>
+<dt><a name="sendFileDirect" href="#sendFileDirect"><span>sendFileDirect:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="file_helpers: proc sendFileDirect(res: Res; req: Req; filePath: string; trustedRoot: string = &quot;&quot;)" href="nim_express/middlewares/file_helpers.html#sendFileDirect%2CRes%2CReq%2Cstring%2Cstring">file_helpers: proc sendFileDirect(res: Res; req: Req; filePath: string; trustedRoot: string = &quot;&quot;)</a></li>
+          </ul></dd>
+<dt><a name="SendFileOutcome" href="#SendFileOutcome"><span>SendFileOutcome:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="file_helpers: object SendFileOutcome" href="nim_express/middlewares/file_helpers.html#SendFileOutcome">file_helpers: object SendFileOutcome</a></li>
           </ul></dd>
 <dt><a name="sendHtmlBody" href="#sendHtmlBody"><span>sendHtmlBody:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
@@ -4164,9 +4182,29 @@
 <li><a class="reference external"
           data-doc-search-tag="static_files: object StaticCacheOptions" href="nim_express/middlewares/static_files.html#StaticCacheOptions">static_files: object StaticCacheOptions</a></li>
           </ul></dd>
+<dt><a name="staticEmbedView" href="#staticEmbedView"><span>staticEmbedView:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="app: macro staticEmbedView(app: ExpressApp; name: static[string]; file: static[string]): untyped" href="nim_express/app.html#staticEmbedView.m%2CExpressApp%2Cstatic%5Bstring%5D%2Cstatic%5Bstring%5D">app: macro staticEmbedView(app: ExpressApp; name: static[string]; file: static[string]): untyped</a></li>
+          </ul></dd>
 <dt><a name="staticEmbedViewDir" href="#staticEmbedViewDir"><span>staticEmbedViewDir:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="app: macro staticEmbedViewDir(app: ExpressApp; dir: static[string]): untyped" href="nim_express/app.html#staticEmbedViewDir.m%2CExpressApp%2Cstatic%5Bstring%5D">app: macro staticEmbedViewDir(app: ExpressApp; dir: static[string]): untyped</a></li>
+          </ul></dd>
+<dt><a name="StaticMeta" href="#StaticMeta"><span>StaticMeta:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="file_helpers: object StaticMeta" href="nim_express/middlewares/file_helpers.html#StaticMeta">file_helpers: object StaticMeta</a></li>
+          </ul></dd>
+<dt><a name="StaticMetaCacheMaxEntries" href="#StaticMetaCacheMaxEntries"><span>StaticMetaCacheMaxEntries:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="file_helpers: const StaticMetaCacheMaxEntries" href="nim_express/middlewares/file_helpers.html#StaticMetaCacheMaxEntries">file_helpers: const StaticMetaCacheMaxEntries</a></li>
+          </ul></dd>
+<dt><a name="StaticMetaCacheTtlSeconds" href="#StaticMetaCacheTtlSeconds"><span>StaticMetaCacheTtlSeconds:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="file_helpers: const StaticMetaCacheTtlSeconds" href="nim_express/middlewares/file_helpers.html#StaticMetaCacheTtlSeconds">file_helpers: const StaticMetaCacheTtlSeconds</a></li>
+          </ul></dd>
+<dt><a name="StaticPathExpandCacheMax" href="#StaticPathExpandCacheMax"><span>StaticPathExpandCacheMax:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="file_helpers: const StaticPathExpandCacheMax" href="nim_express/middlewares/file_helpers.html#StaticPathExpandCacheMax">file_helpers: const StaticPathExpandCacheMax</a></li>
           </ul></dd>
 <dt><a name="status" href="#status"><span>status:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
@@ -4320,6 +4358,10 @@
 <li><a class="reference external"
           data-doc-search-tag="app: proc unregisterActiveAsyncRequestForTest(req: Request)" href="nim_express/app.html#unregisterActiveAsyncRequestForTest%2CRequest">app: proc unregisterActiveAsyncRequestForTest(req: Request)</a></li>
           </ul></dd>
+<dt><a name="unregisterClusterWorkerPid" href="#unregisterClusterWorkerPid"><span>unregisterClusterWorkerPid:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="app: proc unregisterClusterWorkerPid(pid: Pid)" href="nim_express/app.html#unregisterClusterWorkerPid%2CPid">app: proc unregisterClusterWorkerPid(pid: Pid)</a></li>
+          </ul></dd>
 <dt><a name="unsatisfiedContentRangeValue" href="#unsatisfiedContentRangeValue"><span>unsatisfiedContentRangeValue:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="windowing: proc unsatisfiedContentRangeValue(unit: string; total: int): string" href="nim_express/windowing.html#unsatisfiedContentRangeValue%2Cstring%2Cint">windowing: proc unsatisfiedContentRangeValue(unit: string; total: int): string</a></li>
@@ -4456,7 +4498,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-09-27 20:32:38 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:23 UTC</small>
       </div>
     </div>
   </div>
