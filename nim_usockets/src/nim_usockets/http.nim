@@ -3561,7 +3561,16 @@ proc writeQueuedResponse(
     fixedWrite = true
     let headerPtr = cast[cstring](unsafeAddr resp.header[resp.headerPos])
     headerRemainingBeforeWrite = resp.header.len - resp.headerPos
-    if not resp.isFileBody and resp.bodyPos == 0 and resp.body.len > 0 and ssl == 0:
+    if resp.isFileBody and resp.fileRemaining > 0 and ssl == 0:
+      # A file body is later sent straight to the fd via sendfile. The header
+      # must actually reach the socket first, or the body overtakes it in the
+      # kernel buffer and the client sees raw file bytes without a status line.
+      written = bufferSocketWrite(sockData, ssl, s, headerPtr, headerRemainingBeforeWrite)
+      flushSendBuffer(sockData, ssl, s)
+      if written <= 0 or sockData.sendBuffer.len > 0:
+        return false
+      written = headerRemainingBeforeWrite
+    elif not resp.isFileBody and resp.bodyPos == 0 and resp.body.len > 0 and ssl == 0:
       if sockData.sendBuffer.len == 0:
         written = int(us_socket_write2_unchecked(s,
           headerPtr, headerRemainingBeforeWrite.cint,
@@ -3718,6 +3727,9 @@ proc writeQueuedResponse(
       else:
         let e = errno
         if e == EAGAIN or e == EWOULDBLOCK:
+          # Arm a writable edge; uSockets only notifies writable after a failed
+          # us_socket_write, and a drained header write leaves none pending.
+          discard us_socket_write(ssl, s, nil, 0, 0)
           return false
         resp.hardFailure = true
         resp.closeAfterWrite = true
@@ -4230,6 +4242,13 @@ proc flushPendingResponses(sockData: ptr SocketData, s: UsSocketPtr) =
         # another writable edge that may never arrive.
         if queuedRemainingBytes(sockData.pendingSlots[headIdx]) > 0:
           continue
+      if wrote > 0 and sockData.pendingSlots[headIdx].isFileBody and
+          sockData.pendingSlots[headIdx].fileRemaining > 0:
+        # File responses write the header in one pass and the body via sendfile in the
+        # next. Without this retry the header progress ends the flush and no writable
+        # edge arrives (the header write drained the uSockets queue), so the body
+        # would stall until the next incoming request.
+        continue
       return
 
 ## Write a fully prepared header and body response, preserving pipelined socket ordering

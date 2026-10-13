@@ -117,6 +117,13 @@ __pycache__/
 # Optimization plan scratch
 optimization_plan/
 
+# Local agent / tooling state
+.pi/
+
+# Benchmark run outputs / scratch
+bench-results/
+benchmark/_solo_*.log
+
 # Local scratch / task state (not for public repo)
 todo.json
 .tmp_*
@@ -131,6 +138,7 @@ vendor/zippy/tests/data/tarballs/
 vendor/malebolgia/bench/data/
 
 # Locally-built binaries that were previously committed
+examples/artillery_app
 examples/websocket_pubsub_compression_app
 examples/websocket_broadcast
 examples/sse_stream_app
@@ -149,3 +157,8 @@ benchmark/sample_iter*.txt
 */benchmark/sample_iter*.txt
 examples/*/flamegraph_*.svg
 examples/*/*_flamegraph_raw.txt
+benchmark/bench_pg
+benchmark/ws_echo_pg
+
+# Bench static fixture (self-generates at runtime)
+benchmark/static16k.bin
