@@ -75,8 +75,19 @@ proc createApp(): ExpressApp =
     app.get("/static") do (req: Request, res: Response):
       res.sendFileDirect(req, "benchmark/static16k.bin",
           trustedRoot = "benchmark")
-    # sendfile path without per-request metadata work (prebuilt header block)
-    let staticFileInfo = getFileInfo("benchmark/static16k.bin")
+    # sendfile path without per-request metadata work (prebuilt header block).
+    # The 16 KiB fixture is generated on first start so no binary stays in VCS.
+    let staticFixtureDir = "benchmark"
+    let staticFixture = staticFixtureDir / "static16k.bin"
+    if not fileExists(staticFixture):
+      if not dirExists(staticFixtureDir): createDir(staticFixtureDir)
+      var buf: string
+      setLen(buf, 16384)
+      for i in 0 ..< 16384: buf[i] = char((i * 7 + 13) mod 251)
+      var f = staticFixture.open(fmWrite)
+      f.write(buf[0 ..< buf.len])
+      f.close()
+    let staticFileInfo = getFileInfo(staticFixture)
     let staticRawHeader = "HTTP/1.1 200 OK\r\n" &
       "Content-Type: application/octet-stream\r\n" &
       "Content-Length: " & $staticFileInfo.size & "\r\n" &

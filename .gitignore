@@ -159,3 +159,6 @@ examples/*/flamegraph_*.svg
 examples/*/*_flamegraph_raw.txt
 benchmark/bench_pg
 benchmark/ws_echo_pg
+
+# Bench static fixture (self-generates at runtime)
+benchmark/static16k.bin
