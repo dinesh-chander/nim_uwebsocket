@@ -240,7 +240,17 @@ int us_socket_writev_n(int ssl, struct us_socket_t *s, struct iovec *iov, int io
 #endif
 
 int us_socket_write(int ssl, struct us_socket_t *s, const char *data, int length, int msg_more) {
-    if (!s || length <= 0) return 0;
+    if (!s) return 0;
+    if (length <= 0) {
+        /* Local extension: a 0-byte write on a plain (non-SSL) socket arms the
+         * writable watch without sending data. Lets callers (sendfile fast
+         * path) wait for the socket to drain instead of spinning or stalling.
+         * See docs/design/usockets-fork.md. */
+        if (!ssl && !us_socket_is_closed(0, s) && !us_socket_is_shut_down(0, s)) {
+            us_poll_change(&s->p, s->context->loop, LIBUS_SOCKET_READABLE | LIBUS_SOCKET_WRITABLE);
+        }
+        return 0;
+    }
 #ifndef LIBUS_NO_SSL
     if (ssl) {
         return us_internal_ssl_socket_write((struct us_internal_ssl_socket_t *) s, data, length, msg_more);

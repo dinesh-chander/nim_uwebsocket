@@ -70,10 +70,24 @@ proc createApp(): ExpressApp =
     app.get("/plaintext") do (req: Request, res: Response):
       res.text(PlainBody)
 
-    let staticBody = readFile("bench-results/static16k.bin")
+    # canonical static-serving path (ETag/ranges/sendfile fast path).
+    # Sync handler + sendFileDirect: zero async machinery on steady state.
     app.get("/static") do (req: Request, res: Response):
-      res.contentType("application/octet-stream")
-      res.send(staticBody)
+      res.sendFileDirect(req, "bench-results/static16k.bin",
+          trustedRoot = "bench-results")
+    # sendfile path without per-request metadata work (prebuilt header block)
+    let staticFileInfo = getFileInfo("bench-results/static16k.bin")
+    let staticRawHeader = "HTTP/1.1 200 OK\r\n" &
+      "Content-Type: application/octet-stream\r\n" &
+      "Content-Length: " & $staticFileInfo.size & "\r\n" &
+      "Connection: keep-alive\r\n\r\n"
+    app.get("/staticraw") do (req: Request, res: Response):
+      if res.native.sendFilePreparedResponse(
+          staticRawHeader, "bench-results/static16k.bin", staticFileInfo.size, false):
+        res.native.markBodySent()
+        res.finished = true
+      else:
+        res.serverError("sendfile failed")
 
     if cfg.profile.len > 0:
       echo "profile: ", cfg.profile
