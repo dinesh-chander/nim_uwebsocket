@@ -100,12 +100,20 @@ proc fileStatusOrNone*(path: string): RawFileStatus =
       result = RawFileStatus()
 
 proc cachedExpandFilename(path: string): string {.inline.} =
+  # `expandFilename` raises OSError when a final component does not exist;
+  # sendFile must answer 404 instead, so fall back to a plain absolute path.
+  var expanded: string
+  try:
+    expanded = path.expandFilename()
+  except CatchableError:
+    # Also guard teardown-time races where a global table may already be
+    # destroyed (return a plain absolute path instead of touching the map).
+    return if path.isAbsolute: path else: getCurrentDir() / path
   if pathExpandCache == nil:
-    result = path.expandFilename()
-    return
+    return expanded
   if pathExpandCache.len > 0 and pathExpandCache.tryGet(path, result):
     return
-  result = path.expandFilename()
+  result = expanded
   if pathExpandCache.len >= StaticPathExpandCacheMax:
     pathExpandCache.clear()
   discard pathExpandCache.put(path, result)

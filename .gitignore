@@ -117,6 +117,12 @@ __pycache__/
 # Optimization plan scratch
 optimization_plan/
 
+# Local agent / tooling state
+.pi/
+
+# Benchmark run outputs (bench-results/ fixtures stay tracked)
+bench-results/base-*.txt
+
 # Local scratch / task state (not for public repo)
 todo.json
 .tmp_*
