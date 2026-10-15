@@ -320,15 +320,17 @@ void us_loop_run(struct us_loop_t *loop) {
 
                 LIBUS_SOCKET_DESCRIPTOR accepted_fd = cqe->res;
                 struct us_socket_context_t *context = listen_s->s.context;
-                if (context->on_pre_open != 0 && context->on_pre_open(context, accepted_fd) != accepted_fd) {
-                    bsd_close_socket(accepted_fd);
-                    continue;
-                }
 
                 struct bsd_addr_t addr;
                 int has_remote_addr = bsd_remote_addr(accepted_fd, &addr) == 0;
                 char *addr_ip = has_remote_addr ? bsd_addr_get_ip(&addr) : 0;
                 int addr_ip_length = has_remote_addr ? bsd_addr_get_ip_length(&addr) : 0;
+
+                if (context->on_pre_open != 0 && context->on_pre_open(context, accepted_fd, addr_ip, addr_ip_length) != accepted_fd) {
+                    bsd_close_socket(accepted_fd);
+                    continue;
+                }
+
                 us_adopt_accepted_socket(0, context, accepted_fd, listen_s->socket_ext_size, addr_ip, addr_ip_length);
             } else if (pointer_tag == SOCKET_CLOSE) {
                 int slot = (int) (cqe_data >> 3);
