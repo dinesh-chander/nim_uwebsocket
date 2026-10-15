@@ -47,17 +47,22 @@ fi
 
 # Per-package table from summary.md. Prefer the explicit **Total** row;
 # fall back to summing package rows for summaries generated without one.
+MEASURED_ROW=$(awk -f /dev/stdin "$OUT_DIR/summary.md" <<'AWK'
+BEGIN { FS = "|" }
+/^## Line coverage per package/ { insec=1; next }
+/^## / { insec=0 }
+insec && /Total/ {
+  gsub(/[ %]/, "", $3); gsub(/[ %]/, "", $4); gsub(/[^0-9.]/, "", $5)
+  printf "%d %d %s\n", $3+0, $4+0, $5; found=1; exit
+}
+insec && NF >= 5 && $2 !~ /^[- ]+$/ &&  $2 !~ /Package/ {
+  l=$3+0; m=$4+0; tl+=l; tm+=m
+}
+END { if (!found) printf "%d %d %.2f\n", tl, tm, (tl>0 ? (tl-tm)*100/tl : 0) }
+AWK
+)
 read -r LINES MISSED MEASURED <<EOF
-$(awk -F'|'
-  /^## Line coverage per package/ { insec=1; next }
-  /^## / { insec=0 }
-  insec && /Total/ { gsub(/[ %]/, "", $3); gsub(/[ %]/, "", $4); gsub(/[^0-9.]/, "", $5)
-    printf "%d %d %s\n", $3+0, $4+0, $5; found=1; exit }
-  insec && NF >= 5 && $2 !~ /^[- ]+$/ && $2 !~ /^Package/ {
-    l=$3+0; m=$4+0; tl+=l; tm+=m
-  }
-  END { if (!found) { printf "%d %d %.2f\n", tl, tm, (tl>0 ? (tl-tm)*100/tl : 0) } }
-' "$OUT_DIR/summary.md")
+$MEASURED_ROW
 EOF
 if [ "${LINES:-0}" -le 0 ]; then
   echo "coverage_gate: could not parse a coverage table from $OUT_DIR/summary.md" >&2
@@ -78,7 +83,7 @@ summary "|---|---:|---:|---:|"
 awk -F'|' '
   /^## Line coverage per package/ { insec=1; next }
   /^## / { insec=0 }
-  insec && NF >= 5 && $2 !~ /^[- ]+$/ && $2 !~ /^Package/ && $2 !~ /Total/ {
+  insec && NF >= 5 && $2 !~ /^[- ]+$/ &&  $2 !~ /Package/ && $2 !~ /Total/ {
     printf "| %s | %d | %d | %s |\n", $2, $3, $4, $5
   }
 ' "$OUT_DIR/summary.md" | while IFS= read -r line; do summary "$line"; done
