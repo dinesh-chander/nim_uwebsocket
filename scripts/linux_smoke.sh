@@ -175,7 +175,7 @@ if ! curl -fsS --max-time 2 "http://127.0.0.1:${CLUSTER_PORT}/api/echo?msg=linux
   echo "linux_smoke: echo response did not round-trip plain text" >&2
   exit 1
 fi
-if ! curl -fsS --max-time 2 "http://127.0.0.1:${CLUSTER_PORT}/api/quote" | grep -Eq '"echo"[[:space:]]*:[[:space:]]*"a\\\"b"'; then
+if ! curl -fsS --max-time 2 "http://127.0.0.1:${CLUSTER_PORT}/api/quote" | grep -qF '"echo":"a\"b"'; then
   echo "linux_smoke: echo response did not JSON-escape quotes" >&2
   exit 1
 fi

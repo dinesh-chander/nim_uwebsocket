@@ -10011,6 +10011,37 @@ proc runLoopPostMaintenance(server: HttpServer) {.inline.} =
       server.emitServerPanic("loopPostCallback_defect", defect.msg)
   server.clearClosedSocketTombstones()
 
+proc runWsKeepalive(server: HttpServer) {.inline.} =
+  if server == nil or server.websockets.len == 0:
+    if server != nil:
+      server.wsKeepaliveCursor = 0
+    return
+
+  if server.wsKeepaliveCursor < 0 or server.wsKeepaliveCursor >= server.websockets.len:
+    server.wsKeepaliveCursor = 0
+
+  let initialLen = server.websockets.len
+  var processed = 0
+  while processed < initialLen and server.websockets.len > 0:
+    if server.wsKeepaliveCursor >= server.websockets.len:
+      server.wsKeepaliveCursor = 0
+    let idx = server.wsKeepaliveCursor
+    let ws = server.websockets[idx]
+    inc processed
+
+    if ws != nil and ws.isOpen and ws.socket != nil:
+      let key = ws.wsKey()
+      if key.len == 0 or server.websocketSet == nil or server.websocketSet.contains(key):
+        ws.ping()
+
+    # removeTrackedWebSocket uses swap-delete. If ping/close handling removed
+    # the current socket, keep the cursor at this index so the swapped-in socket
+    # is not skipped; otherwise advance to the next entry without snapshotting.
+    if idx < server.websockets.len and server.websockets[idx] == ws:
+      inc server.wsKeepaliveCursor
+    if server.wsKeepaliveCursor >= server.websockets.len:
+      server.wsKeepaliveCursor = 0
+
 proc runMacosFallbackTimers(server: HttpServer) {.inline, used.} =
   when defined(macosx):
     if server == nil:
@@ -14028,37 +14059,6 @@ proc onDateHeaderTimerFire(timer: UsTimerPtr) {.cdecl, used.} =
     reportEscapedDefect("dateHeaderTimer", defect)
   except CatchableError as err:
     reportEscapedError("dateHeaderTimer", err)
-
-proc runWsKeepalive(server: HttpServer) {.inline.} =
-  if server == nil or server.websockets.len == 0:
-    if server != nil:
-      server.wsKeepaliveCursor = 0
-    return
-
-  if server.wsKeepaliveCursor < 0 or server.wsKeepaliveCursor >= server.websockets.len:
-    server.wsKeepaliveCursor = 0
-
-  let initialLen = server.websockets.len
-  var processed = 0
-  while processed < initialLen and server.websockets.len > 0:
-    if server.wsKeepaliveCursor >= server.websockets.len:
-      server.wsKeepaliveCursor = 0
-    let idx = server.wsKeepaliveCursor
-    let ws = server.websockets[idx]
-    inc processed
-
-    if ws != nil and ws.isOpen and ws.socket != nil:
-      let key = ws.wsKey()
-      if key.len == 0 or server.websocketSet == nil or server.websocketSet.contains(key):
-        ws.ping()
-
-    # removeTrackedWebSocket uses swap-delete. If ping/close handling removed
-    # the current socket, keep the cursor at this index so the swapped-in socket
-    # is not skipped; otherwise advance to the next entry without snapshotting.
-    if idx < server.websockets.len and server.websockets[idx] == ws:
-      inc server.wsKeepaliveCursor
-    if server.wsKeepaliveCursor >= server.websockets.len:
-      server.wsKeepaliveCursor = 0
 
 # WebSocket keepalive timer callback
 proc onWsKeepaliveFire(timer: UsTimerPtr) {.cdecl, used.} =
