@@ -1,0 +1,15 @@
+{
+  "coverage_pct": 69.35,
+  "total_lines": 850303,
+  "total_missed": 260570,
+  "tolerance_pp": 0.25,
+  "updated": "2026-10-14T00:00:00Z",
+  "packages": {
+    "nim_utils": 88.36,
+    "nim_fastjson": 89.32,
+    "nim_usockets": 65.55,
+    "nim_fasthttpclient": 75.81,
+    "nim_express": 59.74
+  },
+  "note": "Full-suite LLVM line coverage measured on a single-core dev box. The CI gate fails when total coverage drops more than tolerance_pp below coverage_pct. Re-measure with `bash scripts/coverage.sh && python3 scripts/update_coverage_baseline.py coverage/summary.md` after merged test additions raise coverage. Expect CI numbers to differ slightly from local ones; the first green CI run should re-pin this file."
+}

@@ -44,8 +44,30 @@ FAILED_TESTS="$COVERAGE_OUT/failed_tests.txt"
 
 command -v "$NIM" >/dev/null 2>&1 || { echo "error: $NIM not found on PATH" >&2; exit 1; }
 command -v clang >/dev/null 2>&1 || { echo "error: clang not found on PATH" >&2; exit 1; }
-command -v llvm-profdata >/dev/null 2>&1 || { echo "error: llvm-profdata not found on PATH" >&2; exit 1; }
+if ! command -v llvm-cov >/dev/null 2>&1; then
+  # Debian/Ubuntu ship only versioned binaries (llvm-cov-18) in the llvm-X package.
+  mkdir -p "$COVERAGE_OUT/bin-tools"
+  for cand in llvm-cov-21 llvm-cov-20 llvm-cov-19 llvm-cov-18 llvm-cov-17; do
+    if command -v "$cand" >/dev/null 2>&1; then
+      mkdir -p "$COVERAGE_OUT/bin-tools"
+      ln -sf "$(command -v "$cand")" "$COVERAGE_OUT/bin-tools/llvm-cov"
+      export PATH="$COVERAGE_OUT/bin-tools:$PATH"
+      break
+    fi
+  done
+fi
 command -v llvm-cov >/dev/null 2>&1 || { echo "error: llvm-cov not found on PATH" >&2; exit 1; }
+if ! command -v llvm-profdata >/dev/null 2>&1; then
+  for cand in llvm-profdata-21 llvm-profdata-20 llvm-profdata-19 llvm-profdata-18 llvm-profdata-17; do
+    if command -v "$cand" >/dev/null 2>&1; then
+      mkdir -p "$COVERAGE_OUT/bin-tools"
+      ln -sf "$(command -v "$cand")" "$COVERAGE_OUT/bin-tools/llvm-profdata"
+      export PATH="$COVERAGE_OUT/bin-tools:$PATH"
+      break
+    fi
+  done
+fi
+command -v llvm-profdata >/dev/null 2>&1 || { echo "error: llvm-profdata not found on PATH" >&2; exit 1; }
 
 mkdir -p "$BIN_DIR" "$CACHE_DIR" "$LOG_DIR" "$REPORT_DIR" "$HTML_DIR"
 
@@ -130,6 +152,11 @@ echo "coverage: ${#MANIFEST[@]} test binaries selected (filter='${COVERAGE_FILTE
 # Incremental: rebuilt only when a vendored source is newer than the archive.
 USOCKETS_DIR="$ROOT_DIR/nim_usockets/usockets"
 USOCKETS_COV_A=""
+# Serializes concurrent builds of the shared uSockets.a (smoke + coverage jobs
+# may run on the same runner checkout simultaneously).
+( if command -v flock >/dev/null 2>&1; then exec 9>"$ROOT_DIR/.usockets-build.lock"; flock 9; fi
+  cd "$ROOT_DIR" && make usockets
+) 
 if [ -f "$USOCKETS_DIR/src/socket.c" ]; then
   USOCKETS_COV_A="$COVERAGE_OUT/uSockets.cov.a"
   USOCKETS_COV_OBJDIR="$COVERAGE_OUT/usockets_obj"
@@ -316,8 +343,9 @@ SUMMARY="$COVERAGE_OUT/summary.md"
       n=split("nim_utils nim_fastjson nim_usockets nim_fasthttpclient nim_express", order, " ")
       for (i=1; i<=n; i++) {
         p=order[i]
-        if (p in pl) printf "| %s | %d | %d | %.2f%% |\n", p, pl[p], pm[p], (pl[p]-pm[p])*100/pl[p]
+        if (p in pl) { printf "| %s | %d | %d | %.2f%% |\n", p, pl[p], pm[p], (pl[p]-pm[p])*100/pl[p]; tl+=pl[p]; tm+=pm[p] }
       }
+      if (tl>0) printf "| **Total** | %d | %d | %.2f%% |\n", tl, tm, (tl-tm)*100/tl
     }' "$ALL_TSV"
   echo
   echo "## Top 20 least-covered files"
