@@ -27,7 +27,7 @@ def main() -> int:
             if not in_section or not line.startswith("|"):
                 continue
             cells = [c.strip() for c in line.strip().strip("|").split("|")]
-            if len(cells) < 4 or cells[0] in ("Package", "") or set(cells[0]) <= {"-"}:
+            if len(cells) < 4 or cells[0] in ("Package", "") or cells[0].strip("*") == "Total" or set(cells[0]) <= {"-"}:
                 continue
             try:
                 lines, missed = int(cells[1]), int(cells[2])
