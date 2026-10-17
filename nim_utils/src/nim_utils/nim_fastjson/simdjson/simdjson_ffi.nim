@@ -68,7 +68,13 @@ static:
     if lockResult.exitCode == 0:
       locked = true
       break
-    sleep(50)
+    # os.sleep cannot execute in the Nim VM ("cannot 'importc' variable at
+    # compile time; nanosleep"), which breaks parallel compiles where several
+    # nim processes contend for this lock. Block via a shell sleep instead.
+    when defined(windows):
+      discard gorgeEx("ping -n 1 127.0.0.1 > nul")
+    else:
+      discard gorgeEx("sleep 0.05")
   doAssert locked, "timed out waiting for simdjson build lock: " & lockDir
 
   try:

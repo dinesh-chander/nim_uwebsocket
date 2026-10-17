@@ -162,3 +162,6 @@ benchmark/ws_echo_pg
 
 # Bench static fixture (self-generates at runtime)
 benchmark/static16k.bin
+
+# uSockets build lock (make/coverage serialization)
+.usockets-build.lock

@@ -23,7 +23,7 @@ jobs:
       - name: Setup Nim
         uses: jiro4989/setup-nim-action@v2.3.0
         with:
-          nim-version: "2.2.10"
+          nim-version: "2.2.8"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install system dependencies
@@ -56,7 +56,7 @@ jobs:
       - name: Setup Nim
         uses: jiro4989/setup-nim-action@v2.3.0
         with:
-          nim-version: "2.2.10"
+          nim-version: "2.2.8"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install system dependencies (Linux)
@@ -85,7 +85,7 @@ jobs:
       - name: Setup Nim
         uses: jiro4989/setup-nim-action@v2.3.0
         with:
-          nim-version: "2.2.10"
+          nim-version: "2.2.8"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install system dependencies
@@ -107,7 +107,7 @@ jobs:
       - name: Setup Nim
         uses: jiro4989/setup-nim-action@v2.3.0
         with:
-          nim-version: "2.2.10"
+          nim-version: "2.2.8"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install system dependencies
@@ -137,7 +137,7 @@ jobs:
       - name: Setup Nim
         uses: jiro4989/setup-nim-action@v2.3.0
         with:
-          nim-version: "2.2.10"
+          nim-version: "2.2.8"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install system dependencies
@@ -216,7 +216,7 @@ jobs:
       - name: Setup Nim
         uses: jiro4989/setup-nim-action@v2.3.0
         with:
-          nim-version: "2.2.10"
+          nim-version: "2.2.8"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache Nim artifacts
