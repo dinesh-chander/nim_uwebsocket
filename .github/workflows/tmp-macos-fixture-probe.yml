@@ -30,6 +30,6 @@ jobs:
             --path:vendor/zippy/src --path:vendor/checksums \
             --passL:"nim_usockets/usockets/uSockets.a -framework CoreFoundation" \
             -o:nim_express/tests/ws_permessage_deflate_integration_server \
-            nim_express/tests/ws_permessage_deflate_integration_server.nim > probe.log 2>&1
-          echo "nim exit=$?"
-          tail -40 probe.log
+            nim_express/tests/ws_permessage_deflate_integration_server.nim > probe.log 2>&1 || true
+          echo "nim exit captured above; log tail:"
+          cat probe.log
