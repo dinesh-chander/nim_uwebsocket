@@ -1,6 +1,11 @@
 name: tmp-macos-fixture-probe
 
-on: [workflow_dispatch]
+on:
+  push:
+    branches: [ci/ci-checks]
+    paths:
+      - ".github/workflows/tmp-macos-fixture-probe.yml"
+      - "probe-trigger.txt"
 
 jobs:
   probe:
