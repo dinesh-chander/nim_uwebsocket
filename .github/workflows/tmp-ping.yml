@@ -1,0 +1,15 @@
+name: tmp-ping
+
+on:
+  push:
+    branches: [ci/ci-checks]
+    paths:
+      - ".github/workflows/tmp-ping.yml"
+      - "probe-trigger.txt"
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo "ping ok $(date -u)"
