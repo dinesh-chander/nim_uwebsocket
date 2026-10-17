@@ -79,22 +79,28 @@ proc createApp(): ExpressApp =
     # The 16 KiB fixture is generated on first start so no binary stays in VCS.
     let staticFixtureDir = "benchmark"
     let staticFixture = staticFixtureDir / "static16k.bin"
-    if not fileExists(staticFixture):
-      if not dirExists(staticFixtureDir): createDir(staticFixtureDir)
-      var buf: string
-      setLen(buf, 16384)
-      for i in 0 ..< 16384: buf[i] = char((i * 7 + 13) mod 251)
-      var f = staticFixture.open(fmWrite)
-      f.write(buf[0 ..< buf.len])
-      f.close()
-    let staticFileInfo = getFileInfo(staticFixture)
+    var staticSize = 16384
+    # Read-only or missing fixture dir (e.g. the non-root Docker runtime
+    # image) must not crash startup; /static and /staticraw then 404/500.
+    try:
+      if not fileExists(staticFixture):
+        if not dirExists(staticFixtureDir): createDir(staticFixtureDir)
+        var buf: string
+        setLen(buf, 16384)
+        for i in 0 ..< 16384: buf[i] = char((i * 7 + 13) mod 251)
+        var f = staticFixture.open(fmWrite)
+        f.write(buf[0 ..< buf.len])
+        f.close()
+      staticSize = getFileInfo(staticFixture).size.int
+    except CatchableError as e:
+      echo "static fixture unavailable: ", e.msg, " (static routes disabled)"
     let staticRawHeader = "HTTP/1.1 200 OK\r\n" &
       "Content-Type: application/octet-stream\r\n" &
-      "Content-Length: " & $staticFileInfo.size & "\r\n" &
+      "Content-Length: " & $staticSize & "\r\n" &
       "Connection: keep-alive\r\n\r\n"
     app.get("/staticraw") do (req: Request, res: Response):
       if res.native.sendFilePreparedResponse(
-          staticRawHeader, "benchmark/static16k.bin", staticFileInfo.size, false):
+          staticRawHeader, "benchmark/static16k.bin", staticSize, false):
         res.native.markBodySent()
         res.finished = true
       else:
