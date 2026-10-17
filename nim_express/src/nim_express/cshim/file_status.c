@@ -23,7 +23,13 @@ int nim_fs_stat(const char *path, nim_fs_status_out *out) {
   }
   out->mode = st.st_mode;
   out->size = (long long) st.st_size;
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__sun)
+  /* BSD/macOS keep the timespec under st_mtimespec; Linux uses st_mtim. */
+  out->mtime_sec = (long long) st.st_mtimespec.tv_sec;
+  out->mtime_nsec = (long long) st.st_mtimespec.tv_nsec;
+#else
   out->mtime_sec = (long long) st.st_mtim.tv_sec;
   out->mtime_nsec = (long long) st.st_mtim.tv_nsec;
+#endif
   return 0;
 }
