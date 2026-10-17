@@ -214,7 +214,11 @@ proc compileExpressFixture(repoRoot, serverBin: string) =
   cmd.add " " & linkFlags
   cmd.add " -o:\"" & serverBin & "\""
   cmd.add " nim_express/tests/ws_permessage_deflate_integration_server.nim"
-  let (compileOut, exitCode) = execCmdEx(cmd, options = {poUsePath}, workingDir = repoRoot)
+  let (compileOut, exitCode) = execCmdEx(
+    cmd,
+    options = {poUsePath, poStdErrToStdOut},
+    workingDir = repoRoot
+  )
   if exitCode != 0:
     echo "[fixture compile failed]\n" & compileOut
   check exitCode == 0
