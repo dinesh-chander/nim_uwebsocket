@@ -1,0 +1,18 @@
+{
+  "required_status_checks": {
+    "strict": false,
+    "contexts": [
+      "lint (nim check)",
+      "unit-tests",
+      "linux-smoke (epoll)",
+      "linux-smoke (io_uring)",
+      "harness-gate",
+      "coverage",
+      "smoke-docker (epoll)",
+      "smoke-docker (io_uring)"
+    ]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": null,
+  "restrictions": null
+}
