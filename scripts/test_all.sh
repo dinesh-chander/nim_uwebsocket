@@ -50,9 +50,9 @@ run_test_dir() {
 
 run_test_dir nim_utils "$ROOT_DIR/nim_utils/tests" "${COMMON_PATHS[@]}"
 run_test_dir nim_fastjson "$ROOT_DIR/nim_utils/src/nim_utils/nim_fastjson/tests" "${COMMON_PATHS[@]}"
-run_test_dir nim_usockets "$ROOT_DIR/nim_usockets/tests" "${COMMON_PATHS[@]}" "${EXTRA_FLAGS[@]}" -d:nimUwebsocketsTest
-run_test_dir nim_fasthttpclient "$ROOT_DIR/nim_fasthttpclient/tests" "${COMMON_PATHS[@]}" "${EXTRA_FLAGS[@]}"
+run_test_dir nim_usockets "$ROOT_DIR/nim_usockets/tests" "${COMMON_PATHS[@]}" "${EXTRA_FLAGS[@]+"${EXTRA_FLAGS[@]}"}" -d:nimUwebsocketsTest
+run_test_dir nim_fasthttpclient "$ROOT_DIR/nim_fasthttpclient/tests" "${COMMON_PATHS[@]}" "${EXTRA_FLAGS[@]+"${EXTRA_FLAGS[@]}"}"
 "$NIM" c --run --nimcache:"$NIMCACHE_ROOT/nim_fasthttpclient_gated_client" \
   -o:"$TEST_BIN_ROOT/nim_fasthttpclient_gated_client" \
-  "${COMMON_PATHS[@]}" "${EXTRA_FLAGS[@]}" -d:nimFastHttpClientTest "$ROOT_DIR/nim_fasthttpclient/tests/test_client.nim"
-run_test_dir nim_express "$ROOT_DIR/nim_express/tests" "${COMMON_PATHS[@]}" "${EXTRA_FLAGS[@]}"
+  "${COMMON_PATHS[@]}" "${EXTRA_FLAGS[@]+"${EXTRA_FLAGS[@]}"}" -d:nimFastHttpClientTest "$ROOT_DIR/nim_fasthttpclient/tests/test_client.nim"
+run_test_dir nim_express "$ROOT_DIR/nim_express/tests" "${COMMON_PATHS[@]}" "${EXTRA_FLAGS[@]+"${EXTRA_FLAGS[@]}"}"

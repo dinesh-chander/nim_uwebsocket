@@ -1,0 +1,35 @@
+{
+  "coverage_pct": 49.44,
+  "total_lines": 3732096,
+  "total_missed": 1887063,
+  "tolerance_pp": 0.25,
+  "updated": "2026-10-17T21:25:19Z",
+  "packages": {
+    "nim_utils": {
+      "lines": 761644,
+      "missed": 369878,
+      "coverage_pct": 51.44
+    },
+    "nim_fastjson": {
+      "lines": 420052,
+      "missed": 236361,
+      "coverage_pct": 43.73
+    },
+    "nim_usockets": {
+      "lines": 817839,
+      "missed": 526597,
+      "coverage_pct": 35.61
+    },
+    "nim_fasthttpclient": {
+      "lines": 218282,
+      "missed": 121248,
+      "coverage_pct": 44.45
+    },
+    "nim_express": {
+      "lines": 1514279,
+      "missed": 632979,
+      "coverage_pct": 58.2
+    }
+  },
+  "note": "Full-suite LLVM line coverage over scripts/test_all.sh discovery. Raise only after a green `bash scripts/coverage.sh` run; the CI gate (scripts/coverage_gate.sh) fails when coverage drops more than tolerance_pp below this baseline."
+}

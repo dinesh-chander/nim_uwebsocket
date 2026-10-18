@@ -160,7 +160,7 @@ if grep -Eq 'failed to start|cluster_worker_exit' "$NIMCACHE_ROOT/cluster.log"; 
   cat "$NIMCACHE_ROOT/cluster.log" >&2 || true
   exit 1
 fi
-WORKER_STARTS="$(grep -Ec 'Worker [0-9]+ .* started on port' "$NIMCACHE_ROOT/cluster.log" || true)"
+WORKER_STARTS="$(grep -Ec 'Worker [0-9]+ .* started on [0-9a-zA-Z.:-]+:[0-9]+' "$NIMCACHE_ROOT/cluster.log" || true)"
 if [ "$WORKER_STARTS" -lt 2 ]; then
   echo "linux_smoke: expected at least 2 worker start lines, got $WORKER_STARTS" >&2
   cat "$NIMCACHE_ROOT/cluster.log" >&2 || true
@@ -175,7 +175,7 @@ if ! curl -fsS --max-time 2 "http://127.0.0.1:${CLUSTER_PORT}/api/echo?msg=linux
   echo "linux_smoke: echo response did not round-trip plain text" >&2
   exit 1
 fi
-if ! curl -fsS --max-time 2 "http://127.0.0.1:${CLUSTER_PORT}/api/quote" | grep -Eq '"echo"[[:space:]]*:[[:space:]]*"a\\\"b"'; then
+if ! curl -fsS --max-time 2 "http://127.0.0.1:${CLUSTER_PORT}/api/quote" | grep -qF '"echo":"a\"b"'; then
   echo "linux_smoke: echo response did not JSON-escape quotes" >&2
   exit 1
 fi

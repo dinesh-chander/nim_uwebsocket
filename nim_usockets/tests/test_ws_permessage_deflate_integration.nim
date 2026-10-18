@@ -201,23 +201,26 @@ proc compileExpressFixture(repoRoot, serverBin: string) =
   let nimExe = findExe("nim")
   if nimExe.len == 0:
     raise newException(OSError, "nim executable not found in PATH")
-  let compile = startProcess(
-    nimExe,
-    workingDir = repoRoot,
-    args = @[
-      "c",
-      "-d:release",
-      "--path:nim_utils/src",
-      "--path:nim_usockets/src",
-      "--path:vendor/zippy/src",
-      "--path:vendor/checksums",
-      "--passL:nim_usockets/usockets/uSockets.a -lpthread -ldl",
-      "-o:" & serverBin,
-      "nim_express/tests/ws_permessage_deflate_integration_server.nim"
-    ]
+  # macOS GCD builds of uSockets need CoreFoundation at link time; Linux needs
+  # pthread/dl. Wrong flags here fail the fixture compile with a bare exit 1.
+  let linkFlags =
+    when defined(macosx):
+      "--passL:\"nim_usockets/usockets/uSockets.a -framework CoreFoundation\""
+    else:
+      "--passL:\"nim_usockets/usockets/uSockets.a -lpthread -ldl\""
+  var cmd = "\"" & nimExe & "\" c -d:release"
+  cmd.add " --path:nim_utils/src --path:nim_usockets/src"
+  cmd.add " --path:vendor/zippy/src --path:vendor/checksums"
+  cmd.add " " & linkFlags
+  cmd.add " -o:\"" & serverBin & "\""
+  cmd.add " nim_express/tests/ws_permessage_deflate_integration_server.nim"
+  let (compileOut, exitCode) = execCmdEx(
+    cmd,
+    options = {poUsePath, poStdErrToStdOut},
+    workingDir = repoRoot
   )
-  let exitCode = waitForExit(compile)
-  close(compile)
+  if exitCode != 0:
+    echo "[fixture compile failed]\n" & compileOut
   check exitCode == 0
 
 suite "WebSocket permessage-deflate integration":

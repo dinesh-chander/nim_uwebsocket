@@ -473,7 +473,7 @@ struct us_socket_t *us_adopt_accepted_socket(int ssl, struct us_socket_context_t
     return s;
 }
 
-void us_socket_context_on_pre_open(int ssl, struct us_socket_context_t *context, LIBUS_SOCKET_DESCRIPTOR (*on_pre_open)(struct us_socket_context_t *context, LIBUS_SOCKET_DESCRIPTOR fd)) {
+void us_socket_context_on_pre_open(int ssl, struct us_socket_context_t *context, LIBUS_SOCKET_DESCRIPTOR (*on_pre_open)(struct us_socket_context_t *context, LIBUS_SOCKET_DESCRIPTOR fd, char *ip, int ip_length)) {
     (void) ssl;
     if (context) {
         context->on_pre_open = on_pre_open;
