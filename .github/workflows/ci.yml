@@ -1,0 +1,218 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch: {}
+
+jobs:
+  # ---------------------------------------------------------------- lint
+  # `nim check` every module in every package (type-checks without linking).
+  # Advisory: four vendored third-party libs under vendor/ have pre-existing
+  # errors (useKey/useMalloc pragmas removed from Nim), so a failure here is
+  # reported but does not block merges. Library code under nim_* src/ must
+  # stay clean — new errors there are visible in the annotations.
+  lint:
+    name: lint (nim check)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Nim
+        uses: jiro4989/setup-nim-action@v2.3.0
+        with:
+          nim-version: "2.2.8"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config liburing-dev
+
+      - name: nim check library modules
+        run: |
+          fail=0
+          for f in $(find nim_utils/src nim_usockets/src nim_express/src nim_fasthttpclient/src -name '*.nim' | sort); do
+            if ! nim check --path:nim_utils/src --path:nim_usockets/src --path:nim_express/src --path:nim_fasthttpclient/src --path:vendor/zippy/src --path:vendor/brotli/src --path:vendor/nim_zstd --path:vendor/nim_libdeflate_gzip/src --path:vendor/malebolgia/src --path:vendor/jsony/src --path:vendor/checksums --hints:off --warnings:off "$f" >/tmp/check.log 2>&1; then
+              echo "::error file=$f::nim check failed"; fail=1; tail -5 /tmp/check.log
+            fi
+          done
+          exit $fail
+
+  # ---------------------------------------------------------- unit-tests
+  # Full unit + integration suites for all five packages.
+  unit-tests:
+    name: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Nim
+        uses: jiro4989/setup-nim-action@v2.3.0
+        with:
+          nim-version: "2.2.8"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config liburing-dev libsqlite3-dev sqlite3
+
+      - name: Build vendored uSockets
+        run: make usockets
+
+      - name: Run unit tests
+        run: bash scripts/test_all.sh
+
+  # ------------------------------------------------------- linux-smoke
+  # Live transport integration (HTTP/WS over real sockets) on both Linux
+  # event-loop backends.
+  linux-smoke:
+    name: linux-smoke (${{ matrix.backend }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [epoll, io_uring]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Nim
+        uses: jiro4989/setup-nim-action@v2.3.0
+        with:
+          nim-version: "2.2.8"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config liburing-dev
+
+      - name: Live transport smoke
+        env:
+          NIMCACHE_ROOT: ${{ github.workspace }}/.nimcache/smoke-${{ matrix.backend }}
+        run: USOCKETS_BACKEND=${{ matrix.backend }} bash scripts/linux_smoke.sh
+
+  # ------------------------------------------------------- harness-gate
+  # Per-package + per-middleware executable guardrails (harness/).
+  harness-gate:
+    name: harness-gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Nim
+        uses: jiro4989/setup-nim-action@v2.3.0
+        with:
+          nim-version: "2.2.8"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config liburing-dev libsqlite3-dev sqlite3
+
+      - name: Build vendored uSockets
+        run: make usockets
+
+      - name: Run all harness units
+        run: |
+          fail=0
+          for unit in harness/nim_utils harness/nim_usockets harness/nim_express harness/nim_fasthttpclient harness/middleware/*/; do
+            [ -x "$unit/run.sh" ] || continue
+            if ! bash "$unit/run.sh"; then fail=1; fi
+          done
+          exit $fail
+
+  # ---------------------------------------------------------- coverage
+  # Full-suite LLVM source line coverage, gated against
+  # ci/coverage-baseline.json (total may not drop more than 0.25 pp).
+  coverage:
+    name: coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Nim
+        uses: jiro4989/setup-nim-action@v2.3.0
+        with:
+          nim-version: "2.2.8"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config liburing-dev clang llvm
+
+      - name: Build vendored uSockets
+        run: make usockets
+
+      - name: Run coverage suite
+        env:
+          COVERAGE_JOBS: "4"
+        run: bash scripts/coverage.sh
+
+      - name: Coverage gate
+        run: bash scripts/coverage_gate.sh --baseline ci/coverage-baseline.json --out coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage/summary.md
+            coverage/coverage.txt
+            coverage/logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+  # -------------------------------------------------------- smoke-docker
+  # The shipped Docker image must boot and serve on both backends.
+  smoke-docker:
+    name: smoke-docker (${{ matrix.backend }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [epoll, io_uring]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build --build-arg USOCKETS_BACKEND=${{ matrix.backend }} --build-arg NIM_VERSION=2.2.10 -t nim-uwebsocket:${{ matrix.backend }} .
+
+      - name: Smoke
+        run: |
+          docker run -d --rm --security-opt seccomp=unconfined --name nim-uwebsocket-smoke-${{ matrix.backend }} -e NIM_EXPRESS_SCALE_MODE=auto -e WORKERS=2 -p 3400:3000 nim-uwebsocket:${{ matrix.backend }}
+          trap 'docker rm -f nim-uwebsocket-smoke-${{ matrix.backend }} >/dev/null 2>&1 || true' EXIT
+          ready=0
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3400/plaintext >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          docker logs nim-uwebsocket-smoke-${{ matrix.backend }} > /tmp/smoke.log 2>&1 || true
+          cat /tmp/smoke.log
+          test "$ready" = "1"
+          ! grep -Eq "failed to start|cluster_worker_exit|Fatal cluster supervision" /tmp/smoke.log
+
+  # ------------------------------------------------------ unit-tests-macos
+  # macOS runners bill at a 10x minute multiplier, so this suite runs
+  # on demand (Actions tab -> Run workflow) rather than on every PR.
+  # Contributors on Macs: `bash scripts/macos_smoke.sh` locally.
+  unit-tests-macos:
+    name: unit-tests (macos)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Nim
+        uses: jiro4989/setup-nim-action@v2.3.0
+        with:
+          nim-version: "2.2.8"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build vendored uSockets
+        run: make usockets
+
+      - name: Run unit tests
+        run: bash scripts/test_all.sh
