@@ -51,7 +51,7 @@ PORT=9000 GPU_INTERVAL_MS=500 ./examples/bin/gpu_dashboard_app
 |-----|---------|---------|
 | `PORT` | `8083` | listen port |
 | `GPU_INTERVAL_MS` | `1000` | backend collection/push interval (min 250) |
-| `ENGINE_BASE` | *(unset)* | llama.cpp server base URL; when set, `/metrics` + `/props` are polled backend-side and normalized into the snapshot (Prometheus text or JSON engines) |
+| `ENGINE_BASE` | *(unset)* | llama.cpp server base URL; when set, `/metrics` + `/props` + `/slots` are polled backend-side and normalized into the snapshot (Prometheus text or JSON engines) |
 | `FAKE_SMI_DIR` | *(unset)* | test hook: read `amd.metric.out` / `amd.static.out` / `nvidia.out` fixtures instead of running vendor CLIs |
 
 ## Endpoints (ops/debug only — the UI uses `/` and `/ws`)
