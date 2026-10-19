@@ -137,11 +137,14 @@ proc collectTick() {.async.} =
   if engineWanted: fEng = runOffload(httpGetBlocking(gEngineBase & "/metrics"))
   var fProps: Future[string] = nil
   if propsWanted: fProps = runOffload(httpGetBlocking(gEngineBase & "/props"))
+  var fSlots: Future[string] = nil
+  if engineWanted: fSlots = runOffload(httpGetBlocking(gEngineBase & "/slots"))
 
   var futs = @[fAmd, fNv]
   if fStatic != nil: futs.add fStatic
   if fEng != nil: futs.add fEng
   if fProps != nil: futs.add fProps
+  if fSlots != nil: futs.add fSlots
   try:
     discard await all(futs)
   except CatchableError:
@@ -171,6 +174,17 @@ proc collectTick() {.async.} =
     let (ok, metricsRaw) = settle(fEng, "engine /metrics")
     if ok: engObj = buildEngineObj(metricsRaw, propsBody)
 
+  # Engine slot inventory (mirrors the Node sidecar's /summary slots field).
+  # Optional: engines without /slots answer 404, so failures stay silent and
+  # the dashboard falls back to the max-context placeholder like the Node page.
+  var slotsVal: JsonNode = newJNull()
+  if fSlots != nil:
+    try:
+      let parsed = parseJson(fSlots.read)
+      if parsed.kind == JArray: slotsVal = parsed
+    except CatchableError:
+      discard
+
   let (amdRows, amdErr) = collectAmdGpus(amdRaw, staticRaw)
   if amdErr[0]: errors.add %amdErr[1]
   let (nvRows, nvErr) = collectNvGpus(nvRaw)
@@ -197,6 +211,7 @@ proc collectTick() {.async.} =
     snapshot["engine"] =
       if engObj != nil: engObj
       else: %*{"kind": "error"}
+    snapshot["slots"] = slotsVal
   let payload = $snapshot
   gLastSnapshot = payload
   pushToConns(payload)

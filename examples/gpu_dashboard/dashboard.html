@@ -134,7 +134,7 @@ function render(d){
  const eng=E.engine||{},live=E.live||{},totals=E.totals||{},hwData=E.hardware||{};
  const G=(d.gpus&&d.gpus.gpus)||[];
  const busy=live.state&&live.state!=='idle';
- const maxCtx=eng.max_context??hwData.max_context??null;
+ const maxCtx=eng.max_context??(Array.isArray(d.slots)&&d.slots.length?d.slots[0].n_ctx:null)??hwData.max_context??null;
  lastPush=Date.now();
 
  // engine state badge
@@ -180,7 +180,7 @@ function render(d){
  el('s_vram').textContent=memT!=null?`free ${gib((memT-memU)/1048576)} GiB`:'';
 
  // ---- throughput — hold last non-zero rate across idle/prefill stretches ----
- const rawTgs=isLlam?live.tok_s:(busy&&live.tok_s!=null?live.tok_s:hwData.tok_s);
+ const rawTgs=isLlam?live.tok_s:(live.state==='busy'&&live.tok_s!=null?live.tok_s:hwData.tok_s);
  const rawPps=isLlam?live.prefill_tok_s:(hwData.prefill_tok_s_mean||live.prefill_tok_s_mean||0);
  const tgsStale=!(rawTgs>0)&&lastTgs!=null;
  const ppsStale=!(rawPps>0)&&lastPps!=null;
@@ -191,9 +191,9 @@ function render(d){
  el('c_tgs').innerHTML=(tgsStale?'<span class="dim">':'')+fmt(tgs,1)+'<span class="unit"> tok/s</span>'+(tgsStale?'</span>':'');
  el('s_tgs').textContent=(tgsStale?'last · ':'')+(isLlam?`totals: ${fmt(totals.decode_tokens)} decode tok`
    :`mean ${fmt(hwData.tok_s_mean,1)} tok/s`);
- el('c_pps').innerHTML=(ppsStale?'<span class="dim">':'')+fmt(pps,0)+'<span class="unit"> tok/s</span>'+(ppsStale?'</span>':'');
+ el('c_pps').innerHTML=(ppsStale?'<span class="dim">':'')+fmt(pps,1)+'<span class="unit"> tok/s</span>'+(ppsStale?'</span>':'');
  el('s_pps').textContent=(ppsStale?'last · ':'')+(isLlam?`totals: ${fmt(totals.prompt_tokens)} prompt tok`
-   :(busy&&live.phase?`phase: ${live.phase}`:'idle mean'));
+   :(live.state==='busy'&&live.phase?`phase: ${live.phase}`:'idle mean'));
 
  // ---- KV / context card ----
  if(isLlam&&E.kv&&(E.kv.capacity!=null||E.kv.used>0)){
@@ -201,17 +201,16 @@ function render(d){
   el('c_kv').innerHTML=`${fmt(used)}<span class="unit"> used · ${fmt(avail)} avail / ${fmt(cap)}</span>`;
   setBar('kv_bar',pct,heat(pct,75,90));
   el('s_kv').textContent=pct.toFixed(1)+'% of KV cache occupied'+(E.kv.unchecked?` (+${fmt(E.kv.unchecked)} unchecked)`:'');
- }else if(busy&&maxCtx&&live.prompt_tokens!=null){
-  const used=(live.prompt_tokens||0)+(live.generated||0),avail=Math.max(0,maxCtx-used),pct=maxCtx?100*used/maxCtx:0;
-  el('c_kv').innerHTML=`${fmt(used)}<span class="unit"> used · ${fmt(avail)} avail / ${fmt(maxCtx)}</span>`;
+ }else if(d.slots&&Array.isArray(d.slots)&&d.slots.length){
+  const nctx=d.slots[0].n_ctx||eng.max_context||0;let used=0;
+  for(const s of d.slots)used+=(s.n_prompt_tokens||0)+(s.is_processing&&live.generated?live.generated:0);
+  const avail=Math.max(0,nctx-used),pct=nctx?100*used/nctx:0;
+  el('c_kv').innerHTML=`${fmt(used)}<span class="unit"> used · ${fmt(avail)} avail / ${fmt(nctx)}</span>`;
   setBar('kv_bar',pct,heat(pct,75,90));
   el('s_kv').textContent=pct.toFixed(1)+'% of context window occupied';
  }else if(maxCtx){
-  const idleUsed=(live.prompt_tokens||0)+(totals.output_tokens!=null?0:(live.generated||0));
-  const used=(busy?0:idleUsed),pct=maxCtx?100*used/maxCtx:0;
-  el('c_kv').innerHTML=`${fmt(used)}<span class="unit"> used · ${fmt(Math.max(0,maxCtx-used))} avail / ${fmt(maxCtx)}</span>`;
-  setBar('kv_bar',pct,heat(pct,75,90));
-  el('s_kv').textContent=busy?'':'idle · last window free';
+  el('c_kv').innerHTML=`–<span class="unit"> / ${fmt(maxCtx)}</span>`;setBar('kv_bar',0);
+  el('s_kv').textContent='slots endpoint unavailable';
  }else{el('c_kv').textContent='—';setBar('kv_bar',0);el('s_kv').textContent=hasEng?'no context data':'engine disabled — set ENGINE_BASE';}
 
  // ---- sparkline: engine's own history (json engines) else client-accumulated ----
