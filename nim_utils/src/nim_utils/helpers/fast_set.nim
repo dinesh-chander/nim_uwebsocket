@@ -343,7 +343,7 @@ proc moveEntry(dst: var FastSetStringNimEntry, src: var FastSetStringNimEntry) {
   src.keyPtr = nil
   src.keyLen = 0'u16
 
-proc findFastSetStringFoundIdx(storage: FastSetStringNimStorage, key: string, hash: uint64): int =
+proc findFastSetStringFoundIdx(storage: FastSetStringNimStorage, key: string, hash: uint64): int {.inline.} =
   if storage == nil or storage.capacity == 0:
     return -1
   let mask = storage.capacity - 1
@@ -370,7 +370,7 @@ proc findFastSetStringFoundIdx(storage: FastSetStringNimStorage, key: string, ha
     stride += FastSetSwGroupSize
     offset = (offset + stride) and mask
 
-proc findFastSetRawFoundIdx(storage: FastSetStringNimStorage, kPtr: pointer, kLen: int, hash: uint64): int =
+proc findFastSetRawFoundIdx(storage: FastSetStringNimStorage, kPtr: pointer, kLen: int, hash: uint64): int {.inline.} =
   if storage == nil or storage.capacity == 0:
     return -1
   if kLen > FastSetMaxInlineStringLen:
@@ -395,64 +395,63 @@ proc findFastSetRawFoundIdx(storage: FastSetStringNimStorage, kPtr: pointer, kLe
     stride += FastSetSwGroupSize
     offset = (offset + stride) and mask
 
-proc swFindInsertSlot(storage: FastSetStringNimStorage, hash: uint64): int =
-  let mask = storage.capacity - 1
-  var offset = swH1(hash, mask)
-  var stride = 0
-  while true:
-    let ctrlBase = swCtrlPtr(storage, offset)
-    let freeMask = swarMatchEmptyOrDel16(ctrlBase)
-    if freeMask != 0:
-      let slotOff = int(swarFirstSlot(freeMask))
-      return (offset + slotOff) and mask
-    stride += FastSetSwGroupSize
-    offset = (offset + stride) and mask
-
 proc rehashFastSetStringNim(storage: FastSetStringNimStorage, newCap: int)
 proc ensureFastSetStringCapacity(storage: FastSetStringNimStorage, targetCount: int)
 proc clearFastSetString(storage: FastSetStringNimStorage)
+
+proc findOrInsertFastSetRaw(storage: FastSetStringNimStorage, keyPtr: pointer, keyLen: int, hash: uint64, foundExisting: var bool): int =
+  if storage == nil:
+    foundExisting = false
+    return -1
+
+  while true:
+    if storage.capacity == 0:
+      ensureFastSetStringCapacity(storage, storage.count + 1)
+
+    # Fused scan: a single group walk records the first empty-or-deleted slot
+    # while verifying h2 matches, replacing the separate find + insert-slot
+    # probes. Keys are impossible past the first empty slot, so stopping there
+    # yields exactly the slot a standalone insert scan would pick.
+    let mask = storage.capacity - 1
+    let h2 = swH2(hash)
+    var offset = swH1(hash, mask)
+    var stride = 0
+    var insertIdx = -1
+    let scanMatches = keyLen <= FastSetMaxInlineStringLen
+    while true:
+      let ctrlBase = swCtrlPtr(storage, offset)
+      if scanMatches:
+        var matchMask = swarMatch16(ctrlBase, h2)
+        while matchMask != 0:
+          let slotOff = int(swarFirstSlot(matchMask))
+          let idx = (offset + slotOff) and mask
+          let entry = swEntryAt(storage, idx)
+          if entry.keyLen == uint16(keyLen) and
+              (keyLen == 0 or equalMem(entry.keyPtr, keyPtr, keyLen)):
+            foundExisting = true
+            return idx
+          matchMask = swarClearLowest(matchMask)
+      let freeMask = swarMatchEmptyOrDel16(ctrlBase)
+      if freeMask != 0 and insertIdx < 0:
+        insertIdx = (offset + int(swarFirstSlot(freeMask))) and mask
+      if swarMatchEmpty16(ctrlBase) != 0:
+        break
+      stride += FastSetSwGroupSize
+      offset = (offset + stride) and mask
+
+    if storage.count + 1 > storage.growAt or storage.used > storage.rebuildAt:
+      ensureFastSetStringCapacity(storage, storage.count + 1)
+      continue
+
+    foundExisting = false
+    return insertIdx
 
 proc findOrInsertFastSetString(storage: FastSetStringNimStorage, key: string, hash: uint64, foundExisting: var bool): int {.inline.} =
   if storage == nil:
     foundExisting = false
     return -1
-
-  while true:
-    if storage.capacity == 0:
-      ensureFastSetStringCapacity(storage, storage.count + 1)
-
-    let idx = findFastSetStringFoundIdx(storage, key, hash)
-    if idx >= 0:
-      foundExisting = true
-      return idx
-
-    if storage.count + 1 > storage.growAt or storage.used > storage.rebuildAt:
-      ensureFastSetStringCapacity(storage, storage.count + 1)
-      continue
-
-    foundExisting = false
-    return swFindInsertSlot(storage, hash)
-
-proc findOrInsertFastSetRaw(storage: FastSetStringNimStorage, keyPtr: pointer, keyLen: int, hash: uint64, foundExisting: var bool): int {.inline.} =
-  if storage == nil:
-    foundExisting = false
-    return -1
-
-  while true:
-    if storage.capacity == 0:
-      ensureFastSetStringCapacity(storage, storage.count + 1)
-
-    let idx = findFastSetRawFoundIdx(storage, keyPtr, keyLen, hash)
-    if idx >= 0:
-      foundExisting = true
-      return idx
-
-    if storage.count + 1 > storage.growAt or storage.used > storage.rebuildAt:
-      ensureFastSetStringCapacity(storage, storage.count + 1)
-      continue
-
-    foundExisting = false
-    return swFindInsertSlot(storage, hash)
+  let kPtr = if key.len == 0: nil else: cast[pointer](unsafeAddr key[0])
+  findOrInsertFastSetRaw(storage, kPtr, key.len, hash, foundExisting)
 
 proc ensureFastSetStringCapacity(storage: FastSetStringNimStorage, targetCount: int) =
   if storage.capacity == 0 or targetCount > storage.growAt:

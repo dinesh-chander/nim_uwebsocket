@@ -279,3 +279,72 @@ get-miss gap is therefore NOT alignment — verstable probes per-bucket with
 quadratic triangular displacement and per-bucket chains, a different scheme
 that is out of scope here. Rolled back from
 `/tmp/nimport/fm_backup_pre_unaligned.nim`; gate re-verified 12/12.
+
+## fast_set optimization pass (2026-10-21)
+
+Two profiled changes, same test-and-adopt loop as fast_map, measured with
+`nim_utils/benchmark/bench_fastset.nim` (new): alternating guarded runs, min-of-2
+per binary after an early uncontended pair proved ±35% environment drift.
+
+1. **Fused single-probe insert** — `findOrInsertFastSetRaw` previously ran the
+   find group-scan and then a second full group-scan (`swFindInsertSlot`) for every
+   new key. One scan now records the first empty-or-deleted slot while verifying
+   h2 matches; stops at the first empty exactly like the standalone find, so the
+   selected slot is identical (wrapped slop/mirror semantics unchanged). Insert
+   −6..13%, containsOrIncl-new −3..9%, all other ops flat.
+2. **Inlined find probes** — `{.inline.}` on `findFastSetStringFoundIdx` /
+   `findFastSetRawFoundIdx`: contains-hit −4..9%, contains-miss −3..15%,
+   excl-miss −7..13%; no regressions (median 0.97).
+
+Rejected: nothing attempted-and-rejected on this pass beyond measurement noise
+correction above. `swFindInsertSlot` removed as dead code after fusion.
+
+| op | n | C (ns) | Nim before (ns) | Nim final (ns) | final/before | final/C |
+|---|---|---|---|---|---|---|
+| insert | 10 | 14.5 | 14.5 | 13.6 | 0.94 | 0.94 |
+| contains-hit | 10 | 4.2 | 7.1 | 6.7 | 0.94 | 1.60 |
+| contains-miss | 10 | 2.5 | 5.7 | 5.4 | 0.95 | 2.16 |
+| incl-dup | 10 | 4.1 | 7.3 | 7.2 | 0.99 | 1.76 |
+| coi-new | 10 | 20.3 | 21.2 | 20.7 | 0.98 | 1.02 |
+| excl-hit | 10 | 7.1 | 12.8 | 12.5 | 0.98 | 1.76 |
+| excl-miss | 10 | 3.5 | 7.0 | 6.8 | 0.97 | 1.94 |
+| churn/op | 10 | 8.9 | 13.6 | 13.3 | 0.98 | 1.49 |
+| insert | 100 | 17.6 | 10.8 | 9.3 | 0.86 | 0.53 |
+| contains-hit | 100 | 4.4 | 7.3 | 6.7 | 0.92 | 1.52 |
+| contains-miss | 100 | 2.5 | 5.8 | 5.4 | 0.93 | 2.16 |
+| incl-dup | 100 | 4.5 | 7.5 | 7.7 | 1.03 | 1.71 |
+| coi-new | 100 | 21.1 | 21.3 | 20.3 | 0.95 | 0.96 |
+| excl-hit | 100 | 10.4 | 9.3 | 9.2 | 0.99 | 0.88 |
+| excl-miss | 100 | 2.6 | 6.4 | 5.8 | 0.91 | 2.23 |
+| churn/op | 100 | 9.7 | 10.0 | 10.0 | 1.00 | 1.03 |
+| insert | 1000 | 13.8 | 11.8 | 10.4 | 0.88 | 0.75 |
+| contains-hit | 1000 | 4.8 | 8.0 | 7.3 | 0.91 | 1.52 |
+| contains-miss | 1000 | 2.8 | 7.8 | 7.0 | 0.90 | 2.50 |
+| incl-dup | 1000 | 4.8 | 8.1 | 8.5 | 1.05 | 1.77 |
+| coi-new | 1000 | 32.7 | 26.1 | 24.7 | 0.95 | 0.76 |
+| excl-hit | 1000 | 12.2 | 10.5 | 10.6 | 1.01 | 0.87 |
+| excl-miss | 1000 | 3.1 | 9.1 | 8.3 | 0.91 | 2.68 |
+| churn/op | 1000 | 11.9 | 12.9 | 12.3 | 0.95 | 1.03 |
+| insert | 10000 | 20.4 | 16.9 | 15.1 | 0.89 | 0.74 |
+| contains-hit | 10000 | 6.8 | 11.0 | 10.4 | 0.95 | 1.53 |
+| contains-miss | 10000 | 6.6 | 12.0 | 11.4 | 0.95 | 1.73 |
+| incl-dup | 10000 | 6.9 | 11.2 | 11.3 | 1.01 | 1.64 |
+| coi-new | 10000 | 48.9 | 41.7 | 40.8 | 0.98 | 0.83 |
+| excl-hit | 10000 | 16.4 | 13.1 | 13.2 | 1.01 | 0.80 |
+| excl-miss | 10000 | 8.6 | 12.7 | 11.7 | 0.92 | 1.36 |
+| churn/op | 10000 | 18.1 | 23.6 | 23.1 | 0.98 | 1.28 |
+| insert | 100000 | 28.6 | 15.8 | 14.7 | 0.93 | 0.51 |
+| contains-hit | 100000 | 11.9 | 15.4 | 14.9 | 0.97 | 1.25 |
+| contains-miss | 100000 | 12.1 | 17.8 | 17.0 | 0.96 | 1.40 |
+| incl-dup | 100000 | 12.1 | 16.0 | 16.0 | 1.00 | 1.32 |
+| coi-new | 100000 | 69.8 | 93.1 | 90.3 | 0.97 | 1.29 |
+| excl-hit | 100000 | 22.2 | 22.6 | 22.8 | 1.01 | 1.03 |
+| excl-miss | 100000 | 13.2 | 19.3 | 18.7 | 0.97 | 1.42 |
+| churn/op | 100000 | 27.7 | 21.7 | 22.5 | 1.04 | 0.81 |
+
+Per-op medians at n>=1000: final beats the deleted C backend on insert (0.52-0.78x),
+coi-new (0.72-0.83x at 1k/10k), excl-hit (0.82-1.01x); lookups remain 1.3-1.7x
+behind C at small scales (residual, same class as the fast_map get-miss residual:
+C compile-unit inlining, unchanged by this pass). wrk /json after the pass:
+304.0k / 299.7k req/s (p99 band unchanged) — parity with pre-pass 298-306k.
+Gates after both changes: nim_utils 12/12, nim_express 73/73.
