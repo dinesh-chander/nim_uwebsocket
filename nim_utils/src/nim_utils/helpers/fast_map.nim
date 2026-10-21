@@ -205,13 +205,11 @@ type
     ctrl: seq[uint8]
     entries: seq[FastMapNimEntry[V]]
 
-  FastMapInt64NimStorage = FastMapNimStorage[int64]
 
   FastMapStorageObj*[V] = object
     raw: pointer
     kind: FastMapStorageKind
     nimString: FastMapStringNimStorage
-    nimInt64: FastMapInt64NimStorage
     nimGenericStorage: FastMapNimStorage[V]
 
   FastMap*[V] = ref object
@@ -589,8 +587,6 @@ proc updateFastMapStringThresholds(storage: FastMapStringNimStorage) {.inline.} 
   storage.growAt = max(1, (storage.capacity * 7) div 8)
   storage.rebuildAt = max(1, (storage.capacity * 15) div 16)
 
-proc initFastMapInt64NimStorage(): FastMapInt64NimStorage =
-  initFastMapNimStorage[int64]()
 
 proc resetFastMapCtrl[V](storage: FastMapNimStorage[V]) =
   if storage.ctrl.len > 0:
@@ -1169,7 +1165,8 @@ proc insertFastMapStringI64Raw(
 proc putFastMapStringI64Hashed(storage: FastMapStringNimStorage, key: string, value: int64, hash: uint64): bool {.inline.} =
   if storage == nil:
     return false
-  storage.hashConsistent = false
+  # No caller-hash write API exists for int64 maps, so stored hashes always
+  # match hashFastMapString; keep the duplicate-detection fast path enabled.
   ensureFastMapStringCapacity(storage, storage.count + 1)
   let idx = insertFastMapStringI64Raw(storage, key, value, hash, replace = true)
   idx >= 0
@@ -1192,6 +1189,17 @@ proc tryGetFastMapStringI64(storage: FastMapStringNimStorage, key: string, value
 proc getFastMapStringI64Ptr(storage: FastMapStringNimStorage, key: string): ptr int64 {.inline.} =
   var homeBucket: int
   let idx = findFastMapStringFoundIdx(storage, key, hashFastMapString(key), homeBucket)
+  if idx < 0:
+    return nil
+  cast[ptr int64](swEntryValPtr(swEntryAt(storage, idx)))
+
+## Return a zero-copy pointer to a stored int64 using a precomputed hash.
+proc getFastMapStringI64PtrHashed(storage: FastMapStringNimStorage, key: string,
+    hash: uint64): ptr int64 {.inline.} =
+  if storage == nil or storage.capacity == 0:
+    return nil
+  var homeBucket: int
+  let idx = findFastMapStringFoundIdx(storage, key, hash, homeBucket)
   if idx < 0:
     return nil
   cast[ptr int64](swEntryValPtr(swEntryAt(storage, idx)))
@@ -1453,52 +1461,14 @@ proc getOrPutFastMapNimPtr[V](storage: FastMapNimStorage[V], key: string, value:
     inc storage.count
   addr storage.entries[insertIdx].value
 
-proc reserveFastMapInt64(storage: FastMapInt64NimStorage, n: int): bool {.inline.} =
-  reserveFastMapNim(storage, n)
 
-proc lenFastMapInt64(storage: FastMapInt64NimStorage): int {.inline.} =
-  lenFastMapNim(storage)
 
-proc putFastMapInt64(storage: FastMapInt64NimStorage, key: string, value: int64): bool {.inline.} =
-  putFastMapNim[int64](storage, key, value)
 
-proc tryGetFastMapInt64(storage: FastMapInt64NimStorage, key: string, value: var int64): bool {.inline.} =
-  tryGetFastMapNim[int64](storage, key, value)
 
-proc getFastMapInt64Ptr(storage: FastMapInt64NimStorage, key: string): ptr int64 {.inline.} =
-  getFastMapNimPtr[int64](storage, key)
 
-proc getOrPutFastMapInt64Ptr(storage: FastMapInt64NimStorage, key: string, value: int64): ptr int64 {.inline.} =
-  getOrPutFastMapNimPtr[int64](storage, key, value)
 
-proc containsFastMapInt64(storage: FastMapInt64NimStorage, key: string): bool {.inline.} =
-  not storage.getFastMapInt64Ptr(key).isNil
 
-proc delFastMapInt64(storage: FastMapInt64NimStorage, key: string): bool =
-  if storage == nil or storage.entries.len == 0:
-    return false
-  let idx = findFastMapNimFoundIdx(storage, key, hashFastMapString(key))
-  if idx < 0:
-    return false
-  storage.ctrl[idx] = FastMapCtrlDeleted
-  dec storage.count
-  if storage.count == 0:
-    storage.used = 0
-    for i in 0..<storage.entries.len:
-      storage.ctrl[i] = FastMapCtrlEmpty
-      storage.entries[i] = default(FastMapNimEntry[int64])
-  elif storage.count * 4 < storage.used and storage.entries.len > 16:
-    rehashFastMapNim(storage, storage.entries.len)
-  true
 
-proc clearFastMapInt64(storage: FastMapInt64NimStorage) =
-  if storage == nil:
-    return
-  storage.count = 0
-  storage.used = 0
-  for i in 0..<storage.entries.len:
-    storage.ctrl[i] = FastMapCtrlEmpty
-    storage.entries[i] = default(FastMapNimEntry[int64])
 
 proc delFastMapGeneric[V](storage: FastMapNimStorage[V], key: string): bool =
   if storage == nil or storage.entries.len == 0:
@@ -1534,7 +1504,7 @@ proc `=destroy`[V](storage: var FastMapStorageObj[V]) =
 
 proc releaseFastMapStorage[V](storage: var FastMapStorageObj[V]) =
   ## Idempotently release all storage owned by this map's storage object.
-  if storage.raw == nil and storage.nimString.isNil and storage.nimInt64.isNil and
+  if storage.raw == nil and storage.nimString.isNil and
       storage.kind != fmskNimGeneric:
     return
   case storage.kind
@@ -1543,10 +1513,8 @@ proc releaseFastMapStorage[V](storage: var FastMapStorageObj[V]) =
       swFreeTables(storage.nimString)
       arenaFreeAll(storage.nimString.arena)
     storage.nimString = nil
-  of fmskInt64Nim:
-    storage.nimInt64 = nil
-  of fmskInt64Arena:
-    # Both arena kinds now live in nimString storage.
+  of fmskInt64Nim, fmskInt64Arena:
+    # Both int64 kinds live in nimString storage.
     if not storage.nimString.isNil:
       swFreeTables(storage.nimString)
       arenaFreeAll(storage.nimString.arena)
@@ -1560,8 +1528,6 @@ proc rawHandle[V](map: FastMap[V]): pointer {.inline.} =
     return nil
   if map.storage.kind == fmskStringNim:
     return cast[pointer](map.storage.nimString)
-  if map.storage.kind == fmskInt64Nim:
-    return cast[pointer](map.storage.nimInt64)
   if map.storage.kind == fmskNimGeneric:
     return cast[pointer](map.storage.nimGenericStorage)
   if map.storage.kind == fmskInt64Arena:
@@ -1576,7 +1542,7 @@ proc newFastMap*[V](): FastMap[V] =
     result.storage.nimString = initFastMapStringNimStorage()
   elif V is int64:
     result.storage.kind = fmskInt64Nim
-    result.storage.nimInt64 = initFastMapInt64NimStorage()
+    result.storage.nimString = initFastMapStringNimStorage()
   else:
     result.storage.kind = fmskNimGeneric
     result.storage.nimGenericStorage = initFastMapNimStorage[V]()
@@ -1672,9 +1638,7 @@ proc len*[V](map: FastMap[V]): int {.inline.} =
       0
   elif V is int64:
     case map.storage.kind
-    of fmskInt64Nim:
-      lenFastMapInt64(map.storage.nimInt64)
-    of fmskInt64Arena:
+    of fmskInt64Nim, fmskInt64Arena:
       lenFastMapString(map.storage.nimString)
     else:
       0
@@ -1696,11 +1660,9 @@ proc reserve*[V](map: FastMap[V], n: int): bool {.inline.} =
       false
   elif V is int64:
     case map.storage.kind
-    of fmskInt64Nim:
-      if map.storage.nimInt64 == nil:
-        map.storage.nimInt64 = initFastMapInt64NimStorage()
-      reserveFastMapInt64(map.storage.nimInt64, n)
-    of fmskInt64Arena:
+    of fmskInt64Nim, fmskInt64Arena:
+      if map.storage.nimString.isNil:
+        map.storage.nimString = initFastMapStringNimStorage()
       reserveFastMapString(map.storage.nimString, n)
     else:
       false
@@ -1718,9 +1680,7 @@ proc put*[V](map: FastMap[V], key: string, value: V): bool {.inline.} =
       false
   elif V is int64:
     case map.storage.kind
-    of fmskInt64Nim:
-      putFastMapInt64(map.storage.nimInt64, key, value)
-    of fmskInt64Arena:
+    of fmskInt64Nim, fmskInt64Arena:
       putFastMapStringI64(map.storage.nimString, key, value)
     else:
       false
@@ -1760,11 +1720,7 @@ proc putView*(map: FastMap[string], key, value: FastStringView): bool {.inline.}
 ## Insert or update an int64 entry from a cstring key without allocation.
 proc putC*(map: FastMap[int64], key: cstring, value: int64): bool {.inline.} =
   case map.storage.kind
-  of fmskInt64Nim:
-    if map.storage.nimInt64 == nil:
-      map.storage.nimInt64 = initFastMapInt64NimStorage()
-    putFastMapInt64(map.storage.nimInt64, key.toOwnedString, value)
-  of fmskInt64Arena:
+  of fmskInt64Nim, fmskInt64Arena:
     putFastMapStringI64(map.storage.nimString, key.toOwnedString, value)
   else:
     false
@@ -1774,11 +1730,7 @@ proc putView*(map: FastMap[int64], key: FastStringView, value: int64): bool {.in
   if not key.isValidFastStringView:
     return false
   case map.storage.kind
-  of fmskInt64Nim:
-    if map.storage.nimInt64 == nil:
-      map.storage.nimInt64 = initFastMapInt64NimStorage()
-    putFastMapInt64(map.storage.nimInt64, key.toOwnedString, value)
-  of fmskInt64Arena:
+  of fmskInt64Nim, fmskInt64Arena:
     putFastMapStringI64(map.storage.nimString, key.toOwnedString, value)
   else:
     false
@@ -1912,9 +1864,7 @@ proc tryGet*[V](map: FastMap[V], key: string, value: var V): bool {.inline.} =
       true
   elif V is int64:
     case map.storage.kind
-    of fmskInt64Nim:
-      tryGetFastMapInt64(map.storage.nimInt64, key, value)
-    of fmskInt64Arena:
+    of fmskInt64Nim, fmskInt64Arena:
       tryGetFastMapStringI64(map.storage.nimString, key, value)
     else:
       false
@@ -1936,8 +1886,8 @@ proc getPtrHashed*[V](map: FastMap[V], key: string, hash: uint64): ptr V {.inlin
   when V is string:
     nil
   elif V is int64:
-    if map.storage.nimInt64.isNil: nil
-    else: getFastMapNimPtrHashed[int64](map.storage.nimInt64, key, hash)
+    if map.storage.nimString.isNil: nil
+    else: getFastMapStringI64PtrHashed(map.storage.nimString, key, hash)
   else:
     if map.storage.nimGenericStorage.isNil: nil
     else: getFastMapNimPtrHashed(map.storage.nimGenericStorage, key, hash)
@@ -1961,24 +1911,13 @@ proc stringValuePtrOrPut(map: FastMap[string], key, value: string): ptr string {
   nil  ## No longer supported — entries use unmanaged storage
 
 proc int64ValuePtr(map: FastMap[int64], key: string): ptr int64 {.inline.} =
-  case map.storage.kind
-  of fmskInt64Nim:
-    getFastMapInt64Ptr(map.storage.nimInt64, key)
-  of fmskInt64Arena:
-    getFastMapStringI64Ptr(map.storage.nimString, key)
-  else:
-    nil
+  if map.storage.nimString.isNil: nil
+  else: getFastMapStringI64Ptr(map.storage.nimString, key)
 
 proc int64ValuePtrOrPut(map: FastMap[int64], key: string, value: int64): ptr int64 {.inline.} =
-  case map.storage.kind
-  of fmskInt64Nim:
-    if map.storage.nimInt64 == nil:
-      map.storage.nimInt64 = initFastMapInt64NimStorage()
-    getOrPutFastMapInt64Ptr(map.storage.nimInt64, key, value)
-  of fmskInt64Arena:
-    getOrPutFastMapStringI64Ptr(map.storage.nimString, key, value)
-  else:
-    nil
+  if map.storage.nimString.isNil:
+    map.storage.nimString = initFastMapStringNimStorage()
+  getOrPutFastMapStringI64Ptr(map.storage.nimString, key, value)
 
 ## Check whether the map contains a key.
 proc contains*[V](map: FastMap[V], key: string): bool {.inline.} =
@@ -1990,9 +1929,7 @@ proc contains*[V](map: FastMap[V], key: string): bool {.inline.} =
       false
   elif V is int64:
     case map.storage.kind
-    of fmskInt64Nim:
-      containsFastMapInt64(map.storage.nimInt64, key)
-    of fmskInt64Arena:
+    of fmskInt64Nim, fmskInt64Arena:
       containsFastMapStringI64(map.storage.nimString, key)
     else:
       false
@@ -2011,9 +1948,7 @@ proc containsC*(map: FastMap[string], key: cstring): bool {.inline.} =
 ## Check whether the map contains a cstring key.
 proc containsC*(map: FastMap[int64], key: cstring): bool {.inline.} =
   case map.storage.kind
-  of fmskInt64Nim:
-    containsFastMapInt64(map.storage.nimInt64, key.toOwnedString)
-  of fmskInt64Arena:
+  of fmskInt64Nim, fmskInt64Arena:
     containsFastMapStringI64(map.storage.nimString, key.toOwnedString)
   else:
     false
@@ -2033,9 +1968,7 @@ proc containsView*(map: FastMap[int64], key: FastStringView): bool {.inline.} =
   if not key.isValidFastStringView:
     return false
   case map.storage.kind
-  of fmskInt64Nim:
-    containsFastMapInt64(map.storage.nimInt64, key.toOwnedString)
-  of fmskInt64Arena:
+  of fmskInt64Nim, fmskInt64Arena:
     containsFastMapStringI64(map.storage.nimString, key.toOwnedString)
   else:
     false
@@ -2050,9 +1983,7 @@ proc del*[V](map: FastMap[V], key: string): bool {.inline.} =
       false
   elif V is int64:
     case map.storage.kind
-    of fmskInt64Nim:
-      delFastMapInt64(map.storage.nimInt64, key)
-    of fmskInt64Arena:
+    of fmskInt64Nim, fmskInt64Arena:
       delFastMapString(map.storage.nimString, key)
     else:
       false
@@ -2071,9 +2002,7 @@ proc delC*(map: FastMap[string], key: cstring): bool {.inline.} =
 ## Remove a cstring key from the map; returns false if the key was absent.
 proc delC*(map: FastMap[int64], key: cstring): bool {.inline.} =
   case map.storage.kind
-  of fmskInt64Nim:
-    delFastMapInt64(map.storage.nimInt64, key.toOwnedString)
-  of fmskInt64Arena:
+  of fmskInt64Nim, fmskInt64Arena:
     delFastMapString(map.storage.nimString, key.toOwnedString)
   else:
     false
@@ -2093,9 +2022,7 @@ proc delView*(map: FastMap[int64], key: FastStringView): bool {.inline.} =
   if not key.isValidFastStringView:
     return false
   case map.storage.kind
-  of fmskInt64Nim:
-    delFastMapInt64(map.storage.nimInt64, key.toOwnedString)
-  of fmskInt64Arena:
+  of fmskInt64Nim, fmskInt64Arena:
     delFastMapString(map.storage.nimString, key.toOwnedString)
   else:
     false
@@ -2110,9 +2037,7 @@ proc clear*[V](map: FastMap[V]) {.inline.} =
       discard
   elif V is int64:
     case map.storage.kind
-    of fmskInt64Nim:
-      clearFastMapInt64(map.storage.nimInt64)
-    of fmskInt64Arena:
+    of fmskInt64Nim, fmskInt64Arena:
       clearFastMapString(map.storage.nimString)
     else:
       discard
@@ -2250,14 +2175,7 @@ iterator pairs*(map: FastMap[string]): (string, string) =
 ## Iterate over all entries as string and int64 pairs.
 iterator pairs*(map: FastMap[int64]): (string, int64) =
   case map.storage.kind
-  of fmskInt64Nim:
-    if not map.storage.nimInt64.isNil:
-      for i in 0..<map.storage.nimInt64.entries.len:
-        let ctrl = map.storage.nimInt64.ctrl[i]
-        if ctrl != FastMapCtrlEmpty and ctrl != FastMapCtrlDeleted:
-          let entry = map.storage.nimInt64.entries[i]
-          yield (entry.key, entry.value)
-  of fmskInt64Arena:
+  of fmskInt64Nim, fmskInt64Arena:
     if not map.storage.nimString.isNil:
       var i = 0
       while nextFastMapStringOccupiedIdx(map.storage.nimString, i):
@@ -2311,14 +2229,7 @@ iterator mvalues*(map: FastMap[string]): var string =
 ## Iterate over int64 values as var references for in-place mutation.
 iterator mvalues*(map: FastMap[int64]): var int64 =
   case map.storage.kind
-  of fmskInt64Nim:
-    if not map.storage.nimInt64.isNil:
-      let expectedLen = map.len
-      for i in 0..<map.storage.nimInt64.entries.len:
-        if map.storage.nimInt64.ctrl[i] != FastMapCtrlEmpty and map.storage.nimInt64.ctrl[i] != FastMapCtrlDeleted:
-          yield map.storage.nimInt64.entries[i].value
-          assert map.len == expectedLen, "the length of the table changed while iterating over it"
-  of fmskInt64Arena:
+  of fmskInt64Nim, fmskInt64Arena:
     if not map.storage.nimString.isNil:
       let expectedLen = map.len
       var i = 0
@@ -2337,14 +2248,7 @@ iterator mpairs*(map: FastMap[string]): (string, var string) =
 ## Iterate over entries as key and mutable int64 value pairs.
 iterator mpairs*(map: FastMap[int64]): (string, var int64) =
   case map.storage.kind
-  of fmskInt64Nim:
-    if not map.storage.nimInt64.isNil:
-      let expectedLen = map.len
-      for i in 0..<map.storage.nimInt64.entries.len:
-        if map.storage.nimInt64.ctrl[i] != FastMapCtrlEmpty and map.storage.nimInt64.ctrl[i] != FastMapCtrlDeleted:
-          yield (map.storage.nimInt64.entries[i].key, map.storage.nimInt64.entries[i].value)
-          assert map.len == expectedLen, "the length of the table changed while iterating over it"
-  of fmskInt64Arena:
+  of fmskInt64Nim, fmskInt64Arena:
     if not map.storage.nimString.isNil:
       let expectedLen = map.len
       var i = 0

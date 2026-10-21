@@ -445,10 +445,10 @@ full-run table below.
 
 Notable: the former O(capacity) string-insert residual (was ~186 us/op at
 n=100k before the hashConsistent flag) is gone; inserts are now the
-strongest win (0.34-0.59x C). Remaining gaps: get-miss at n<=1000
-(1.3x, abs ~1 ns), int64-backend get-hit (1.3-1.7x: generic storage has
-32-byte entries vs 16-byte in the C i64 specialization — cache-line
-density), map-of-map at 100k (1.06x, build-phase dominated).
+strongest win (0.34-0.59x C). Gaps noted above (int64 get-hit 1.28-1.68x) were closed by the
+int64-backend redesign in pass 5 below; string get-miss at n<=1000
+(1.3x, abs ~1 ns) and map-of-map at 100k (1.06x, build-phase
+dominated) remain.
 
 ## Extended correctness stress (pass 4)
 
@@ -474,3 +474,33 @@ insert whether or not the key was present; `missingOrExcl` returns true
 when the key was missing (not when removed).
 
 Gates: nim_utils 13/13, nim_express 73/73.
+
+## Pass 5: int64 maps on the SWAR string backend (adopted)
+
+The int64 backend still used the generic `FastMapNimStorage[int64]`
+(32-byte entries with heap-string keys, seq-based ctrl). Plain
+`newFastMap[int64]` and `newFastArenaMap[int64]` now share the exact
+nimString SWAR storage (24-byte entries, bump-arena `[key][NUL][i64]`
+payloads) that arena int64 maps already used; the dead generic-int64
+helper set and the `nimInt64` storage field were removed (~140 lines).
+
+Incidental fix: `putFastMapStringI64Hashed` unconditionally flipped
+`hashConsistent = false`, re-introducing the O(capacity) keyOnly
+duplicate scan on every insert of the arena int64 map (measured 17.7
+us/op at n=10k). No caller-hash write API exists for int64 maps, so
+the flag now stays true. First A/B caught this (insert ratio 596x);
+second A/B:
+
+| op | n | before | after | ratio | C |
+|---|---|---|---|---|---|
+| int64 get-hit | 1000 | 7.5 | 6.3 | 0.84 | 5.3 |
+| int64 get-hit | 10000 | 13.3 | 7.7 | 0.58 | 7.9 |
+| int64 get-hit | 100000 | 24.7 | 12.3 | 0.50 | 14.6 |
+| int64 insert | 10000 | 30.0 | 28.6 | 0.95 | 50.4 |
+| int64 insert | 100000 | 73.7 | 23.3 | 0.32 | 54.2 |
+
+int64 get-hit vs C: 0.84x at n=1k, 0.97x at 10k, 0.84x at 100k — the
+1.68x gap is gone; only tiny scales (n<=100) trail C (~1.1-1.2x,
+abs ~1 ns). All string ops within noise (median ratio 1.007 over 50
+comparisons, alternating min-of-2). Gates: nim_utils 13/13,
+nim_express 73/73.
