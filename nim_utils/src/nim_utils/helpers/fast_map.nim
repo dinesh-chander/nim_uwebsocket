@@ -5,22 +5,52 @@ import std/[os, times]
 import std/bitops
 import ./swar_group
 
+const nimWyHashUseMulhi = defined(amd64) and (defined(gcc) or defined(clang)) and
+  not defined(js) and not defined(vcc) and not defined(nimWyHashPortable)
+
+proc nimWyMulhi(a, b: uint64): uint64 {.inline.} =
+  # Exact high 64 bits of the 128-bit product; x86-64 gets one mulhi
+  # instruction instead of the four 32-bit multiplies below.
+  var r: uint64
+  when nimWyHashUseMulhi:
+    {.emit: "uint64_t nx_a = `a`, nx_b = `b`; `r` = (uint64_t)((__uint128_t)nx_a * nx_b >> 64);".}
+  else:
+    let ha = a shr 32
+    let la = a and 0xFFFF_FFFF'u64
+    let hb = b shr 32
+    let lb = b and 0xFFFF_FFFF'u64
+    let rm0 = ha * lb
+    let rm1 = hb * la
+    let t = (la * lb) + (rm0 shl 32)
+    var carry = (if t < (la * lb): 1'u64 else: 0'u64)
+    let loCheck = t + (rm1 shl 32)
+    if loCheck < t:
+      inc carry
+    r = (ha * hb) + (rm0 shr 32) + (rm1 shr 32) + carry
+  r
+
 proc nimWyMum(a, b: var uint64) {.inline.} =
-  let ha = a shr 32
-  let la = a and 0xFFFF_FFFF'u64
-  let hb = b shr 32
-  let lb = b and 0xFFFF_FFFF'u64
-  let rh = ha * hb
-  let rm0 = ha * lb
-  let rm1 = hb * la
-  let rl = la * lb
-  let t = rl + (rm0 shl 32)
-  var carry = (if t < rl: 1'u64 else: 0'u64)
-  let lo = t + (rm1 shl 32)
-  if lo < t:
-    inc carry
-  a = lo
-  b = rh + (rm0 shr 32) + (rm1 shr 32) + carry
+  when nimWyHashUseMulhi:
+    let lo = a * b
+    let hi = nimWyMulhi(a, b)
+    a = lo
+    b = hi
+  else:
+    let ha = a shr 32
+    let la = a and 0xFFFF_FFFF'u64
+    let hb = b shr 32
+    let lb = b and 0xFFFF_FFFF'u64
+    let rh = ha * hb
+    let rm0 = ha * lb
+    let rm1 = hb * la
+    let rl = la * lb
+    let t = rl + (rm0 shl 32)
+    var carry = (if t < rl: 1'u64 else: 0'u64)
+    let lo = t + (rm1 shl 32)
+    if lo < t:
+      inc carry
+    a = lo
+    b = rh + (rm0 shr 32) + (rm1 shr 32) + carry
 
 proc nimWyMix(a, b: uint64): uint64 {.inline.} =
   var x = a

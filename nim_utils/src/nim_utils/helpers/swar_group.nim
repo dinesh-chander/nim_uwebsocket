@@ -22,39 +22,24 @@ const
   swarGatherLo = 0x81020400'u64
 
 when swarUseSimd:
-  # One 16-byte unaligned control-group load plus byte compare/movemask.
-  # Extern (not static): callers may inline the importc call into other
-  # translation units, which then link against this single definition.
-  {.emit: """
-#ifdef __cplusplus
-extern "C" {
-#endif
-typedef char nxSwarV16 __attribute__((__vector_size__(16)));
-typedef char nxSwarV16u __attribute__((__vector_size__(16), __aligned__(1), __may_alias__));
-unsigned int nx_nim_swar_match16(void* p, unsigned int h2) {
-  nxSwarV16 v = (nxSwarV16)(*(const nxSwarV16u*)p);
-  nxSwarV16 k; int i;
-  for (i = 0; i < 16; i++) k[i] = (char)h2;
-  return (unsigned int)__builtin_ia32_pmovmskb128(__builtin_ia32_pcmpeqb128(v, k));
-}
-unsigned int nx_nim_swar_match_empty16(void* p) {
-  nxSwarV16 v = (nxSwarV16)(*(const nxSwarV16u*)p);
-  nxSwarV16 k; int i;
-  for (i = 0; i < 16; i++) k[i] = (char)0xFF;
-  return (unsigned int)__builtin_ia32_pmovmskb128(__builtin_ia32_pcmpeqb128(v, k));
-}
-unsigned int nx_nim_swar_match_empty_or_del16(void* p) {
-  nxSwarV16 v = (nxSwarV16)(*(const nxSwarV16u*)p);
-  return (unsigned int)__builtin_ia32_pmovmskb128(v);
-}
-#ifdef __cplusplus
-}
-#endif
-""".}
+  # SSE2 group matching emitted as self-contained statement-expressions so it
+  # fully inlines into every caller translation unit (no extern call). The
+  # broadcast uses 64-bit byte replication + vector splat; a byte-store loop
+  # defeats vectorisation and costs ~3 ns per call.
+  proc cSwarMatch16(p: pointer; h2: cuint): cuint {.inline.} =
+    var r: cuint
+    {.emit: "`r` = ({ typedef char nxv16 __attribute__((__vector_size__(16))); typedef char nxv16u __attribute__((__vector_size__(16), __aligned__(1), __may_alias__)); typedef long long nxv2di __attribute__((__vector_size__(16))); nxv16 nx_v = (nxv16)(*(const nxv16u*)`p`); long long nx_r8 = (long long)(`h2` * 0x0101010101010101ULL); nxv16 nx_k = (nxv16)((nxv2di){nx_r8, nx_r8}); (unsigned int)__builtin_ia32_pmovmskb128(__builtin_ia32_pcmpeqb128(nx_v, nx_k)); });".}
+    r
 
-  proc cSwarMatch16(p: pointer; h2: cuint): cuint {.importc: "nx_nim_swar_match16", cdecl.}
-  proc cSwarMatchEmpty16(p: pointer): cuint {.importc: "nx_nim_swar_match_empty16", cdecl.}
-  proc cSwarMatchEmptyOrDel16(p: pointer): cuint {.importc: "nx_nim_swar_match_empty_or_del16", cdecl.}
+  proc cSwarMatchEmpty16(p: pointer): cuint {.inline.} =
+    var r: cuint
+    {.emit: "`r` = ({ typedef char nxv16 __attribute__((__vector_size__(16))); typedef char nxv16u __attribute__((__vector_size__(16), __aligned__(1), __may_alias__)); typedef long long nxv2di __attribute__((__vector_size__(16))); nxv16 nx_v = (nxv16)(*(const nxv16u*)`p`); nxv16 nx_k = (nxv16)((nxv2di){-1LL, -1LL}); (unsigned int)__builtin_ia32_pmovmskb128(__builtin_ia32_pcmpeqb128(nx_v, nx_k)); });".}
+    r
+
+  proc cSwarMatchEmptyOrDel16(p: pointer): cuint {.inline.} =
+    var r: cuint
+    {.emit: "`r` = ({ typedef char nxv16 __attribute__((__vector_size__(16))); typedef char nxv16u __attribute__((__vector_size__(16), __aligned__(1), __may_alias__)); nxv16 nx_v = (nxv16)(*(const nxv16u*)`p`); (unsigned int)__builtin_ia32_pmovmskb128(nx_v); });".}
+    r
 
 ## Set the high bit of lane i in the result iff byte i of `x` is zero.
 ## Exact per-lane (absl form): the (x and lo7) + 0x7F sum never carries

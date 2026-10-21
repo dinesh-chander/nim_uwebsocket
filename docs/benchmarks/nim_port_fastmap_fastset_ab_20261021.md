@@ -348,3 +348,129 @@ behind C at small scales (residual, same class as the fast_map get-miss residual
 C compile-unit inlining, unchanged by this pass). wrk /json after the pass:
 304.0k / 299.7k req/s (p99 band unchanged) — parity with pre-pass 298-306k.
 Gates after both changes: nim_utils 12/12, nim_express 73/73.
+
+## Optimization pass 3 (fast_set pass 2): mulhi hash + splat broadcast (adopted)
+
+Three measured changes, each A/B-verified with alternating min-of-N guarded runs:
+
+1. **`nimWyMum` → hardware 64x64→128 high half** (`nimWyMulhi`, one
+   `__uint128_t` emit, gcc/clang amd64; portable unfolded path kept and
+   verified to compile/run via `-d:nimWyHashPortable`). Proven
+   bit-identical to the old unfolded mum on 1M random pairs, so the
+   wyhash byte-identity contract holds. Effects: FS median 0.79 (misses
+   up to 1.9x), FM median 0.86 (get-miss@10k 0.54).
+2. **Excl double-store removal** in `fast_set.nim` (`freeEntryString` +
+   `zeroEntry` wrote the same fields twice; merged). Free ~2-5%.
+3. **SWAR broadcast fix + full inlining** (`swar_group.nim`): the SSE2
+   helpers built the compare vector with a 16-byte store loop, which
+   gcc does not vectorize — ~3.2 ns per call, dwarfing the 0.46 ns
+   match itself. Replaced with 64-bit byte-replication + vector splat,
+   and converted the extern functions to `{.inline.}` procs emitting
+   self-contained gcc statement-expressions (no extern call, no
+   cross-TU typedefs). Effects: FS median 0.97 vs extern-splat (misses
+   −10%, inserts −8..−12%); FM median 0.925 vs pre-fix (get-miss 0.85,
+   insert 0.86, get-hit 0.90-0.93, everything ≤1.01).
+
+Final absolute numbers (ns/op, min-of-2 alternating; C from the
+deleted-backend binaries):
+
+| op | n | C | final | final/C |
+|---|---|---|---|---|
+| FS contains-hit | 10 | 4.2 | 5.5 | 1.31 |
+| FS contains-miss | 10 | 2.5 | 3.8 | 1.52 |
+| FS insert | 1000 | 13.8 | 7.3 | 0.53 |
+| FS contains-hit | 1000 | 4.8 | 5.9 | 1.23 |
+| FS contains-miss | 1000 | 2.8 | 4.6 | 1.64 |
+| FS incl-dup | 1000 | 4.8 | 6.3 | 1.31 |
+| FS excl-hit | 1000 | 12.2 | 8.7 | 0.71 |
+| FS churn/op | 1000 | 11.9 | 9.3 | 0.78 |
+| FS insert | 100000 | 28.6 | 11.4 | 0.40 |
+| FS contains-hit | 100000 | 11.9 | 10.8 | 0.91 |
+| FS contains-miss | 100000 | 12.1 | 8.3 | 0.69 |
+| FS excl-hit | 100000 | 22.2 | 15.2 | 0.68 |
+| FM string get-hit | 10000 | 18.6 | 16.1 | 0.87 |
+| FM string get-miss | 10000 | 7.9 | 5.2 | 0.66 |
+| FM string insert | 10000 | 69.7 | 37.2 | 0.53 |
+| FM string delete | 10000 | 28.0 | 12.2 | 0.44 |
+| FM int64 get-hit | 10000 | 7.9 | 12.9 | 1.63 |
+| FM contains | 10000 | 8.6 | 7.4 | 0.86 |
+
+Rejected after measurement (kept out of tree):
+
+- **LTO (`-d:lto`)**: uniform ~10x SLOWER (73 ns/op floor); Nim's
+  emitted-C + LTO pipeline pathologies. Not usable.
+- **Portable uint64 SWAR (no SSE2)**: 30% slower than the (extern,
+  pre-fix) SSE2 path; SSE2+inlining retained.
+- **-march=native**: median 0.977 (noise) and unsafe as a library
+  default. Skipped.
+- **PGO**: hot loops are single-iteration scan loops already fully
+  inlined after the splat fix; no measured lever — skipped with
+  rationale.
+
+Post-pass wrk /json: 308.0k / 305.6k / 305.3k req/s (p99 1.22 ms band)
+— above C baseline (303-307k). Gates: nim_utils 12/12, nim_express 73/73.
+
+Remaining gap after this pass: FS small-scale lookup ratios ~1.2-1.5x
+(abs 1-1.3 ns/op) and FM int64 get-hit ~1.3-1.7x remain; both are
+hash+probe dependent-chain latency at L1, quantified in the final
+full-run table below.
+
+## Final full-run table (post pass 3, min-of-3 clean guarded runs, ns/op)
+
+| op | n | C (deleted backend) | Nim final | ratio |
+|---|---|---|---|---|
+| string insert | 10 | 55.4 | 20.7 | 0.37 |
+| string insert | 1000 | 59.7 | 26.5 | 0.44 |
+| string insert | 100000 | 80.4 | 27.3 | 0.34 |
+| string get-hit | 10 | 12.6 | 12.4 | 0.98 |
+| string get-hit | 1000 | 15.9 | 14.7 | 0.92 |
+| string get-hit | 10000 | 18.6 | 16.4 | 0.88 |
+| string get-hit | 100000 | 28.7 | 22.9 | 0.80 |
+| string get-miss | 10 | 2.6 | 3.5 | 1.35 |
+| string get-miss | 1000 | 3.5 | 4.5 | 1.29 |
+| string get-miss | 10000 | 7.9 | 5.3 | 0.67 |
+| string get-miss | 100000 | 12.4 | 10.8 | 0.87 |
+| string contains | 1000 | 5.7 | 6.2 | 1.09 |
+| string contains | 100000 | 16.9 | 12.3 | 0.73 |
+| string delete | 1000 | 23.1 | 11.5 | 0.50 |
+| string delete | 100000 | 46.5 | 21.6 | 0.46 |
+| getView | 10000 | 9.9 | 9.5 | 0.96 |
+| getView | 100000 | 17.8 | 14.1 | 0.79 |
+| int64 get-hit | 10 | 4.7 | 6.0 | 1.28 |
+| int64 get-hit | 10000 | 7.9 | 12.7 | 1.61 |
+| int64 get-hit | 100000 | 14.6 | 24.5 | 1.68 |
+| int64 insert | 10000 | 50.4 | 29.7 | 0.59 |
+| map-of-map create | 1000 | 245.9 | 151.1 | 0.61 |
+| map-of-map create | 100000 | 314.2 | 334.5 | 1.06 |
+
+Notable: the former O(capacity) string-insert residual (was ~186 us/op at
+n=100k before the hashConsistent flag) is gone; inserts are now the
+strongest win (0.34-0.59x C). Remaining gaps: get-miss at n<=1000
+(1.3x, abs ~1 ns), int64-backend get-hit (1.3-1.7x: generic storage has
+32-byte entries vs 16-byte in the C i64 specialization — cache-line
+density), map-of-map at 100k (1.06x, build-phase dominated).
+
+## Extended correctness stress (pass 4)
+
+Two stress suites, deterministic seeds, oracle-compared:
+
+- `nim_utils/tests/test_fast_collections_stress.nim` (8 tests): backend
+  fuzz vs Table, int64 group-boundary torture, tuple-V generic fuzz,
+  hash-inconsistency replace semantics, tombstone storms across
+  rebuilds, arena clear/reinsert ramps, oversized views, iteration
+  sweeps through mixed tombstones.
+- `nim_utils/tests/test_fast_collections_stress2.nim` (11 tests):
+  fast_set API-matrix fuzz (string/cstring/view overloads vs HashSet,
+  40k ops x 3 seeds, periodic full iterations), set small-capacity
+  group wraparound, set + map key-length boundaries (0/65534/65535,
+  65536 raises, oversized views rejected), arena/default backend
+  equivalence, map `pop`/`take`/`mgetOrPut`/`[]=` fuzz, int64 map
+  surface fuzz, `pairsView` vs `pairs`, `mpairs` mutation semantics
+  (int64 mutable; string raises ValueError by design), map string
+  small-capacity wraparound torture.
+
+Contract facts pinned by tests: `incl*` returns true on successful
+insert whether or not the key was present; `missingOrExcl` returns true
+when the key was missing (not when removed).
+
+Gates: nim_utils 13/13, nim_express 73/73.

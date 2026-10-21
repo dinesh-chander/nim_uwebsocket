@@ -329,10 +329,6 @@ proc setEntryKeyRaw(entry: var FastSetStringNimEntry, keyPtr: pointer, keyLen: i
   entry.keyLen = uint16(keyLen)
   entry.keyPtr = arenaStrDup(arena, keyPtr, keyLen)
 
-proc freeEntryString(entry: var FastSetStringNimEntry) {.inline.} =
-  entry.keyPtr = nil
-  entry.keyLen = 0'u16
-
 proc zeroEntry(entry: var FastSetStringNimEntry) {.inline.} =
   entry.keyPtr = nil
   entry.keyLen = 0'u16
@@ -607,7 +603,6 @@ proc exclFastSetString(storage: FastSetStringNimStorage, key: string): bool =
     return false
   dec storage.count
   storage.liveBytes -= entryStorageBytes(int(swEntryAt(storage, idx).keyLen))
-  freeEntryString(swEntryAt(storage, idx)[])
   zeroEntry(swEntryAt(storage, idx)[])
   swSetCtrl(storage, idx, FastSetCtrlDeleted)
   if storage.count == 0:
@@ -624,7 +619,6 @@ proc exclFastSetRaw(storage: FastSetStringNimStorage, keyPtr: pointer, keyLen: i
     return false
   dec storage.count
   storage.liveBytes -= entryStorageBytes(int(swEntryAt(storage, idx).keyLen))
-  freeEntryString(swEntryAt(storage, idx)[])
   zeroEntry(swEntryAt(storage, idx)[])
   swSetCtrl(storage, idx, FastSetCtrlDeleted)
   if storage.count == 0:
