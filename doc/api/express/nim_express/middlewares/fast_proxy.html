@@ -16,13 +16,16 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.10">
 
 <!-- JS -->
-<script type="text/javascript" src="../../dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="../../dochack.js?v=2.2.10"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">nim_express/middlewares/fast_proxy</h1>
       <div class="row">
@@ -154,7 +157,7 @@
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
     <div id="FastProxyHostValidation">
-  <dt><pre><a href="fast_proxy.html#FastProxyHostValidation"><span class="Identifier">FastProxyHostValidation</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
+  <dt><pre><a href="#FastProxyHostValidation"><span class="Identifier">FastProxyHostValidation</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
   <span class="Identifier">hostPublic</span><span class="Other">,</span>               <span class="Comment">## hostPrivate: the host name or a resolved address is private/internal.</span>
   <span class="Identifier">hostPrivate</span><span class="Other">,</span> <span class="Comment">## hostResolutionFailed: the DNS lookup failed (NXDOMAIN, SERVFAIL,</span>
                 <span class="Comment">## resolver unreachable, ...). This is distinct from hostPrivate so</span>
@@ -167,13 +170,13 @@
   </dd>
 </div>
 <div id="FastProxyOptions">
-  <dt><pre><a href="fast_proxy.html#FastProxyOptions"><span class="Identifier">FastProxyOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#FastProxyOptions"><span class="Identifier">FastProxyOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">target</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>
-  <span class="Identifier">targetResolver</span><span class="Operator">*</span><span class="Other">:</span> <a href="fast_proxy.html#FastProxyTargetResolver"><span class="Identifier">FastProxyTargetResolver</span></a>
+  <span class="Identifier">targetResolver</span><span class="Operator">*</span><span class="Other">:</span> <a href="#FastProxyTargetResolver"><span class="Identifier">FastProxyTargetResolver</span></a>
   <span class="Identifier">timeoutMs</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>            <span class="Comment">## Upper bound for the upstream request. Defaults to 30s.</span>
   <span class="Identifier">connectTimeoutMs</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>     <span class="Comment">## Upper bound for the upstream TCP connect. Defaults to 5s.</span>
   <span class="Identifier">stripPrefix</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>
-  <span class="Identifier">pathRewriter</span><span class="Operator">*</span><span class="Other">:</span> <a href="fast_proxy.html#FastProxyPathRewriter"><span class="Identifier">FastProxyPathRewriter</span></a>
+  <span class="Identifier">pathRewriter</span><span class="Operator">*</span><span class="Other">:</span> <a href="#FastProxyPathRewriter"><span class="Identifier">FastProxyPathRewriter</span></a>
   <span class="Identifier">preserveHostHeader</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>
   <span class="Identifier">addXForwardedHeaders</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>
   <span class="Identifier">blockPrivateUpstreams</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Comment">## Block requests to private/internal IP addresses (RFC 1918, link-local,</span>
@@ -202,7 +205,7 @@
   </dd>
 </div>
 <div id="FastProxyPathRewriter">
-  <dt><pre><a href="fast_proxy.html#FastProxyPathRewriter"><span class="Identifier">FastProxyPathRewriter</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">path</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> {.<span class="Identifier">closure</span>.}</pre></dt>
+  <dt><pre><a href="#FastProxyPathRewriter"><span class="Identifier">FastProxyPathRewriter</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">path</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> {.<span class="Identifier">closure</span>.}</pre></dt>
   <dd>
     
     
@@ -210,7 +213,7 @@
   </dd>
 </div>
 <div id="FastProxyTargetResolver">
-  <dt><pre><a href="fast_proxy.html#FastProxyTargetResolver"><span class="Identifier">FastProxyTargetResolver</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">req</span><span class="Other">:</span> <a href="common.html#Req"><span class="Identifier">Req</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> {.<span class="Identifier">closure</span>.}</pre></dt>
+  <dt><pre><a href="#FastProxyTargetResolver"><span class="Identifier">FastProxyTargetResolver</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">req</span><span class="Other">:</span> <a href="common.html#Req"><span class="Identifier">Req</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> {.<span class="Identifier">closure</span>.}</pre></dt>
   <dd>
     
     
@@ -224,7 +227,7 @@
   <h1><a class="toc-backref" href="#10">Consts</a></h1>
   <dl class="item">
     <div id="DefaultFastProxyConnectTimeoutMs">
-  <dt><pre><a href="fast_proxy.html#DefaultFastProxyConnectTimeoutMs"><span class="Identifier">DefaultFastProxyConnectTimeoutMs</span></a> <span class="Other">=</span> <span class="DecNumber">5000</span></pre></dt>
+  <dt><pre><a href="#DefaultFastProxyConnectTimeoutMs"><span class="Identifier">DefaultFastProxyConnectTimeoutMs</span></a> <span class="Other">=</span> <span class="DecNumber">5000</span></pre></dt>
   <dd>
     
     
@@ -232,7 +235,7 @@
   </dd>
 </div>
 <div id="DefaultFastProxyMaxRequestBytes">
-  <dt><pre><a href="fast_proxy.html#DefaultFastProxyMaxRequestBytes"><span class="Identifier">DefaultFastProxyMaxRequestBytes</span></a> <span class="Other">=</span> <span class="DecNumber">8388608</span></pre></dt>
+  <dt><pre><a href="#DefaultFastProxyMaxRequestBytes"><span class="Identifier">DefaultFastProxyMaxRequestBytes</span></a> <span class="Other">=</span> <span class="DecNumber">8388608</span></pre></dt>
   <dd>
     
     
@@ -240,7 +243,7 @@
   </dd>
 </div>
 <div id="DefaultFastProxyMaxResponseBytes">
-  <dt><pre><a href="fast_proxy.html#DefaultFastProxyMaxResponseBytes"><span class="Identifier">DefaultFastProxyMaxResponseBytes</span></a> <span class="Other">=</span> <span class="DecNumber">16777216</span></pre></dt>
+  <dt><pre><a href="#DefaultFastProxyMaxResponseBytes"><span class="Identifier">DefaultFastProxyMaxResponseBytes</span></a> <span class="Other">=</span> <span class="DecNumber">16777216</span></pre></dt>
   <dd>
     
     
@@ -248,7 +251,7 @@
   </dd>
 </div>
 <div id="DefaultFastProxyRequestTimeoutMs">
-  <dt><pre><a href="fast_proxy.html#DefaultFastProxyRequestTimeoutMs"><span class="Identifier">DefaultFastProxyRequestTimeoutMs</span></a> <span class="Other">=</span> <span class="DecNumber">30000</span></pre></dt>
+  <dt><pre><a href="#DefaultFastProxyRequestTimeoutMs"><span class="Identifier">DefaultFastProxyRequestTimeoutMs</span></a> <span class="Other">=</span> <span class="DecNumber">30000</span></pre></dt>
   <dd>
     
     
@@ -263,7 +266,7 @@
   <dl class="item">
     <div id="defaultFastProxyOptions-procs-all">
   <div id="defaultFastProxyOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultFastProxyOptions"><span class="Identifier">defaultFastProxyOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="fast_proxy.html#FastProxyOptions"><span class="Identifier">FastProxyOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultFastProxyOptions"><span class="Identifier">defaultFastProxyOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#FastProxyOptions"><span class="Identifier">FastProxyOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -275,7 +278,7 @@
 </div>
 <div id="fastProxy-procs-all">
   <div id="fastProxy,FastProxyOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#fastProxy%2CFastProxyOptions"><span class="Identifier">fastProxy</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="fast_proxy.html#FastProxyOptions"><span class="Identifier">FastProxyOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultFastProxyOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#fastProxy%2CFastProxyOptions"><span class="Identifier">fastProxy</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#FastProxyOptions"><span class="Identifier">FastProxyOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultFastProxyOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -300,7 +303,7 @@
 </div>
 <div id="initFastProxyOptions-procs-all">
   <div id="initFastProxyOptions,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#initFastProxyOptions%2Cstring"><span class="Identifier">initFastProxyOptions</span></a><span class="Other">(</span><span class="Identifier">target</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <a href="fast_proxy.html#FastProxyOptions"><span class="Identifier">FastProxyOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#initFastProxyOptions%2Cstring"><span class="Identifier">initFastProxyOptions</span></a><span class="Other">(</span><span class="Identifier">target</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <a href="#FastProxyOptions"><span class="Identifier">FastProxyOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span>
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -320,7 +323,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:23 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 12:49:20 UTC</small>
       </div>
     </div>
   </div>

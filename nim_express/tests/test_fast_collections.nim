@@ -14,7 +14,7 @@ suite "Fast collections":
     check map.get("alpha") == "1"
     check map.get("missing", "fallback") == "fallback"
 
-    # Verstable insert semantics replace existing key/value.
+    # Insert semantics replace existing key/value.
     check map.put("alpha", "3")
     check map.get("alpha") == "3"
     check map.len == 2

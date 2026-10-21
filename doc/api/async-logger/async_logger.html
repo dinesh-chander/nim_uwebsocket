@@ -16,13 +16,16 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="nimdoc.out.css?v=2.2.10">
 
 <!-- JS -->
-<script type="text/javascript" src="dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="dochack.js?v=2.2.10"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">nim_utils/async_logger</h1>
       <div class="row">
@@ -234,7 +237,7 @@
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
     <div id="AsyncLogger">
-  <dt><pre><a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a> <span class="Other">=</span> <span class="Keyword">ptr</span> <span class="Identifier">AsyncLoggerObj</span></pre></dt>
+  <dt><pre><a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a> <span class="Other">=</span> <span class="Keyword">ptr</span> <span class="Identifier">AsyncLoggerObj</span></pre></dt>
   <dd>
     
     
@@ -242,10 +245,10 @@
   </dd>
 </div>
 <div id="AsyncLoggerConfig">
-  <dt><pre><a href="async_logger.html#AsyncLoggerConfig"><span class="Identifier">AsyncLoggerConfig</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
-  <span class="Identifier">level</span><span class="Operator">*</span><span class="Other">:</span> <a href="async_logger.html#LogLevel"><span class="Identifier">LogLevel</span></a>
-  <span class="Identifier">format</span><span class="Operator">*</span><span class="Other">:</span> <a href="async_logger.html#LogFormat"><span class="Identifier">LogFormat</span></a>
-  <span class="Identifier">output</span><span class="Operator">*</span><span class="Other">:</span> <a href="async_logger.html#LogOutput"><span class="Identifier">LogOutput</span></a>
+  <dt><pre><a href="#AsyncLoggerConfig"><span class="Identifier">AsyncLoggerConfig</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <span class="Identifier">level</span><span class="Operator">*</span><span class="Other">:</span> <a href="#LogLevel"><span class="Identifier">LogLevel</span></a>
+  <span class="Identifier">format</span><span class="Operator">*</span><span class="Other">:</span> <a href="#LogFormat"><span class="Identifier">LogFormat</span></a>
+  <span class="Identifier">output</span><span class="Operator">*</span><span class="Other">:</span> <a href="#LogOutput"><span class="Identifier">LogOutput</span></a>
   <span class="Identifier">filePath</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>
   <span class="Identifier">bufferSize</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">maxEntryBytes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
@@ -260,7 +263,7 @@
   </dd>
 </div>
 <div id="LogFormat">
-  <dt><pre><a href="async_logger.html#LogFormat"><span class="Identifier">LogFormat</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
+  <dt><pre><a href="#LogFormat"><span class="Identifier">LogFormat</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
   <span class="Identifier">lfJson</span><span class="Other">,</span> <span class="Identifier">lfText</span><span class="Other">,</span> <span class="Identifier">lfCompact</span></pre></dt>
   <dd>
     
@@ -269,7 +272,7 @@
   </dd>
 </div>
 <div id="LogLevel">
-  <dt><pre><a href="async_logger.html#LogLevel"><span class="Identifier">LogLevel</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
+  <dt><pre><a href="#LogLevel"><span class="Identifier">LogLevel</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
   <span class="Identifier">llTrace</span><span class="Other">,</span> <span class="Identifier">llDebug</span><span class="Other">,</span> <span class="Identifier">llInfo</span><span class="Other">,</span> <span class="Identifier">llWarn</span><span class="Other">,</span> <span class="Identifier">llError</span><span class="Other">,</span> <span class="Identifier">llFatal</span></pre></dt>
   <dd>
     
@@ -278,7 +281,7 @@
   </dd>
 </div>
 <div id="LogOutput">
-  <dt><pre><a href="async_logger.html#LogOutput"><span class="Identifier">LogOutput</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
+  <dt><pre><a href="#LogOutput"><span class="Identifier">LogOutput</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
   <span class="Identifier">loStdout</span><span class="Other">,</span> <span class="Identifier">loStderr</span><span class="Other">,</span> <span class="Identifier">loFile</span></pre></dt>
   <dd>
     
@@ -294,7 +297,7 @@
   <dl class="item">
     <div id="close-procs-all">
   <div id="close,AsyncLogger">
-  <dt><pre><span class="Keyword">proc</span> <a href="#close%2CAsyncLogger"><span class="Identifier">close</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#close%2CAsyncLogger"><span class="Identifier">close</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -316,7 +319,7 @@
 </div>
 <div id="debug-procs-all">
   <div id="debug,AsyncLogger,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#debug%2CAsyncLogger%2Cstring"><span class="Identifier">debug</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#debug%2CAsyncLogger%2Cstring"><span class="Identifier">debug</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -325,7 +328,7 @@
   </dd>
 </div>
 <div id="debug,AsyncLogger,string,openArray[]">
-  <dt><pre><span class="Keyword">proc</span> <a href="#debug%2CAsyncLogger%2Cstring%2CopenArray%5B%5D"><span class="Identifier">debug</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#debug%2CAsyncLogger%2Cstring%2CopenArray%5B%5D"><span class="Identifier">debug</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span>
            <span class="Identifier">fields</span><span class="Other">:</span> <span class="Identifier">openArray</span><span class="Other">[</span><span class="Other">(</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">]</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
@@ -338,7 +341,7 @@
 </div>
 <div id="debugObj-procs-all">
   <div id="debugObj,AsyncLogger,string,T">
-  <dt><pre><span class="Keyword">proc</span> <a href="#debugObj%2CAsyncLogger%2Cstring%2CT"><span class="Identifier">debugObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#debugObj%2CAsyncLogger%2Cstring%2CT"><span class="Identifier">debugObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.
     <span class="Identifier">inline</span>.}</pre></dt>
   <dd>
     
@@ -350,7 +353,7 @@
 </div>
 <div id="defaultConfig-procs-all">
   <div id="defaultConfig">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultConfig"><span class="Identifier">defaultConfig</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="async_logger.html#AsyncLoggerConfig"><span class="Identifier">AsyncLoggerConfig</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultConfig"><span class="Identifier">defaultConfig</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#AsyncLoggerConfig"><span class="Identifier">AsyncLoggerConfig</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -372,7 +375,7 @@
 </div>
 <div id="destroy-procs-all">
   <div id="destroy,AsyncLogger">
-  <dt><pre><span class="Keyword">proc</span> <a href="#destroy%2CAsyncLogger"><span class="Identifier">destroy</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#destroy%2CAsyncLogger"><span class="Identifier">destroy</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -383,7 +386,7 @@
 </div>
 <div id="dispose-procs-all">
   <div id="dispose,AsyncLogger">
-  <dt><pre><span class="Keyword">proc</span> <a href="#dispose%2CAsyncLogger"><span class="Identifier">dispose</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#dispose%2CAsyncLogger"><span class="Identifier">dispose</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
                                         <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -395,7 +398,7 @@
 </div>
 <div id="droppedCount-procs-all">
   <div id="droppedCount,AsyncLogger">
-  <dt><pre><span class="Keyword">proc</span> <a href="#droppedCount%2CAsyncLogger"><span class="Identifier">droppedCount</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int64</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#droppedCount%2CAsyncLogger"><span class="Identifier">droppedCount</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int64</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -407,7 +410,7 @@
 </div>
 <div id="error-procs-all">
   <div id="error,AsyncLogger,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#error%2CAsyncLogger%2Cstring"><span class="Identifier">error</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#error%2CAsyncLogger%2Cstring"><span class="Identifier">error</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -416,7 +419,7 @@
   </dd>
 </div>
 <div id="error,AsyncLogger,string,openArray[]">
-  <dt><pre><span class="Keyword">proc</span> <a href="#error%2CAsyncLogger%2Cstring%2CopenArray%5B%5D"><span class="Identifier">error</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#error%2CAsyncLogger%2Cstring%2CopenArray%5B%5D"><span class="Identifier">error</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span>
            <span class="Identifier">fields</span><span class="Other">:</span> <span class="Identifier">openArray</span><span class="Other">[</span><span class="Other">(</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">]</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
@@ -429,7 +432,7 @@
 </div>
 <div id="errorObj-procs-all">
   <div id="errorObj,AsyncLogger,string,T">
-  <dt><pre><span class="Keyword">proc</span> <a href="#errorObj%2CAsyncLogger%2Cstring%2CT"><span class="Identifier">errorObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#errorObj%2CAsyncLogger%2Cstring%2CT"><span class="Identifier">errorObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.
     <span class="Identifier">inline</span>.}</pre></dt>
   <dd>
     
@@ -441,7 +444,7 @@
 </div>
 <div id="fatal-procs-all">
   <div id="fatal,AsyncLogger,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#fatal%2CAsyncLogger%2Cstring"><span class="Identifier">fatal</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#fatal%2CAsyncLogger%2Cstring"><span class="Identifier">fatal</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -450,7 +453,7 @@
   </dd>
 </div>
 <div id="fatal,AsyncLogger,string,openArray[]">
-  <dt><pre><span class="Keyword">proc</span> <a href="#fatal%2CAsyncLogger%2Cstring%2CopenArray%5B%5D"><span class="Identifier">fatal</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#fatal%2CAsyncLogger%2Cstring%2CopenArray%5B%5D"><span class="Identifier">fatal</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span>
            <span class="Identifier">fields</span><span class="Other">:</span> <span class="Identifier">openArray</span><span class="Other">[</span><span class="Other">(</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">]</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
@@ -463,7 +466,7 @@
 </div>
 <div id="fatalObj-procs-all">
   <div id="fatalObj,AsyncLogger,string,T">
-  <dt><pre><span class="Keyword">proc</span> <a href="#fatalObj%2CAsyncLogger%2Cstring%2CT"><span class="Identifier">fatalObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#fatalObj%2CAsyncLogger%2Cstring%2CT"><span class="Identifier">fatalObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.
     <span class="Identifier">inline</span>.}</pre></dt>
   <dd>
     
@@ -475,7 +478,7 @@
 </div>
 <div id="flush-procs-all">
   <div id="flush,AsyncLogger">
-  <dt><pre><span class="Keyword">proc</span> <a href="#flush%2CAsyncLogger"><span class="Identifier">flush</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#flush%2CAsyncLogger"><span class="Identifier">flush</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -497,7 +500,7 @@
 </div>
 <div id="getDefaultLogger-procs-all">
   <div id="getDefaultLogger">
-  <dt><pre><span class="Keyword">proc</span> <a href="#getDefaultLogger"><span class="Identifier">getDefaultLogger</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#getDefaultLogger"><span class="Identifier">getDefaultLogger</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -508,7 +511,7 @@
 </div>
 <div id="info-procs-all">
   <div id="info,AsyncLogger,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#info%2CAsyncLogger%2Cstring"><span class="Identifier">info</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#info%2CAsyncLogger%2Cstring"><span class="Identifier">info</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -517,7 +520,7 @@
   </dd>
 </div>
 <div id="info,AsyncLogger,string,openArray[]">
-  <dt><pre><span class="Keyword">proc</span> <a href="#info%2CAsyncLogger%2Cstring%2CopenArray%5B%5D"><span class="Identifier">info</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">fields</span><span class="Other">:</span> <span class="Identifier">openArray</span><span class="Other">[</span><span class="Other">(</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">]</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#info%2CAsyncLogger%2Cstring%2CopenArray%5B%5D"><span class="Identifier">info</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">fields</span><span class="Other">:</span> <span class="Identifier">openArray</span><span class="Other">[</span><span class="Other">(</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">]</span><span class="Other">)</span> {.
     <span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -529,7 +532,7 @@
 </div>
 <div id="infoObj-procs-all">
   <div id="infoObj,AsyncLogger,string,T">
-  <dt><pre><span class="Keyword">proc</span> <a href="#infoObj%2CAsyncLogger%2Cstring%2CT"><span class="Identifier">infoObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#infoObj%2CAsyncLogger%2Cstring%2CT"><span class="Identifier">infoObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.
     <span class="Identifier">inline</span>.}</pre></dt>
   <dd>
     
@@ -541,7 +544,7 @@
 </div>
 <div id="initDefaultLogger-procs-all">
   <div id="initDefaultLogger,AsyncLoggerConfig">
-  <dt><pre><span class="Keyword">proc</span> <a href="#initDefaultLogger%2CAsyncLoggerConfig"><span class="Identifier">initDefaultLogger</span></a><span class="Other">(</span><span class="Identifier">config</span><span class="Other">:</span> <a href="async_logger.html#AsyncLoggerConfig"><span class="Identifier">AsyncLoggerConfig</span></a> <span class="Other">=</span> <span class="Identifier">defaultConfig</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#initDefaultLogger%2CAsyncLoggerConfig"><span class="Identifier">initDefaultLogger</span></a><span class="Other">(</span><span class="Identifier">config</span><span class="Other">:</span> <a href="#AsyncLoggerConfig"><span class="Identifier">AsyncLoggerConfig</span></a> <span class="Other">=</span> <span class="Identifier">defaultConfig</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ResourceExhaustedError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -553,7 +556,7 @@
 </div>
 <div id="log-procs-all">
   <div id="log,AsyncLogger,LogLevel,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#log%2CAsyncLogger%2CLogLevel%2Cstring"><span class="Identifier">log</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">level</span><span class="Other">:</span> <a href="async_logger.html#LogLevel"><span class="Identifier">LogLevel</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#log%2CAsyncLogger%2CLogLevel%2Cstring"><span class="Identifier">log</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">level</span><span class="Other">:</span> <a href="#LogLevel"><span class="Identifier">LogLevel</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -562,7 +565,7 @@
   </dd>
 </div>
 <div id="log,AsyncLogger,LogLevel,string,openArray[]">
-  <dt><pre><span class="Keyword">proc</span> <a href="#log%2CAsyncLogger%2CLogLevel%2Cstring%2CopenArray%5B%5D"><span class="Identifier">log</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">level</span><span class="Other">:</span> <a href="async_logger.html#LogLevel"><span class="Identifier">LogLevel</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#log%2CAsyncLogger%2CLogLevel%2Cstring%2CopenArray%5B%5D"><span class="Identifier">log</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">level</span><span class="Other">:</span> <a href="#LogLevel"><span class="Identifier">LogLevel</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span>
          <span class="Identifier">fields</span><span class="Other">:</span> <span class="Identifier">openArray</span><span class="Other">[</span><span class="Other">(</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">]</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
@@ -575,7 +578,7 @@
 </div>
 <div id="logDefault-procs-all">
   <div id="logDefault,LogLevel,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#logDefault%2CLogLevel%2Cstring"><span class="Identifier">logDefault</span></a><span class="Other">(</span><span class="Identifier">level</span><span class="Other">:</span> <a href="async_logger.html#LogLevel"><span class="Identifier">LogLevel</span></a><span class="Other">;</span> <span class="Identifier">message</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#logDefault%2CLogLevel%2Cstring"><span class="Identifier">logDefault</span></a><span class="Other">(</span><span class="Identifier">level</span><span class="Other">:</span> <a href="#LogLevel"><span class="Identifier">LogLevel</span></a><span class="Other">;</span> <span class="Identifier">message</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -587,7 +590,7 @@
 </div>
 <div id="logObj-procs-all">
   <div id="logObj,AsyncLogger,LogLevel,string,T">
-  <dt><pre><span class="Keyword">proc</span> <a href="#logObj%2CAsyncLogger%2CLogLevel%2Cstring%2CT"><span class="Identifier">logObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">level</span><span class="Other">:</span> <a href="async_logger.html#LogLevel"><span class="Identifier">LogLevel</span></a><span class="Other">;</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#logObj%2CAsyncLogger%2CLogLevel%2Cstring%2CT"><span class="Identifier">logObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">level</span><span class="Other">:</span> <a href="#LogLevel"><span class="Identifier">LogLevel</span></a><span class="Other">;</span>
                                     <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.<span class="Identifier">inline</span>.}</pre></dt>
   <dd>
     
@@ -599,7 +602,7 @@
 </div>
 <div id="newAsyncLogger-procs-all">
   <div id="newAsyncLogger,AsyncLoggerConfig">
-  <dt><pre><span class="Keyword">proc</span> <a href="#newAsyncLogger%2CAsyncLoggerConfig"><span class="Identifier">newAsyncLogger</span></a><span class="Other">(</span><span class="Identifier">config</span><span class="Other">:</span> <a href="async_logger.html#AsyncLoggerConfig"><span class="Identifier">AsyncLoggerConfig</span></a> <span class="Other">=</span> <span class="Identifier">defaultConfig</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#newAsyncLogger%2CAsyncLoggerConfig"><span class="Identifier">newAsyncLogger</span></a><span class="Other">(</span><span class="Identifier">config</span><span class="Other">:</span> <a href="#AsyncLoggerConfig"><span class="Identifier">AsyncLoggerConfig</span></a> <span class="Other">=</span> <span class="Identifier">defaultConfig</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ResourceExhaustedError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -611,7 +614,7 @@
 </div>
 <div id="setLevel-procs-all">
   <div id="setLevel,AsyncLogger,LogLevel">
-  <dt><pre><span class="Keyword">proc</span> <a href="#setLevel%2CAsyncLogger%2CLogLevel"><span class="Identifier">setLevel</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">level</span><span class="Other">:</span> <a href="async_logger.html#LogLevel"><span class="Identifier">LogLevel</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#setLevel%2CAsyncLogger%2CLogLevel"><span class="Identifier">setLevel</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">level</span><span class="Other">:</span> <a href="#LogLevel"><span class="Identifier">LogLevel</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -623,7 +626,7 @@
 </div>
 <div id="trace-procs-all">
   <div id="trace,AsyncLogger,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#trace%2CAsyncLogger%2Cstring"><span class="Identifier">trace</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#trace%2CAsyncLogger%2Cstring"><span class="Identifier">trace</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -632,7 +635,7 @@
   </dd>
 </div>
 <div id="trace,AsyncLogger,string,openArray[]">
-  <dt><pre><span class="Keyword">proc</span> <a href="#trace%2CAsyncLogger%2Cstring%2CopenArray%5B%5D"><span class="Identifier">trace</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#trace%2CAsyncLogger%2Cstring%2CopenArray%5B%5D"><span class="Identifier">trace</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span>
            <span class="Identifier">fields</span><span class="Other">:</span> <span class="Identifier">openArray</span><span class="Other">[</span><span class="Other">(</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">]</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
@@ -645,7 +648,7 @@
 </div>
 <div id="traceObj-procs-all">
   <div id="traceObj,AsyncLogger,string,T">
-  <dt><pre><span class="Keyword">proc</span> <a href="#traceObj%2CAsyncLogger%2Cstring%2CT"><span class="Identifier">traceObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#traceObj%2CAsyncLogger%2Cstring%2CT"><span class="Identifier">traceObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.
     <span class="Identifier">inline</span>.}</pre></dt>
   <dd>
     
@@ -657,7 +660,7 @@
 </div>
 <div id="warn-procs-all">
   <div id="warn,AsyncLogger,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#warn%2CAsyncLogger%2Cstring"><span class="Identifier">warn</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#warn%2CAsyncLogger%2Cstring"><span class="Identifier">warn</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -666,7 +669,7 @@
   </dd>
 </div>
 <div id="warn,AsyncLogger,string,openArray[]">
-  <dt><pre><span class="Keyword">proc</span> <a href="#warn%2CAsyncLogger%2Cstring%2CopenArray%5B%5D"><span class="Identifier">warn</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">fields</span><span class="Other">:</span> <span class="Identifier">openArray</span><span class="Other">[</span><span class="Other">(</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">]</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#warn%2CAsyncLogger%2Cstring%2CopenArray%5B%5D"><span class="Identifier">warn</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">fields</span><span class="Other">:</span> <span class="Identifier">openArray</span><span class="Other">[</span><span class="Other">(</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">]</span><span class="Other">)</span> {.
     <span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -678,7 +681,7 @@
 </div>
 <div id="warnObj-procs-all">
   <div id="warnObj,AsyncLogger,string,T">
-  <dt><pre><span class="Keyword">proc</span> <a href="#warnObj%2CAsyncLogger%2Cstring%2CT"><span class="Identifier">warnObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#warnObj%2CAsyncLogger%2Cstring%2CT"><span class="Identifier">warnObj</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Keyword">object</span> <span class="Operator">|</span> <span class="Keyword">ref</span> <span class="Keyword">object</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">obj</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.
     <span class="Identifier">inline</span>.}</pre></dt>
   <dd>
     
@@ -690,7 +693,7 @@
 </div>
 <div id="writeErrorCount-procs-all">
   <div id="writeErrorCount,AsyncLogger">
-  <dt><pre><span class="Keyword">proc</span> <a href="#writeErrorCount%2CAsyncLogger"><span class="Identifier">writeErrorCount</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="async_logger.html#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int64</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#writeErrorCount%2CAsyncLogger"><span class="Identifier">writeErrorCount</span></a><span class="Other">(</span><span class="Identifier">logger</span><span class="Other">:</span> <a href="#AsyncLogger"><span class="Identifier">AsyncLogger</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int64</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -710,7 +713,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:25 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 12:49:22 UTC</small>
       </div>
     </div>
   </div>

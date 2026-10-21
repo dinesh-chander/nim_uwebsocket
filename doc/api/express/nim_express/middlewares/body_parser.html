@@ -16,13 +16,16 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.10">
 
 <!-- JS -->
-<script type="text/javascript" src="../../dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="../../dochack.js?v=2.2.10"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">nim_express/middlewares/body_parser</h1>
       <div class="row">
@@ -180,7 +183,7 @@ Returns the default options for the JSON body parser.Returns the default options
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
     <div id="JsonParserOptions">
-  <dt><pre><a href="body_parser.html#JsonParserOptions"><span class="Identifier">JsonParserOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#JsonParserOptions"><span class="Identifier">JsonParserOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">limitBytes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">strict</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>
   <span class="Identifier">allowEmpty</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>
@@ -192,7 +195,7 @@ Returns the default options for the JSON body parser.Returns the default options
   </dd>
 </div>
 <div id="RawParserOptions">
-  <dt><pre><a href="body_parser.html#RawParserOptions"><span class="Identifier">RawParserOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#RawParserOptions"><span class="Identifier">RawParserOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">limitBytes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">acceptedMimeTypes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">]</span></pre></dt>
   <dd>
@@ -202,7 +205,7 @@ Returns the default options for the JSON body parser.Returns the default options
   </dd>
 </div>
 <div id="TextParserOptions">
-  <dt><pre><a href="body_parser.html#TextParserOptions"><span class="Identifier">TextParserOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#TextParserOptions"><span class="Identifier">TextParserOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">limitBytes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">acceptedMimeTypes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">]</span>
   <span class="Identifier">requireUtf8</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span></pre></dt>
@@ -213,7 +216,7 @@ Returns the default options for the JSON body parser.Returns the default options
   </dd>
 </div>
 <div id="UrlEncodedParserOptions">
-  <dt><pre><a href="body_parser.html#UrlEncodedParserOptions"><span class="Identifier">UrlEncodedParserOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#UrlEncodedParserOptions"><span class="Identifier">UrlEncodedParserOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">limitBytes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">maxPairs</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">maxKeyBytes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
@@ -226,7 +229,7 @@ Returns the default options for the JSON body parser.Returns the default options
   </dd>
 </div>
 <div id="XmlParserOptions">
-  <dt><pre><a href="body_parser.html#XmlParserOptions"><span class="Identifier">XmlParserOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#XmlParserOptions"><span class="Identifier">XmlParserOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">limitBytes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">acceptedMimeTypes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">]</span></pre></dt>
   <dd>
@@ -242,7 +245,7 @@ Returns the default options for the JSON body parser.Returns the default options
   <h1><a class="toc-backref" href="#10">Consts</a></h1>
   <dl class="item">
     <div id="DefaultJsonLimitBytes">
-  <dt><pre><a href="body_parser.html#DefaultJsonLimitBytes"><span class="Identifier">DefaultJsonLimitBytes</span></a> <span class="Other">=</span> <span class="DecNumber">1048576</span></pre></dt>
+  <dt><pre><a href="#DefaultJsonLimitBytes"><span class="Identifier">DefaultJsonLimitBytes</span></a> <span class="Other">=</span> <span class="DecNumber">1048576</span></pre></dt>
   <dd>
     
     
@@ -250,7 +253,7 @@ Returns the default options for the JSON body parser.Returns the default options
   </dd>
 </div>
 <div id="DefaultRawLimitBytes">
-  <dt><pre><a href="body_parser.html#DefaultRawLimitBytes"><span class="Identifier">DefaultRawLimitBytes</span></a> <span class="Other">=</span> <span class="DecNumber">1048576</span></pre></dt>
+  <dt><pre><a href="#DefaultRawLimitBytes"><span class="Identifier">DefaultRawLimitBytes</span></a> <span class="Other">=</span> <span class="DecNumber">1048576</span></pre></dt>
   <dd>
     
     
@@ -258,7 +261,7 @@ Returns the default options for the JSON body parser.Returns the default options
   </dd>
 </div>
 <div id="DefaultTextLimitBytes">
-  <dt><pre><a href="body_parser.html#DefaultTextLimitBytes"><span class="Identifier">DefaultTextLimitBytes</span></a> <span class="Other">=</span> <span class="DecNumber">1048576</span></pre></dt>
+  <dt><pre><a href="#DefaultTextLimitBytes"><span class="Identifier">DefaultTextLimitBytes</span></a> <span class="Other">=</span> <span class="DecNumber">1048576</span></pre></dt>
   <dd>
     
     
@@ -266,7 +269,7 @@ Returns the default options for the JSON body parser.Returns the default options
   </dd>
 </div>
 <div id="DefaultUrlEncodedLimitBytes">
-  <dt><pre><a href="body_parser.html#DefaultUrlEncodedLimitBytes"><span class="Identifier">DefaultUrlEncodedLimitBytes</span></a> <span class="Other">=</span> <span class="DecNumber">524288</span></pre></dt>
+  <dt><pre><a href="#DefaultUrlEncodedLimitBytes"><span class="Identifier">DefaultUrlEncodedLimitBytes</span></a> <span class="Other">=</span> <span class="DecNumber">524288</span></pre></dt>
   <dd>
     
     
@@ -274,7 +277,7 @@ Returns the default options for the JSON body parser.Returns the default options
   </dd>
 </div>
 <div id="DefaultUrlEncodedMaxKeyBytes">
-  <dt><pre><a href="body_parser.html#DefaultUrlEncodedMaxKeyBytes"><span class="Identifier">DefaultUrlEncodedMaxKeyBytes</span></a> <span class="Other">=</span> <span class="DecNumber">1024</span></pre></dt>
+  <dt><pre><a href="#DefaultUrlEncodedMaxKeyBytes"><span class="Identifier">DefaultUrlEncodedMaxKeyBytes</span></a> <span class="Other">=</span> <span class="DecNumber">1024</span></pre></dt>
   <dd>
     
     
@@ -282,7 +285,7 @@ Returns the default options for the JSON body parser.Returns the default options
   </dd>
 </div>
 <div id="DefaultUrlEncodedMaxPairs">
-  <dt><pre><a href="body_parser.html#DefaultUrlEncodedMaxPairs"><span class="Identifier">DefaultUrlEncodedMaxPairs</span></a> <span class="Other">=</span> <span class="DecNumber">256</span></pre></dt>
+  <dt><pre><a href="#DefaultUrlEncodedMaxPairs"><span class="Identifier">DefaultUrlEncodedMaxPairs</span></a> <span class="Other">=</span> <span class="DecNumber">256</span></pre></dt>
   <dd>
     
     
@@ -290,7 +293,7 @@ Returns the default options for the JSON body parser.Returns the default options
   </dd>
 </div>
 <div id="DefaultUrlEncodedMaxValueBytes">
-  <dt><pre><a href="body_parser.html#DefaultUrlEncodedMaxValueBytes"><span class="Identifier">DefaultUrlEncodedMaxValueBytes</span></a> <span class="Other">=</span> <span class="DecNumber">8192</span></pre></dt>
+  <dt><pre><a href="#DefaultUrlEncodedMaxValueBytes"><span class="Identifier">DefaultUrlEncodedMaxValueBytes</span></a> <span class="Other">=</span> <span class="DecNumber">8192</span></pre></dt>
   <dd>
     
     
@@ -298,7 +301,7 @@ Returns the default options for the JSON body parser.Returns the default options
   </dd>
 </div>
 <div id="DefaultXmlLimitBytes">
-  <dt><pre><a href="body_parser.html#DefaultXmlLimitBytes"><span class="Identifier">DefaultXmlLimitBytes</span></a> <span class="Other">=</span> <span class="DecNumber">1048576</span></pre></dt>
+  <dt><pre><a href="#DefaultXmlLimitBytes"><span class="Identifier">DefaultXmlLimitBytes</span></a> <span class="Other">=</span> <span class="DecNumber">1048576</span></pre></dt>
   <dd>
     
     
@@ -347,7 +350,7 @@ Returns the default options for the JSON body parser.Returns the default options
 </div>
 <div id="defaultJsonParserOptions-procs-all">
   <div id="defaultJsonParserOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultJsonParserOptions"><span class="Identifier">defaultJsonParserOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="body_parser.html#JsonParserOptions"><span class="Identifier">JsonParserOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultJsonParserOptions"><span class="Identifier">defaultJsonParserOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#JsonParserOptions"><span class="Identifier">JsonParserOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -359,7 +362,7 @@ Returns the default options for the JSON body parser.Returns the default options
 </div>
 <div id="defaultRawParserOptions-procs-all">
   <div id="defaultRawParserOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultRawParserOptions"><span class="Identifier">defaultRawParserOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="body_parser.html#RawParserOptions"><span class="Identifier">RawParserOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultRawParserOptions"><span class="Identifier">defaultRawParserOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#RawParserOptions"><span class="Identifier">RawParserOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -371,7 +374,7 @@ Returns the default options for the JSON body parser.Returns the default options
 </div>
 <div id="defaultTextParserOptions-procs-all">
   <div id="defaultTextParserOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultTextParserOptions"><span class="Identifier">defaultTextParserOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="body_parser.html#TextParserOptions"><span class="Identifier">TextParserOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultTextParserOptions"><span class="Identifier">defaultTextParserOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#TextParserOptions"><span class="Identifier">TextParserOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -383,7 +386,7 @@ Returns the default options for the JSON body parser.Returns the default options
 </div>
 <div id="defaultUrlEncodedParserOptions-procs-all">
   <div id="defaultUrlEncodedParserOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultUrlEncodedParserOptions"><span class="Identifier">defaultUrlEncodedParserOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="body_parser.html#UrlEncodedParserOptions"><span class="Identifier">UrlEncodedParserOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultUrlEncodedParserOptions"><span class="Identifier">defaultUrlEncodedParserOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#UrlEncodedParserOptions"><span class="Identifier">UrlEncodedParserOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span>
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -395,7 +398,7 @@ Returns the default options for the JSON body parser.Returns the default options
 </div>
 <div id="defaultXmlParserOptions-procs-all">
   <div id="defaultXmlParserOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultXmlParserOptions"><span class="Identifier">defaultXmlParserOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="body_parser.html#XmlParserOptions"><span class="Identifier">XmlParserOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultXmlParserOptions"><span class="Identifier">defaultXmlParserOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#XmlParserOptions"><span class="Identifier">XmlParserOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -407,7 +410,7 @@ Returns the default options for the JSON body parser.Returns the default options
 </div>
 <div id="json-procs-all">
   <div id="json,JsonParserOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#json%2CJsonParserOptions"><span class="Identifier">json</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="body_parser.html#JsonParserOptions"><span class="Identifier">JsonParserOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultJsonParserOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#json%2CJsonParserOptions"><span class="Identifier">json</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#JsonParserOptions"><span class="Identifier">JsonParserOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultJsonParserOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -419,7 +422,7 @@ Returns the default options for the JSON body parser.Returns the default options
 </div>
 <div id="raw-procs-all">
   <div id="raw,RawParserOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#raw%2CRawParserOptions"><span class="Identifier">raw</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="body_parser.html#RawParserOptions"><span class="Identifier">RawParserOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultRawParserOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#raw%2CRawParserOptions"><span class="Identifier">raw</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#RawParserOptions"><span class="Identifier">RawParserOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultRawParserOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -431,7 +434,7 @@ Returns the default options for the JSON body parser.Returns the default options
 </div>
 <div id="text-procs-all">
   <div id="text,TextParserOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#text%2CTextParserOptions"><span class="Identifier">text</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="body_parser.html#TextParserOptions"><span class="Identifier">TextParserOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultTextParserOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#text%2CTextParserOptions"><span class="Identifier">text</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#TextParserOptions"><span class="Identifier">TextParserOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultTextParserOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -443,7 +446,7 @@ Returns the default options for the JSON body parser.Returns the default options
 </div>
 <div id="urlencoded-procs-all">
   <div id="urlencoded,UrlEncodedParserOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#urlencoded%2CUrlEncodedParserOptions"><span class="Identifier">urlencoded</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="body_parser.html#UrlEncodedParserOptions"><span class="Identifier">UrlEncodedParserOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultUrlEncodedParserOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#urlencoded%2CUrlEncodedParserOptions"><span class="Identifier">urlencoded</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#UrlEncodedParserOptions"><span class="Identifier">UrlEncodedParserOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultUrlEncodedParserOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -455,7 +458,7 @@ Returns the default options for the JSON body parser.Returns the default options
 </div>
 <div id="xml-procs-all">
   <div id="xml,XmlParserOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#xml%2CXmlParserOptions"><span class="Identifier">xml</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="body_parser.html#XmlParserOptions"><span class="Identifier">XmlParserOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultXmlParserOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#xml%2CXmlParserOptions"><span class="Identifier">xml</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#XmlParserOptions"><span class="Identifier">XmlParserOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultXmlParserOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -475,7 +478,7 @@ Returns the default options for the JSON body parser.Returns the default options
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:23 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 12:49:19 UTC</small>
       </div>
     </div>
   </div>

@@ -191,7 +191,7 @@ when isMainModule:
   let fastSet = benchFastSet(n)
 
   printResult("Std Table[string,string]", n, stdTable)
-  printResult("FastMap FFI (Verstable C)", n, fastMap)
+  printResult("FastMap (pure Nim)", n, fastMap)
   echo ""
   printResult("Std HashSet[string]", n, stdSet)
-  printResult("FastSet FFI (Verstable C)", n, fastSet)
+  printResult("FastSet (pure Nim)", n, fastSet)

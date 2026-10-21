@@ -2,9 +2,6 @@ import std/[algorithm, os, osproc, strutils, unittest]
 
 import ../src/nim_utils/helpers/[fast_map, fast_set]
 
-# C-side string hash computed by the verstable backend (emitted by fast_map).
-proc nx_fm_hash_n(keyPtr: pointer, keyLen: csize_t): uint64 {.cdecl, importc.}
-
 const F6ProbeKey = "nim-utils-f6-probe"
 
 when isMainModule:
@@ -32,18 +29,14 @@ suite "nim_utils fast collections helpers":
       setObj.close()
       map.close()
 
-    test "F6: C backends hash keys with the per-process seed, not the fixed wyhash seed":
-      # C-side hashing (verstable backend) must agree with the Nim-side
-      # hashKey for the same key; that only holds once syncFastMapCSeed has
-      # installed the process seed into the C translation unit.
+    test "F6: hash keys with the per-process seed, not the fixed wyhash seed":
+      # Pure-Nim backends hash via hashKey with the per-process seed; a fixed
+      # public seed would make every process agree on one value forever.
       let nimHash = fast_map.hashKey(F6ProbeKey)
-      var probe = F6ProbeKey
-      let cHash = nx_fm_hash_n(cast[pointer](unsafeAddr probe[0]), csize_t(probe.len))
-      check cHash == nimHash
       # Historical fixed-seed wyhash outputs for this key; a fixed public
-      # seed would make the C backend return exactly one of these.
-      check cHash != 0x11bc7f8ac023241c'u64 # wyhash(key, 0xca813bf4c7abf0a9)
-      check cHash != 0x5b206422c55c4179'u64 # wyhash(key, 0)
+      # seed would return exactly one of these.
+      check nimHash != 0x11bc7f8ac023241c'u64 # wyhash(key, 0xca813bf4c7abf0a9)
+      check nimHash != 0x5b206422c55c4179'u64 # wyhash(key, 0)
       # The seed is per-process random: two fresh runs hash the same key
       # differently (the old code produced one stable value forever).
       let probeCmd = "\"" & paramStr(0) & "\" --print-hash"
@@ -226,6 +219,113 @@ suite "nim_utils fast collections helpers":
       check after.data == before.data
       check $after == "old-value"
       map.close()
+
+  test "fast arena int64 map supports put, lookup, delete and iteration":
+    let map = newFastArenaMap[int64](64)
+    for i in 0 ..< 512:
+      check map.put("key-" & $i, int64(i) * 3)
+    var got: int64
+    check map.tryGet("key-42", got)
+    check got == int64(42) * 3
+    check map.contains("key-511")
+    check not map.contains("key-512")
+    check map.len == 512
+
+    check map["key-7"] == int64(7) * 3
+    map["key-7"] = -99
+    check map.tryGet("key-7", got) and got == -99
+
+    var pairSum: int64 = 0
+    var pairCount = 0
+    for k, v in map.pairs:
+      check k.startsWith("key-")
+      pairSum += v
+      inc pairCount
+    check pairCount == 512
+    # Sum of i*3 for i in 0..511 is 392448; key-7 holds -99 instead of 21.
+    check pairSum == int64(392448) - int64(21) - int64(99)
+    var valueSum: int64 = 0
+    for v in map.mvalues:
+      valueSum += v
+    check valueSum == pairSum
+    var mutableCount = 0
+    for k, v in map.mpairs:
+      check v != 0 or k == "key-0"
+      inc mutableCount
+    check mutableCount == 512
+
+    check map.del("key-42")
+    check not map.contains("key-42")
+    check map.len == 511
+    check not map.del("key-42")
+    map.clear()
+    check map.len == 0
+    check not map.tryGet("key-0", got)
+    map.close()
+
+  test "fast arena string map iteration walks all entries":
+    let map = newFastArenaMap[string](64)
+    for i in 0 ..< 256:
+      check map.put("s-" & $i, "v-" & $i)
+    var seen = 0
+    for k, v in map.pairs:
+      check v == "v-" & k[2..^1]
+      inc seen
+    check seen == 256
+    var keyCount = 0
+    for k in map.keys:
+      check k.startsWith("s-")
+      inc keyCount
+    check keyCount == 256
+    check map.len == 256
+    map.close()
+
+  test "fast arena set supports incl, lookup, delete and iteration":
+    let setObj = newFastArenaSet(64)
+    for i in 0 ..< 512:
+      check setObj.incl("k-" & $i)
+    # incl returns true on success, including re-inserting an existing key
+    # (matches the historical C backend contract).
+    check setObj.incl("k-0")
+    check setObj.contains("k-0")
+    check setObj.containsC(cstring("k-1"))
+    check setObj.containsView(fast_set.toFastStringView("k-2"))
+    check not setObj.contains("k-512")
+    check not setObj.containsOrIncl("k-512")
+    check setObj.containsOrIncl("k-512")
+    check setObj.len == 513
+    check setObj.excl("k-42")
+    check not setObj.excl("k-42")
+    check setObj.missingOrExcl("k-42")
+    check not setObj.missingOrExcl("k-0")
+    discard setObj.incl("k-0")
+    check setObj.len == 512
+    var seen = 0
+    for k in setObj.items:
+      check k.startsWith("k-")
+      inc seen
+    check seen == 512
+    var viewSeen = 0
+    for k in setObj.itemsView():
+      check k.len > 0
+      inc viewSeen
+    check viewSeen == 512
+    let seq = setObj.itemsSeq()
+    check seq.len == 512
+    setObj.clear()
+    check setObj.len == 0
+    setObj.close()
+    check setObj.len == 0
+
+  test "fast arena set prefill constructor inserts all keys":
+    let keys = @[
+      "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta"
+    ]
+    let setObj = newFastArenaSet(keys, 64)
+    check setObj.len == 8
+    for k in keys:
+      check setObj.contains(k)
+    setObj.close()
 
   test "fast_map pop and take return generic values":
     type Payload = object

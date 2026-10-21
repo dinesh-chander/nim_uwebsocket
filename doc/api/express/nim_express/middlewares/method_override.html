@@ -16,13 +16,16 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.10">
 
 <!-- JS -->
-<script type="text/javascript" src="../../dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="../../dochack.js?v=2.2.10"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">nim_express/middlewares/method_override</h1>
       <div class="row">
@@ -145,9 +148,9 @@
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
     <div id="MethodOverrideAuditHook">
-  <dt><pre><a href="method_override.html#MethodOverrideAuditHook"><span class="Identifier">MethodOverrideAuditHook</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">req</span><span class="Other">:</span> <a href="common.html#Req"><span class="Identifier">Req</span></a><span class="Other">;</span> <span class="Identifier">originalMethod</span><span class="Other">:</span> <span class="Identifier">HttpMethod</span><span class="Other">;</span>
+  <dt><pre><a href="#MethodOverrideAuditHook"><span class="Identifier">MethodOverrideAuditHook</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">req</span><span class="Other">:</span> <a href="common.html#Req"><span class="Identifier">Req</span></a><span class="Other">;</span> <span class="Identifier">originalMethod</span><span class="Other">:</span> <span class="Identifier">HttpMethod</span><span class="Other">;</span>
                                 <span class="Identifier">overriddenMethod</span><span class="Other">:</span> <span class="Identifier">HttpMethod</span><span class="Other">;</span>
-                                <span class="Identifier">source</span><span class="Other">:</span> <a href="method_override.html#MethodOverrideSource"><span class="Identifier">MethodOverrideSource</span></a><span class="Other">;</span> <span class="Identifier">rawToken</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.
+                                <span class="Identifier">source</span><span class="Other">:</span> <a href="#MethodOverrideSource"><span class="Identifier">MethodOverrideSource</span></a><span class="Other">;</span> <span class="Identifier">rawToken</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.
     <span class="Identifier">closure</span>.}</pre></dt>
   <dd>
     
@@ -156,8 +159,8 @@
   </dd>
 </div>
 <div id="MethodOverrideOptions">
-  <dt><pre><a href="method_override.html#MethodOverrideOptions"><span class="Identifier">MethodOverrideOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
-  <span class="Identifier">sources</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="method_override.html#MethodOverrideSource"><span class="Identifier">MethodOverrideSource</span></a><span class="Other">]</span>
+  <dt><pre><a href="#MethodOverrideOptions"><span class="Identifier">MethodOverrideOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <span class="Identifier">sources</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="#MethodOverrideSource"><span class="Identifier">MethodOverrideSource</span></a><span class="Other">]</span>
   <span class="Identifier">headerName</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>
   <span class="Identifier">queryParam</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>
   <span class="Identifier">formField</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>
@@ -167,7 +170,7 @@
   <span class="Identifier">rejectStatus</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">plusAsSpace</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>
   <span class="Identifier">maxFormBytes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
-  <span class="Identifier">auditHook</span><span class="Operator">*</span><span class="Other">:</span> <a href="method_override.html#MethodOverrideAuditHook"><span class="Identifier">MethodOverrideAuditHook</span></a></pre></dt>
+  <span class="Identifier">auditHook</span><span class="Operator">*</span><span class="Other">:</span> <a href="#MethodOverrideAuditHook"><span class="Identifier">MethodOverrideAuditHook</span></a></pre></dt>
   <dd>
     
     
@@ -175,7 +178,7 @@
   </dd>
 </div>
 <div id="MethodOverrideResolveKind">
-  <dt><pre><a href="method_override.html#MethodOverrideResolveKind"><span class="Identifier">MethodOverrideResolveKind</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
+  <dt><pre><a href="#MethodOverrideResolveKind"><span class="Identifier">MethodOverrideResolveKind</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
   <span class="Identifier">morkNone</span><span class="Other">,</span> <span class="Identifier">morkInvalidToken</span><span class="Other">,</span> <span class="Identifier">morkDisallowedTarget</span><span class="Other">,</span> <span class="Identifier">morkResolved</span></pre></dt>
   <dd>
     
@@ -184,10 +187,10 @@
   </dd>
 </div>
 <div id="MethodOverrideResolveResult">
-  <dt><pre><a href="method_override.html#MethodOverrideResolveResult"><span class="Identifier">MethodOverrideResolveResult</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
-  <span class="Identifier">kind</span><span class="Operator">*</span><span class="Other">:</span> <a href="method_override.html#MethodOverrideResolveKind"><span class="Identifier">MethodOverrideResolveKind</span></a>
+  <dt><pre><a href="#MethodOverrideResolveResult"><span class="Identifier">MethodOverrideResolveResult</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <span class="Identifier">kind</span><span class="Operator">*</span><span class="Other">:</span> <a href="#MethodOverrideResolveKind"><span class="Identifier">MethodOverrideResolveKind</span></a>
   <span class="Identifier">methodKind</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">HttpMethod</span>
-  <span class="Identifier">source</span><span class="Operator">*</span><span class="Other">:</span> <a href="method_override.html#MethodOverrideSource"><span class="Identifier">MethodOverrideSource</span></a>
+  <span class="Identifier">source</span><span class="Operator">*</span><span class="Other">:</span> <a href="#MethodOverrideSource"><span class="Identifier">MethodOverrideSource</span></a>
   <span class="Identifier">rawToken</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>          <span class="Comment">## cleaned+uppercased token, not the raw user input</span></pre></dt>
   <dd>
     
@@ -196,7 +199,7 @@
   </dd>
 </div>
 <div id="MethodOverrideSource">
-  <dt><pre><a href="method_override.html#MethodOverrideSource"><span class="Identifier">MethodOverrideSource</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
+  <dt><pre><a href="#MethodOverrideSource"><span class="Identifier">MethodOverrideSource</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
   <span class="Identifier">mosHeader</span><span class="Other">,</span> <span class="Identifier">mosQuery</span><span class="Other">,</span> <span class="Identifier">mosForm</span></pre></dt>
   <dd>
     
@@ -211,7 +214,7 @@
   <h1><a class="toc-backref" href="#10">Consts</a></h1>
   <dl class="item">
     <div id="DefaultMethodOverrideMaxFormBytes">
-  <dt><pre><a href="method_override.html#DefaultMethodOverrideMaxFormBytes"><span class="Identifier">DefaultMethodOverrideMaxFormBytes</span></a> <span class="Other">=</span> <span class="DecNumber">16384</span></pre></dt>
+  <dt><pre><a href="#DefaultMethodOverrideMaxFormBytes"><span class="Identifier">DefaultMethodOverrideMaxFormBytes</span></a> <span class="Other">=</span> <span class="DecNumber">16384</span></pre></dt>
   <dd>
     
     
@@ -226,7 +229,7 @@
   <dl class="item">
     <div id="applyMethodOverride-procs-all">
   <div id="applyMethodOverride,Req,MethodOverrideOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#applyMethodOverride%2CReq%2CMethodOverrideOptions"><span class="Identifier">applyMethodOverride</span></a><span class="Other">(</span><span class="Identifier">req</span><span class="Other">:</span> <a href="common.html#Req"><span class="Identifier">Req</span></a><span class="Other">;</span> <span class="Identifier">options</span><span class="Other">:</span> <a href="method_override.html#MethodOverrideOptions"><span class="Identifier">MethodOverrideOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultMethodOverrideOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#applyMethodOverride%2CReq%2CMethodOverrideOptions"><span class="Identifier">applyMethodOverride</span></a><span class="Other">(</span><span class="Identifier">req</span><span class="Other">:</span> <a href="common.html#Req"><span class="Identifier">Req</span></a><span class="Other">;</span> <span class="Identifier">options</span><span class="Other">:</span> <a href="#MethodOverrideOptions"><span class="Identifier">MethodOverrideOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultMethodOverrideOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">,</span> <span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ReadIOEffect</span><span class="Other">,</span> <span class="Identifier">RootEffect</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
@@ -239,7 +242,7 @@
 </div>
 <div id="defaultMethodOverrideOptions-procs-all">
   <div id="defaultMethodOverrideOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultMethodOverrideOptions"><span class="Identifier">defaultMethodOverrideOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="method_override.html#MethodOverrideOptions"><span class="Identifier">MethodOverrideOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultMethodOverrideOptions"><span class="Identifier">defaultMethodOverrideOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#MethodOverrideOptions"><span class="Identifier">MethodOverrideOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -251,7 +254,7 @@
 </div>
 <div id="installMethodOverride-procs-all">
   <div id="installMethodOverride,ExpressApp,MethodOverrideOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#installMethodOverride%2CExpressApp%2CMethodOverrideOptions"><span class="Identifier">installMethodOverride</span></a><span class="Other">(</span><span class="Identifier">app</span><span class="Other">:</span> <a href="../types.html#ExpressApp"><span class="Identifier">ExpressApp</span></a><span class="Other">;</span> <span class="Identifier">options</span><span class="Other">:</span> <a href="method_override.html#MethodOverrideOptions"><span class="Identifier">MethodOverrideOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultMethodOverrideOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#installMethodOverride%2CExpressApp%2CMethodOverrideOptions"><span class="Identifier">installMethodOverride</span></a><span class="Other">(</span><span class="Identifier">app</span><span class="Other">:</span> <a href="../types.html#ExpressApp"><span class="Identifier">ExpressApp</span></a><span class="Other">;</span> <span class="Identifier">options</span><span class="Other">:</span> <a href="#MethodOverrideOptions"><span class="Identifier">MethodOverrideOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultMethodOverrideOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -263,7 +266,7 @@
 </div>
 <div id="methodOverride-procs-all">
   <div id="methodOverride,ExpressApp,MethodOverrideOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#methodOverride%2CExpressApp%2CMethodOverrideOptions"><span class="Identifier">methodOverride</span></a><span class="Other">(</span><span class="Identifier">app</span><span class="Other">:</span> <a href="../types.html#ExpressApp"><span class="Identifier">ExpressApp</span></a><span class="Other">;</span> <span class="Identifier">options</span><span class="Other">:</span> <a href="method_override.html#MethodOverrideOptions"><span class="Identifier">MethodOverrideOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultMethodOverrideOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#methodOverride%2CExpressApp%2CMethodOverrideOptions"><span class="Identifier">methodOverride</span></a><span class="Other">(</span><span class="Identifier">app</span><span class="Other">:</span> <a href="../types.html#ExpressApp"><span class="Identifier">ExpressApp</span></a><span class="Other">;</span> <span class="Identifier">options</span><span class="Other">:</span> <a href="#MethodOverrideOptions"><span class="Identifier">MethodOverrideOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultMethodOverrideOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span> {.
     <span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -275,7 +278,7 @@
 </div>
 <div id="resolveOverrideMethod-procs-all">
   <div id="resolveOverrideMethod,Req,MethodOverrideOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#resolveOverrideMethod%2CReq%2CMethodOverrideOptions"><span class="Identifier">resolveOverrideMethod</span></a><span class="Other">(</span><span class="Identifier">req</span><span class="Other">:</span> <a href="common.html#Req"><span class="Identifier">Req</span></a><span class="Other">;</span> <span class="Identifier">options</span><span class="Other">:</span> <a href="method_override.html#MethodOverrideOptions"><span class="Identifier">MethodOverrideOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultMethodOverrideOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="method_override.html#MethodOverrideResolveResult"><span class="Identifier">MethodOverrideResolveResult</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#resolveOverrideMethod%2CReq%2CMethodOverrideOptions"><span class="Identifier">resolveOverrideMethod</span></a><span class="Other">(</span><span class="Identifier">req</span><span class="Other">:</span> <a href="common.html#Req"><span class="Identifier">Req</span></a><span class="Other">;</span> <span class="Identifier">options</span><span class="Other">:</span> <a href="#MethodOverrideOptions"><span class="Identifier">MethodOverrideOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultMethodOverrideOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="#MethodOverrideResolveResult"><span class="Identifier">MethodOverrideResolveResult</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">,</span> <span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ReadIOEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -295,7 +298,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:23 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 12:49:19 UTC</small>
       </div>
     </div>
   </div>

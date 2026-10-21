@@ -16,13 +16,16 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.10">
 
 <!-- JS -->
-<script type="text/javascript" src="../../dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="../../dochack.js?v=2.2.10"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">nim_express/middlewares/graceful_shutdown</h1>
       <div class="row">
@@ -147,10 +150,10 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
     <div id="GracefulShutdownOptions">
-  <dt><pre><a href="graceful_shutdown.html#GracefulShutdownOptions"><span class="Identifier">GracefulShutdownOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#GracefulShutdownOptions"><span class="Identifier">GracefulShutdownOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">drainTimeoutMs</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">healthPath</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>
-  <span class="Identifier">shutdownHooks</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="graceful_shutdown.html#ShutdownHook"><span class="Identifier">ShutdownHook</span></a><span class="Other">]</span>
+  <span class="Identifier">shutdownHooks</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="#ShutdownHook"><span class="Identifier">ShutdownHook</span></a><span class="Other">]</span>
   <span class="Identifier">forceExitOnTimeout</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span></pre></dt>
   <dd>
     
@@ -159,7 +162,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
   </dd>
 </div>
 <div id="GracefulShutdownState">
-  <dt><pre><a href="graceful_shutdown.html#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a> <span class="Other">=</span> <span class="Keyword">ref</span> <span class="Keyword">object</span></pre></dt>
+  <dt><pre><a href="#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a> <span class="Other">=</span> <span class="Keyword">ref</span> <span class="Keyword">object</span></pre></dt>
   <dd>
     
     
@@ -167,7 +170,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
   </dd>
 </div>
 <div id="ShutdownHook">
-  <dt><pre><a href="graceful_shutdown.html#ShutdownHook"><span class="Identifier">ShutdownHook</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Other">)</span> {.<span class="Identifier">closure</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">gcsafe</span></span>.}</pre></dt>
+  <dt><pre><a href="#ShutdownHook"><span class="Identifier">ShutdownHook</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Other">)</span> {.<span class="Identifier">closure</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">gcsafe</span></span>.}</pre></dt>
   <dd>
     
     
@@ -182,7 +185,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
   <dl class="item">
     <div id="defaultGracefulShutdownOptions-procs-all">
   <div id="defaultGracefulShutdownOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultGracefulShutdownOptions"><span class="Identifier">defaultGracefulShutdownOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="graceful_shutdown.html#GracefulShutdownOptions"><span class="Identifier">GracefulShutdownOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultGracefulShutdownOptions"><span class="Identifier">defaultGracefulShutdownOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#GracefulShutdownOptions"><span class="Identifier">GracefulShutdownOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span>
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -194,7 +197,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
 </div>
 <div id="gracefulShutdown-procs-all">
   <div id="gracefulShutdown,GracefulShutdownOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#gracefulShutdown%2CGracefulShutdownOptions"><span class="Identifier">gracefulShutdown</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="graceful_shutdown.html#GracefulShutdownOptions"><span class="Identifier">GracefulShutdownOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultGracefulShutdownOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#gracefulShutdown%2CGracefulShutdownOptions"><span class="Identifier">gracefulShutdown</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#GracefulShutdownOptions"><span class="Identifier">GracefulShutdownOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultGracefulShutdownOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ResourceExhaustedError</span><span class="Other">,</span> <span class="Identifier">IOError</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">TimeEffect</span><span class="Other">,</span> <span class="Identifier">WriteIOEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
@@ -204,7 +207,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
   </dd>
 </div>
 <div id="gracefulShutdown,GracefulShutdownState,bool">
-  <dt><pre><span class="Keyword">proc</span> <a href="#gracefulShutdown%2CGracefulShutdownState%2Cbool"><span class="Identifier">gracefulShutdown</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="graceful_shutdown.html#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">;</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#gracefulShutdown%2CGracefulShutdownState%2Cbool"><span class="Identifier">gracefulShutdown</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">;</span>
                       <span class="Identifier">installSignalHandlers</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Other">=</span> <span class="Identifier">true</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ResourceExhaustedError</span><span class="Other">,</span> <span class="Identifier">IOError</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">TimeEffect</span><span class="Other">,</span> <span class="Identifier">WriteIOEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
@@ -218,7 +221,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
 </div>
 <div id="hooksCompleted-procs-all">
   <div id="hooksCompleted,GracefulShutdownState">
-  <dt><pre><span class="Keyword">proc</span> <a href="#hooksCompleted%2CGracefulShutdownState"><span class="Identifier">hooksCompleted</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="graceful_shutdown.html#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#hooksCompleted%2CGracefulShutdownState"><span class="Identifier">hooksCompleted</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -230,7 +233,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
 </div>
 <div id="inflightCount-procs-all">
   <div id="inflightCount,GracefulShutdownState">
-  <dt><pre><span class="Keyword">proc</span> <a href="#inflightCount%2CGracefulShutdownState"><span class="Identifier">inflightCount</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="graceful_shutdown.html#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int64</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#inflightCount%2CGracefulShutdownState"><span class="Identifier">inflightCount</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int64</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -242,7 +245,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
 </div>
 <div id="initiateShutdown-procs-all">
   <div id="initiateShutdown,GracefulShutdownState">
-  <dt><pre><span class="Keyword">proc</span> <a href="#initiateShutdown%2CGracefulShutdownState"><span class="Identifier">initiateShutdown</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="graceful_shutdown.html#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">IOError</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#initiateShutdown%2CGracefulShutdownState"><span class="Identifier">initiateShutdown</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">IOError</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">TimeEffect</span><span class="Other">,</span> <span class="Identifier">WriteIOEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -254,7 +257,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
 </div>
 <div id="isDrainComplete-procs-all">
   <div id="isDrainComplete,GracefulShutdownState">
-  <dt><pre><span class="Keyword">proc</span> <a href="#isDrainComplete%2CGracefulShutdownState"><span class="Identifier">isDrainComplete</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="graceful_shutdown.html#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#isDrainComplete%2CGracefulShutdownState"><span class="Identifier">isDrainComplete</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -266,7 +269,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
 </div>
 <div id="isShuttingDown-procs-all">
   <div id="isShuttingDown,GracefulShutdownState">
-  <dt><pre><span class="Keyword">proc</span> <a href="#isShuttingDown%2CGracefulShutdownState"><span class="Identifier">isShuttingDown</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="graceful_shutdown.html#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#isShuttingDown%2CGracefulShutdownState"><span class="Identifier">isShuttingDown</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -289,7 +292,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
 </div>
 <div id="newGracefulShutdownState-procs-all">
   <div id="newGracefulShutdownState,GracefulShutdownOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#newGracefulShutdownState%2CGracefulShutdownOptions"><span class="Identifier">newGracefulShutdownState</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="graceful_shutdown.html#GracefulShutdownOptions"><span class="Identifier">GracefulShutdownOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultGracefulShutdownOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="graceful_shutdown.html#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#newGracefulShutdownState%2CGracefulShutdownOptions"><span class="Identifier">newGracefulShutdownState</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#GracefulShutdownOptions"><span class="Identifier">GracefulShutdownOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultGracefulShutdownOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -312,7 +315,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
 </div>
 <div id="runShutdownHooks-procs-all">
   <div id="runShutdownHooks,GracefulShutdownState">
-  <dt><pre><span class="Keyword">proc</span> <a href="#runShutdownHooks%2CGracefulShutdownState"><span class="Identifier">runShutdownHooks</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="graceful_shutdown.html#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#runShutdownHooks%2CGracefulShutdownState"><span class="Identifier">runShutdownHooks</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="#GracefulShutdownState"><span class="Identifier">GracefulShutdownState</span></a><span class="Other">)</span> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">,</span> <span class="Identifier">IOError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">,</span> <span class="Identifier">WriteIOEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -332,7 +335,7 @@ Test hook: clear the pending shutdown signal flag.Test hook: mark the pending sh
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:23 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 12:49:20 UTC</small>
       </div>
     </div>
   </div>

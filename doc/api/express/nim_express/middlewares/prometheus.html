@@ -16,13 +16,16 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.10">
 
 <!-- JS -->
-<script type="text/javascript" src="../../dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="../../dochack.js?v=2.2.10"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">nim_express/middlewares/prometheus</h1>
       <div class="row">
@@ -139,7 +142,7 @@ Creates the Prometheus metrics middleware with default options but a custom metr
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
     <div id="MetricsBucket">
-  <dt><pre><a href="prometheus.html#MetricsBucket"><span class="Identifier">MetricsBucket</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#MetricsBucket"><span class="Identifier">MetricsBucket</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">le</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">float64</span>
   <span class="Identifier">count</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int64</span></pre></dt>
   <dd>
@@ -149,7 +152,7 @@ Creates the Prometheus metrics middleware with default options but a custom metr
   </dd>
 </div>
 <div id="PrometheusOptions">
-  <dt><pre><a href="prometheus.html#PrometheusOptions"><span class="Identifier">PrometheusOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#PrometheusOptions"><span class="Identifier">PrometheusOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">metricsPath</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>
   <span class="Identifier">includeMethod</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>
   <span class="Identifier">normalizePaths</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>
@@ -161,8 +164,8 @@ Creates the Prometheus metrics middleware with default options but a custom metr
   </dd>
 </div>
 <div id="PrometheusRegistry">
-  <dt><pre><a href="prometheus.html#PrometheusRegistry"><span class="Identifier">PrometheusRegistry</span></a> <span class="Other">=</span> <span class="Keyword">ref</span> <span class="Keyword">object</span>
-  <span class="Identifier">routes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">Table</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">,</span> <a href="prometheus.html#RouteMetrics"><span class="Identifier">RouteMetrics</span></a><span class="Other">]</span>
+  <dt><pre><a href="#PrometheusRegistry"><span class="Identifier">PrometheusRegistry</span></a> <span class="Other">=</span> <span class="Keyword">ref</span> <span class="Keyword">object</span>
+  <span class="Identifier">routes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">Table</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">,</span> <a href="#RouteMetrics"><span class="Identifier">RouteMetrics</span></a><span class="Other">]</span>
   <span class="Identifier">inFlight</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">Atomic</span><span class="Other">[</span><span class="Identifier">int64</span><span class="Other">]</span>
   <span class="Identifier">maxRoutes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">droppedRoutes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int64</span></pre></dt>
@@ -173,10 +176,10 @@ Creates the Prometheus metrics middleware with default options but a custom metr
   </dd>
 </div>
 <div id="RouteMetrics">
-  <dt><pre><a href="prometheus.html#RouteMetrics"><span class="Identifier">RouteMetrics</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#RouteMetrics"><span class="Identifier">RouteMetrics</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">requestCount</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int64</span>
   <span class="Identifier">statusCounts</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">array</span><span class="Other">[</span><span class="DecNumber">6</span><span class="Other">,</span> <span class="Identifier">int64</span><span class="Other">]</span>
-  <span class="Identifier">buckets</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="prometheus.html#MetricsBucket"><span class="Identifier">MetricsBucket</span></a><span class="Other">]</span>
+  <span class="Identifier">buckets</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="#MetricsBucket"><span class="Identifier">MetricsBucket</span></a><span class="Other">]</span>
   <span class="Identifier">totalDuration</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">float64</span></pre></dt>
   <dd>
     
@@ -191,7 +194,7 @@ Creates the Prometheus metrics middleware with default options but a custom metr
   <h1><a class="toc-backref" href="#10">Consts</a></h1>
   <dl class="item">
     <div id="DefaultBuckets">
-  <dt><pre><a href="prometheus.html#DefaultBuckets"><span class="Identifier">DefaultBuckets</span></a> <span class="Other">=</span> <span class="Other">[</span><span class="FloatNumber">0.005</span><span class="Other">,</span> <span class="FloatNumber">0.01</span><span class="Other">,</span> <span class="FloatNumber">0.025</span><span class="Other">,</span> <span class="FloatNumber">0.05</span><span class="Other">,</span> <span class="FloatNumber">0.1</span><span class="Other">,</span> <span class="FloatNumber">0.25</span><span class="Other">,</span> <span class="FloatNumber">0.5</span><span class="Other">,</span> <span class="FloatNumber">1.0</span><span class="Other">,</span> <span class="FloatNumber">2.5</span><span class="Other">,</span> <span class="FloatNumber">5.0</span><span class="Other">,</span> <span class="FloatNumber">10.0</span><span class="Other">]</span></pre></dt>
+  <dt><pre><a href="#DefaultBuckets"><span class="Identifier">DefaultBuckets</span></a> <span class="Other">=</span> <span class="Other">[</span><span class="FloatNumber">0.005</span><span class="Other">,</span> <span class="FloatNumber">0.01</span><span class="Other">,</span> <span class="FloatNumber">0.025</span><span class="Other">,</span> <span class="FloatNumber">0.05</span><span class="Other">,</span> <span class="FloatNumber">0.1</span><span class="Other">,</span> <span class="FloatNumber">0.25</span><span class="Other">,</span> <span class="FloatNumber">0.5</span><span class="Other">,</span> <span class="FloatNumber">1.0</span><span class="Other">,</span> <span class="FloatNumber">2.5</span><span class="Other">,</span> <span class="FloatNumber">5.0</span><span class="Other">,</span> <span class="FloatNumber">10.0</span><span class="Other">]</span></pre></dt>
   <dd>
     
     
@@ -199,7 +202,7 @@ Creates the Prometheus metrics middleware with default options but a custom metr
   </dd>
 </div>
 <div id="MaxRouteCardinality">
-  <dt><pre><a href="prometheus.html#MaxRouteCardinality"><span class="Identifier">MaxRouteCardinality</span></a> <span class="Other">=</span> <span class="DecNumber">2048</span></pre></dt>
+  <dt><pre><a href="#MaxRouteCardinality"><span class="Identifier">MaxRouteCardinality</span></a> <span class="Other">=</span> <span class="DecNumber">2048</span></pre></dt>
   <dd>
     
     
@@ -214,7 +217,7 @@ Creates the Prometheus metrics middleware with default options but a custom metr
   <dl class="item">
     <div id="defaultPrometheusOptions-procs-all">
   <div id="defaultPrometheusOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultPrometheusOptions"><span class="Identifier">defaultPrometheusOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="prometheus.html#PrometheusOptions"><span class="Identifier">PrometheusOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultPrometheusOptions"><span class="Identifier">defaultPrometheusOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#PrometheusOptions"><span class="Identifier">PrometheusOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -226,7 +229,7 @@ Creates the Prometheus metrics middleware with default options but a custom metr
 </div>
 <div id="newPrometheusRegistry-procs-all">
   <div id="newPrometheusRegistry,int">
-  <dt><pre><span class="Keyword">proc</span> <a href="#newPrometheusRegistry%2Cint"><span class="Identifier">newPrometheusRegistry</span></a><span class="Other">(</span><span class="Identifier">maxRoutes</span><span class="Other">:</span> <span class="Identifier">int</span> <span class="Other">=</span> <span class="Identifier">MaxRouteCardinality</span><span class="Other">)</span><span class="Other">:</span> <a href="prometheus.html#PrometheusRegistry"><span class="Identifier">PrometheusRegistry</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#newPrometheusRegistry%2Cint"><span class="Identifier">newPrometheusRegistry</span></a><span class="Other">(</span><span class="Identifier">maxRoutes</span><span class="Other">:</span> <span class="Identifier">int</span> <span class="Other">=</span> <span class="Identifier">MaxRouteCardinality</span><span class="Other">)</span><span class="Other">:</span> <a href="#PrometheusRegistry"><span class="Identifier">PrometheusRegistry</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -238,8 +241,8 @@ Creates the Prometheus metrics middleware with default options but a custom metr
 </div>
 <div id="prometheusMetrics-procs-all">
   <div id="prometheusMetrics,PrometheusRegistry,PrometheusOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#prometheusMetrics%2CPrometheusRegistry%2CPrometheusOptions"><span class="Identifier">prometheusMetrics</span></a><span class="Other">(</span><span class="Identifier">registry</span><span class="Other">:</span> <a href="prometheus.html#PrometheusRegistry"><span class="Identifier">PrometheusRegistry</span></a><span class="Other">;</span>
-                       <span class="Identifier">options</span><span class="Other">:</span> <a href="prometheus.html#PrometheusOptions"><span class="Identifier">PrometheusOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultPrometheusOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#prometheusMetrics%2CPrometheusRegistry%2CPrometheusOptions"><span class="Identifier">prometheusMetrics</span></a><span class="Other">(</span><span class="Identifier">registry</span><span class="Other">:</span> <a href="#PrometheusRegistry"><span class="Identifier">PrometheusRegistry</span></a><span class="Other">;</span>
+                       <span class="Identifier">options</span><span class="Other">:</span> <a href="#PrometheusOptions"><span class="Identifier">PrometheusOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultPrometheusOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -248,7 +251,7 @@ Creates the Prometheus metrics middleware with default options but a custom metr
   </dd>
 </div>
 <div id="prometheusMetrics,PrometheusRegistry,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#prometheusMetrics%2CPrometheusRegistry%2Cstring"><span class="Identifier">prometheusMetrics</span></a><span class="Other">(</span><span class="Identifier">registry</span><span class="Other">:</span> <a href="prometheus.html#PrometheusRegistry"><span class="Identifier">PrometheusRegistry</span></a><span class="Other">;</span> <span class="Identifier">metricsPath</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#prometheusMetrics%2CPrometheusRegistry%2Cstring"><span class="Identifier">prometheusMetrics</span></a><span class="Other">(</span><span class="Identifier">registry</span><span class="Other">:</span> <a href="#PrometheusRegistry"><span class="Identifier">PrometheusRegistry</span></a><span class="Other">;</span> <span class="Identifier">metricsPath</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -260,7 +263,7 @@ Creates the Prometheus metrics middleware with default options but a custom metr
 </div>
 <div id="renderMetrics-procs-all">
   <div id="renderMetrics,PrometheusRegistry">
-  <dt><pre><span class="Keyword">proc</span> <a href="#renderMetrics%2CPrometheusRegistry"><span class="Identifier">renderMetrics</span></a><span class="Other">(</span><span class="Identifier">registry</span><span class="Other">:</span> <a href="prometheus.html#PrometheusRegistry"><span class="Identifier">PrometheusRegistry</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#renderMetrics%2CPrometheusRegistry"><span class="Identifier">renderMetrics</span></a><span class="Other">(</span><span class="Identifier">registry</span><span class="Other">:</span> <a href="#PrometheusRegistry"><span class="Identifier">PrometheusRegistry</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -280,7 +283,7 @@ Creates the Prometheus metrics middleware with default options but a custom metr
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:23 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 12:49:20 UTC</small>
       </div>
     </div>
   </div>

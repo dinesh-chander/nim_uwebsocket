@@ -16,13 +16,16 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.10">
 
 <!-- JS -->
-<script type="text/javascript" src="../../dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="../../dochack.js?v=2.2.10"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">nim_express/middlewares/global_error_filter</h1>
       <div class="row">
@@ -143,11 +146,11 @@
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
     <div id="ExceptionFilter">
-  <dt><pre><a href="global_error_filter.html#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">name</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>
   <span class="Identifier">priority</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>             <span class="Comment">## Higher priority values are evaluated first (default 0).</span>
   <span class="Identifier">exceptionType</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>
-  <span class="Identifier">handler</span><span class="Operator">*</span><span class="Other">:</span> <a href="global_error_filter.html#ExceptionFilterProc"><span class="Identifier">ExceptionFilterProc</span></a></pre></dt>
+  <span class="Identifier">handler</span><span class="Operator">*</span><span class="Other">:</span> <a href="#ExceptionFilterProc"><span class="Identifier">ExceptionFilterProc</span></a></pre></dt>
   <dd>
     
     
@@ -155,7 +158,7 @@
   </dd>
 </div>
 <div id="ExceptionFilterProc">
-  <dt><pre><a href="global_error_filter.html#ExceptionFilterProc"><span class="Identifier">ExceptionFilterProc</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">err</span><span class="Other">:</span> <span class="Keyword">ref</span> <span class="Identifier">Exception</span><span class="Other">;</span> <span class="Identifier">req</span><span class="Other">:</span> <a href="common.html#Req"><span class="Identifier">Req</span></a><span class="Other">;</span> <span class="Identifier">res</span><span class="Other">:</span> <a href="common.html#Res"><span class="Identifier">Res</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.
+  <dt><pre><a href="#ExceptionFilterProc"><span class="Identifier">ExceptionFilterProc</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">err</span><span class="Other">:</span> <span class="Keyword">ref</span> <span class="Identifier">Exception</span><span class="Other">;</span> <span class="Identifier">req</span><span class="Other">:</span> <a href="common.html#Req"><span class="Identifier">Req</span></a><span class="Other">;</span> <span class="Identifier">res</span><span class="Other">:</span> <a href="common.html#Res"><span class="Identifier">Res</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.
     <span class="Identifier">closure</span>.}</pre></dt>
   <dd>
     
@@ -164,8 +167,8 @@
   </dd>
 </div>
 <div id="GlobalErrorFilterOptions">
-  <dt><pre><a href="global_error_filter.html#GlobalErrorFilterOptions"><span class="Identifier">GlobalErrorFilterOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
-  <span class="Identifier">filters</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="global_error_filter.html#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a><span class="Other">]</span>
+  <dt><pre><a href="#GlobalErrorFilterOptions"><span class="Identifier">GlobalErrorFilterOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <span class="Identifier">filters</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a><span class="Other">]</span>
   <span class="Identifier">fallbackStatusCode</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">logUnhandled</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span></pre></dt>
   <dd>
@@ -182,7 +185,7 @@
   <dl class="item">
     <div id="builtinFilters-procs-all">
   <div id="builtinFilters">
-  <dt><pre><span class="Keyword">proc</span> <a href="#builtinFilters"><span class="Identifier">builtinFilters</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="global_error_filter.html#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a><span class="Other">]</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#builtinFilters"><span class="Identifier">builtinFilters</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a><span class="Other">]</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     Creates the 5 built-in ExceptionFilter objects (each with a fresh closure allocation). Call once at startup, not per-request.
@@ -193,7 +196,7 @@
 </div>
 <div id="defaultGlobalErrorFilterOptions-procs-all">
   <div id="defaultGlobalErrorFilterOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultGlobalErrorFilterOptions"><span class="Identifier">defaultGlobalErrorFilterOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="global_error_filter.html#GlobalErrorFilterOptions"><span class="Identifier">GlobalErrorFilterOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultGlobalErrorFilterOptions"><span class="Identifier">defaultGlobalErrorFilterOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#GlobalErrorFilterOptions"><span class="Identifier">GlobalErrorFilterOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span>
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -205,7 +208,7 @@
 </div>
 <div id="globalErrorFilter-procs-all">
   <div id="globalErrorFilter,seq[ExceptionFilter]">
-  <dt><pre><span class="Keyword">proc</span> <a href="#globalErrorFilter%2Cseq%5BExceptionFilter%5D"><span class="Identifier">globalErrorFilter</span></a><span class="Other">(</span><span class="Identifier">filters</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="global_error_filter.html#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#globalErrorFilter%2Cseq%5BExceptionFilter%5D"><span class="Identifier">globalErrorFilter</span></a><span class="Other">(</span><span class="Identifier">filters</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -214,7 +217,7 @@
   </dd>
 </div>
 <div id="globalErrorFilter,GlobalErrorFilterOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#globalErrorFilter%2CGlobalErrorFilterOptions"><span class="Identifier">globalErrorFilter</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="global_error_filter.html#GlobalErrorFilterOptions"><span class="Identifier">GlobalErrorFilterOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultGlobalErrorFilterOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#globalErrorFilter%2CGlobalErrorFilterOptions"><span class="Identifier">globalErrorFilter</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#GlobalErrorFilterOptions"><span class="Identifier">GlobalErrorFilterOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultGlobalErrorFilterOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -226,7 +229,7 @@
 </div>
 <div id="globalErrorFilterWithBuiltins-procs-all">
   <div id="globalErrorFilterWithBuiltins,seq[ExceptionFilter]">
-  <dt><pre><span class="Keyword">proc</span> <a href="#globalErrorFilterWithBuiltins%2Cseq%5BExceptionFilter%5D"><span class="Identifier">globalErrorFilterWithBuiltins</span></a><span class="Other">(</span><span class="Identifier">extraFilters</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="global_error_filter.html#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a><span class="Other">]</span> <span class="Other">=</span> <span class="Operator">@</span><span class="Other">[</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#globalErrorFilterWithBuiltins%2Cseq%5BExceptionFilter%5D"><span class="Identifier">globalErrorFilterWithBuiltins</span></a><span class="Other">(</span><span class="Identifier">extraFilters</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a><span class="Other">]</span> <span class="Other">=</span> <span class="Operator">@</span><span class="Other">[</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -238,7 +241,7 @@
 </div>
 <div id="ioErrorFilter-procs-all">
   <div id="ioErrorFilter">
-  <dt><pre><span class="Keyword">proc</span> <a href="#ioErrorFilter"><span class="Identifier">ioErrorFilter</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="global_error_filter.html#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#ioErrorFilter"><span class="Identifier">ioErrorFilter</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -249,7 +252,7 @@
 </div>
 <div id="jsonParsingErrorFilter-procs-all">
   <div id="jsonParsingErrorFilter">
-  <dt><pre><span class="Keyword">proc</span> <a href="#jsonParsingErrorFilter"><span class="Identifier">jsonParsingErrorFilter</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="global_error_filter.html#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#jsonParsingErrorFilter"><span class="Identifier">jsonParsingErrorFilter</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -261,7 +264,7 @@
 </div>
 <div id="keyErrorFilter-procs-all">
   <div id="keyErrorFilter">
-  <dt><pre><span class="Keyword">proc</span> <a href="#keyErrorFilter"><span class="Identifier">keyErrorFilter</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="global_error_filter.html#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#keyErrorFilter"><span class="Identifier">keyErrorFilter</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -272,8 +275,8 @@
 </div>
 <div id="newExceptionFilter-procs-all">
   <div id="newExceptionFilter,string,ExceptionFilterProc,int,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#newExceptionFilter%2Cstring%2CExceptionFilterProc%2Cint%2Cstring"><span class="Identifier">newExceptionFilter</span></a><span class="Other">(</span><span class="Identifier">name</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">handler</span><span class="Other">:</span> <a href="global_error_filter.html#ExceptionFilterProc"><span class="Identifier">ExceptionFilterProc</span></a><span class="Other">;</span>
-                        <span class="Identifier">priority</span><span class="Other">:</span> <span class="Identifier">int</span> <span class="Other">=</span> <span class="DecNumber">0</span><span class="Other">;</span> <span class="Identifier">exceptionType</span><span class="Other">:</span> <span class="Identifier">string</span> <span class="Other">=</span> <span class="StringLit">&quot;&quot;</span><span class="Other">)</span><span class="Other">:</span> <a href="global_error_filter.html#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#newExceptionFilter%2Cstring%2CExceptionFilterProc%2Cint%2Cstring"><span class="Identifier">newExceptionFilter</span></a><span class="Other">(</span><span class="Identifier">name</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">handler</span><span class="Other">:</span> <a href="#ExceptionFilterProc"><span class="Identifier">ExceptionFilterProc</span></a><span class="Other">;</span>
+                        <span class="Identifier">priority</span><span class="Other">:</span> <span class="Identifier">int</span> <span class="Other">=</span> <span class="DecNumber">0</span><span class="Other">;</span> <span class="Identifier">exceptionType</span><span class="Other">:</span> <span class="Identifier">string</span> <span class="Other">=</span> <span class="StringLit">&quot;&quot;</span><span class="Other">)</span><span class="Other">:</span> <a href="#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> {.
     <span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -285,7 +288,7 @@
 </div>
 <div id="osErrorFilter-procs-all">
   <div id="osErrorFilter">
-  <dt><pre><span class="Keyword">proc</span> <a href="#osErrorFilter"><span class="Identifier">osErrorFilter</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="global_error_filter.html#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#osErrorFilter"><span class="Identifier">osErrorFilter</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -296,7 +299,7 @@
 </div>
 <div id="valueErrorFilter-procs-all">
   <div id="valueErrorFilter">
-  <dt><pre><span class="Keyword">proc</span> <a href="#valueErrorFilter"><span class="Identifier">valueErrorFilter</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="global_error_filter.html#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#valueErrorFilter"><span class="Identifier">valueErrorFilter</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#ExceptionFilter"><span class="Identifier">ExceptionFilter</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -315,7 +318,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:23 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 12:49:20 UTC</small>
       </div>
     </div>
   </div>
