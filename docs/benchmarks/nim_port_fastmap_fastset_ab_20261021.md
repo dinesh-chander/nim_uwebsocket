@@ -504,3 +504,41 @@ int64 get-hit vs C: 0.84x at n=1k, 0.97x at 10k, 0.84x at 100k — the
 abs ~1 ns). All string ops within noise (median ratio 1.007 over 50
 comparisons, alternating min-of-2). Gates: nim_utils 13/13,
 nim_express 73/73.
+
+## Pass 6: hashed-API and lifecycle stress (tests only)
+
+`nim_utils/tests/test_fast_collections_stress3.nim` (8 tests, release +
+debug builds green) covers the surface the earlier suites left thin:
+
+- `hashKey` string/view overloads agree and are deterministic per process.
+- Cross-process consistency: a child process re-creates a map with
+  `putHashed`/`getViewHashed` and reproduces the same digest.
+- Full hashed surface on the string backend: 2001 keys (len 0-300 plus a
+  65535-byte key) through `putHashed` / `getViewHashed` / `getLenHashed` /
+  `tryGetViewHashed`, then a seeded churn phase with full-pair and
+  `getView` sweeps against a `Table` oracle.
+- Tombstone storms: 10 rounds of 5000 inserts / 70 % deletes / long-key
+  refills force rebuild + rehash with a full oracle compare each round.
+- Arena maps through the view-key overloads (`putView` / `containsView` /
+  `delView`; int64 maps have no `tryGetView`/`getPtr` view overloads by
+  design — the string-key lanes are asserted instead).
+- Nil-handle and odd-input safety, double-close idempotence, and memory
+  return across 80 map lifecycles (< 32 MB RSS growth).
+- Set prefill constructor + view-key churn across several rehashes.
+
+Pinned contracts this suite discovered (all pre-existing, unchanged):
+
+1. Entries written with a caller hash that differs from `hashKey` output
+   are legitimately invisible to the plain `get`/`del` lanes (they
+   re-hash); only same-hash hashed reads or the key-only insert fallback
+   resolve them. There is no `delHashed` API, so such entries are
+   permanent unless overwritten through the hashed lane.
+2. Nil `FastMap`/`FastSet` handles: only `len` and `close` are nil-safe
+   (true already on the pre-port backend); all other operations require
+   construction first.
+3. `FastStringView ==` compares the data pointer, not content — content
+   checks must go through `$view`.
+4. `hashKey(cstring)` and `hashKey(string)` are not asserted equal for
+   arbitrary content (only the string/view pair is).
+
+Gates: nim_utils 14/14, nim_express 73/73.
