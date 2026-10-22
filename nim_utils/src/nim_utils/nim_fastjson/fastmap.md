@@ -14,7 +14,7 @@ Primary goals:
 The current `FastMap` in `nim_utils/src/nim_utils/helpers/fast_map.nim` is only partially generic:
 - key type is fixed to `string`
 - value type is limited to `string` and `int64`
-- storage is split across native C-backed implementations
+- storage is pure Nim Swiss-table backends (portable SWAR group probes, bump-arena string storage)
 - borrowed view APIs work well for string-heavy hot paths
 
 This design is good for:
@@ -157,7 +157,7 @@ Do not fake `var V` semantics with copied values.
 2. Add true mutable slot access internally
 3. Implement exact `mgetOrPut`
 4. Add `mpairs` and `mvalues`
-5. Benchmark against current C-backed `string -> int64`
+5. Benchmark against previous C-backed `string -> int64`
 
 ### Phase 3: String backend decision
 1. Decide whether `string -> string` stays borrowed/C-assisted

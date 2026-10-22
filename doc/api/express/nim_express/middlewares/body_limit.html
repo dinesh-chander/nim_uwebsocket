@@ -16,13 +16,16 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.10">
 
 <!-- JS -->
-<script type="text/javascript" src="../../dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="../../dochack.js?v=2.2.10"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">nim_express/middlewares/body_limit</h1>
       <div class="row">
@@ -130,9 +133,9 @@ Convenience overload building the middleware from a plain byte count, clamped to
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
     <div id="BodyLimitOptions">
-  <dt><pre><a href="body_limit.html#BodyLimitOptions"><span class="Identifier">BodyLimitOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#BodyLimitOptions"><span class="Identifier">BodyLimitOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">maxBytes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
-  <span class="Identifier">contentTypeLimits</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="body_limit.html#ContentTypeLimitEntry"><span class="Identifier">ContentTypeLimitEntry</span></a><span class="Other">]</span></pre></dt>
+  <span class="Identifier">contentTypeLimits</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="#ContentTypeLimitEntry"><span class="Identifier">ContentTypeLimitEntry</span></a><span class="Other">]</span></pre></dt>
   <dd>
     
     
@@ -140,7 +143,7 @@ Convenience overload building the middleware from a plain byte count, clamped to
   </dd>
 </div>
 <div id="ContentTypeLimitEntry">
-  <dt><pre><a href="body_limit.html#ContentTypeLimitEntry"><span class="Identifier">ContentTypeLimitEntry</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#ContentTypeLimitEntry"><span class="Identifier">ContentTypeLimitEntry</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">contentType</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>
   <span class="Identifier">maxBytes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span></pre></dt>
   <dd>
@@ -156,7 +159,7 @@ Convenience overload building the middleware from a plain byte count, clamped to
   <h1><a class="toc-backref" href="#10">Consts</a></h1>
   <dl class="item">
     <div id="payloadTooLargeBody">
-  <dt><pre><a href="body_limit.html#payloadTooLargeBody"><span class="Identifier">payloadTooLargeBody</span></a> <span class="Other">=</span> <span class="StringLit">&quot;&quot;&quot;{&quot;error&quot;:&quot;Payload Too Large&quot;}&quot;&quot;&quot;</span></pre></dt>
+  <dt><pre><a href="#payloadTooLargeBody"><span class="Identifier">payloadTooLargeBody</span></a> <span class="Other">=</span> <span class="StringLit">&quot;&quot;&quot;{&quot;error&quot;:&quot;Payload Too Large&quot;}&quot;&quot;&quot;</span></pre></dt>
   <dd>
     
     
@@ -180,7 +183,7 @@ Convenience overload building the middleware from a plain byte count, clamped to
   </dd>
 </div>
 <div id="bodyLimit,BodyLimitOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#bodyLimit%2CBodyLimitOptions"><span class="Identifier">bodyLimit</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="body_limit.html#BodyLimitOptions"><span class="Identifier">BodyLimitOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultBodyLimitOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#bodyLimit%2CBodyLimitOptions"><span class="Identifier">bodyLimit</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#BodyLimitOptions"><span class="Identifier">BodyLimitOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultBodyLimitOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -192,7 +195,7 @@ Convenience overload building the middleware from a plain byte count, clamped to
 </div>
 <div id="defaultBodyLimitOptions-procs-all">
   <div id="defaultBodyLimitOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultBodyLimitOptions"><span class="Identifier">defaultBodyLimitOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="body_limit.html#BodyLimitOptions"><span class="Identifier">BodyLimitOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultBodyLimitOptions"><span class="Identifier">defaultBodyLimitOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#BodyLimitOptions"><span class="Identifier">BodyLimitOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -204,8 +207,8 @@ Convenience overload building the middleware from a plain byte count, clamped to
 </div>
 <div id="normalizeContentTypeLimits-procs-all">
   <div id="normalizeContentTypeLimits,seq[ContentTypeLimitEntry]">
-  <dt><pre><span class="Keyword">proc</span> <a href="#normalizeContentTypeLimits%2Cseq%5BContentTypeLimitEntry%5D"><span class="Identifier">normalizeContentTypeLimits</span></a><span class="Other">(</span><span class="Identifier">entries</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="body_limit.html#ContentTypeLimitEntry"><span class="Identifier">ContentTypeLimitEntry</span></a><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span>
-    <a href="body_limit.html#ContentTypeLimitEntry"><span class="Identifier">ContentTypeLimitEntry</span></a><span class="Other">]</span> {.<span class="Identifier">noSideEffect</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#normalizeContentTypeLimits%2Cseq%5BContentTypeLimitEntry%5D"><span class="Identifier">normalizeContentTypeLimits</span></a><span class="Other">(</span><span class="Identifier">entries</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="#ContentTypeLimitEntry"><span class="Identifier">ContentTypeLimitEntry</span></a><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span>
+    <a href="#ContentTypeLimitEntry"><span class="Identifier">ContentTypeLimitEntry</span></a><span class="Other">]</span> {.<span class="Identifier">noSideEffect</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
                              <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -217,7 +220,7 @@ Convenience overload building the middleware from a plain byte count, clamped to
 </div>
 <div id="resolveLimit-procs-all">
   <div id="resolveLimit,seq[ContentTypeLimitEntry],int,">
-  <dt><pre><span class="Keyword">proc</span> <a href="#resolveLimit%2Cseq%5BContentTypeLimitEntry%5D%2Cint%2C"><span class="Identifier">resolveLimit</span></a><span class="Other">(</span><span class="Identifier">limits</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="body_limit.html#ContentTypeLimitEntry"><span class="Identifier">ContentTypeLimitEntry</span></a><span class="Other">]</span><span class="Other">;</span> <span class="Identifier">defaultMax</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">;</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#resolveLimit%2Cseq%5BContentTypeLimitEntry%5D%2Cint%2C"><span class="Identifier">resolveLimit</span></a><span class="Other">(</span><span class="Identifier">limits</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="#ContentTypeLimitEntry"><span class="Identifier">ContentTypeLimitEntry</span></a><span class="Other">]</span><span class="Other">;</span> <span class="Identifier">defaultMax</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">;</span>
                   <span class="Identifier">contentType</span><span class="Other">:</span> <span class="Identifier">fast_map</span><span class="Other">.</span><span class="Identifier">FastStringView</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
     <span class="Identifier">noSideEffect</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
@@ -227,7 +230,7 @@ Convenience overload building the middleware from a plain byte count, clamped to
   </dd>
 </div>
 <div id="resolveLimit,seq[ContentTypeLimitEntry],int,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#resolveLimit%2Cseq%5BContentTypeLimitEntry%5D%2Cint%2Cstring"><span class="Identifier">resolveLimit</span></a><span class="Other">(</span><span class="Identifier">limits</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="body_limit.html#ContentTypeLimitEntry"><span class="Identifier">ContentTypeLimitEntry</span></a><span class="Other">]</span><span class="Other">;</span> <span class="Identifier">defaultMax</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">;</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#resolveLimit%2Cseq%5BContentTypeLimitEntry%5D%2Cint%2Cstring"><span class="Identifier">resolveLimit</span></a><span class="Other">(</span><span class="Identifier">limits</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="#ContentTypeLimitEntry"><span class="Identifier">ContentTypeLimitEntry</span></a><span class="Other">]</span><span class="Other">;</span> <span class="Identifier">defaultMax</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">;</span>
                   <span class="Identifier">contentType</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span class="Identifier">noSideEffect</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
@@ -248,7 +251,7 @@ Convenience overload building the middleware from a plain byte count, clamped to
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:23 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 19:21:38 UTC</small>
       </div>
     </div>
   </div>

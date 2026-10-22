@@ -16,13 +16,16 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="../nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="../nimdoc.out.css?v=2.2.10">
 
 <!-- JS -->
-<script type="text/javascript" src="../dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="../dochack.js?v=2.2.10"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">nim_express/paged_buffer</h1>
       <div class="row">
@@ -258,7 +261,7 @@
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
     <div id="PageBuffer">
-  <dt><pre><a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">pageSize</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">buffered</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span></pre></dt>
   <dd>
@@ -268,7 +271,7 @@
   </dd>
 </div>
 <div id="PagePoolMetrics">
-  <dt><pre><a href="paged_buffer.html#PagePoolMetrics"><span class="Identifier">PagePoolMetrics</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#PagePoolMetrics"><span class="Identifier">PagePoolMetrics</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">hitCount</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int64</span>
   <span class="Identifier">missCount</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int64</span>
   <span class="Identifier">retainedBytes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int64</span>
@@ -280,7 +283,7 @@
   </dd>
 </div>
 <div id="PagePoolPolicy">
-  <dt><pre><a href="paged_buffer.html#PagePoolPolicy"><span class="Identifier">PagePoolPolicy</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#PagePoolPolicy"><span class="Identifier">PagePoolPolicy</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">maxRetainedPages</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">maxRetainedBytes</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int64</span></pre></dt>
   <dd>
@@ -296,7 +299,7 @@
   <h1><a class="toc-backref" href="#10">Consts</a></h1>
   <dl class="item">
     <div id="DefaultPageBufferSize">
-  <dt><pre><a href="paged_buffer.html#DefaultPageBufferSize"><span class="Identifier">DefaultPageBufferSize</span></a> <span class="Other">=</span> <span class="DecNumber">4096</span></pre></dt>
+  <dt><pre><a href="#DefaultPageBufferSize"><span class="Identifier">DefaultPageBufferSize</span></a> <span class="Other">=</span> <span class="DecNumber">4096</span></pre></dt>
   <dd>
     
     
@@ -304,7 +307,7 @@
   </dd>
 </div>
 <div id="DefaultPagePoolLimit">
-  <dt><pre><a href="paged_buffer.html#DefaultPagePoolLimit"><span class="Identifier">DefaultPagePoolLimit</span></a> <span class="Other">=</span> <span class="DecNumber">1024</span></pre></dt>
+  <dt><pre><a href="#DefaultPagePoolLimit"><span class="Identifier">DefaultPagePoolLimit</span></a> <span class="Other">=</span> <span class="DecNumber">1024</span></pre></dt>
   <dd>
     
     
@@ -312,7 +315,7 @@
   </dd>
 </div>
 <div id="HtmlEscapeLookup">
-  <dt><pre><a href="paged_buffer.html#HtmlEscapeLookup"><span class="Identifier">HtmlEscapeLookup</span></a><span class="Other">:</span> <span class="Identifier">array</span><span class="Other">[</span><span class="DecNumber">256</span><span class="Other">,</span> <span class="Identifier">bool</span><span class="Other">]</span> <span class="Other">=</span> <span class="Other">[</span><span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span>
+  <dt><pre><a href="#HtmlEscapeLookup"><span class="Identifier">HtmlEscapeLookup</span></a><span class="Other">:</span> <span class="Identifier">array</span><span class="Other">[</span><span class="DecNumber">256</span><span class="Other">,</span> <span class="Identifier">bool</span><span class="Other">]</span> <span class="Other">=</span> <span class="Other">[</span><span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span>
                                       <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span>
                                       <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span>
                                       <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span> <span class="DecNumber">false</span><span class="Other">,</span>
@@ -369,7 +372,7 @@
   <dl class="item">
     <div id="add-procs-all">
   <div id="add,PageBuffer,char">
-  <dt><pre><span class="Keyword">proc</span> <a href="#add%2CPageBuffer%2Cchar"><span class="Identifier">add</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">c</span><span class="Other">:</span> <span class="Identifier">char</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#add%2CPageBuffer%2Cchar"><span class="Identifier">add</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">c</span><span class="Other">:</span> <span class="Identifier">char</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -378,7 +381,7 @@
   </dd>
 </div>
 <div id="add,PageBuffer,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#add%2CPageBuffer%2Cstring"><span class="Identifier">add</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">text</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#add%2CPageBuffer%2Cstring"><span class="Identifier">add</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">text</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -390,7 +393,7 @@
 </div>
 <div id="addHtmlEscaped-procs-all">
   <div id="addHtmlEscaped,PageBuffer,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#addHtmlEscaped%2CPageBuffer%2Cstring"><span class="Identifier">addHtmlEscaped</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">text</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#addHtmlEscaped%2CPageBuffer%2Cstring"><span class="Identifier">addHtmlEscaped</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">text</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -399,7 +402,7 @@
   </dd>
 </div>
 <div id="addHtmlEscaped,PageBuffer,pointer,int">
-  <dt><pre><span class="Keyword">proc</span> <a href="#addHtmlEscaped%2CPageBuffer%2Cpointer%2Cint"><span class="Identifier">addHtmlEscaped</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">textPtr</span><span class="Other">:</span> <span class="Identifier">pointer</span><span class="Other">;</span> <span class="Identifier">textLen</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#addHtmlEscaped%2CPageBuffer%2Cpointer%2Cint"><span class="Identifier">addHtmlEscaped</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">textPtr</span><span class="Other">:</span> <span class="Identifier">pointer</span><span class="Other">;</span> <span class="Identifier">textLen</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -420,7 +423,7 @@
 </div>
 <div id="addInt-procs-all">
   <div id="addInt,PageBuffer,int">
-  <dt><pre><span class="Keyword">proc</span> <a href="#addInt%2CPageBuffer%2Cint"><span class="Identifier">addInt</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">n</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#addInt%2CPageBuffer%2Cint"><span class="Identifier">addInt</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">n</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -432,7 +435,7 @@
 </div>
 <div id="addSlice-procs-all">
   <div id="addSlice,PageBuffer,string,int,int">
-  <dt><pre><span class="Keyword">proc</span> <a href="#addSlice%2CPageBuffer%2Cstring%2Cint%2Cint"><span class="Identifier">addSlice</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">text</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">startPos</span><span class="Other">,</span> <span class="Identifier">endPos</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#addSlice%2CPageBuffer%2Cstring%2Cint%2Cint"><span class="Identifier">addSlice</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">text</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">startPos</span><span class="Other">,</span> <span class="Identifier">endPos</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> {.
     <span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -444,7 +447,7 @@
 </div>
 <div id="appendRawContiguousUnsafe-procs-all">
   <div id="appendRawContiguousUnsafe,PageBuffer,pointer,int">
-  <dt><pre><span class="Keyword">proc</span> <a href="#appendRawContiguousUnsafe%2CPageBuffer%2Cpointer%2Cint"><span class="Identifier">appendRawContiguousUnsafe</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">src</span><span class="Other">:</span> <span class="Identifier">pointer</span><span class="Other">;</span> <span class="Identifier">len</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#appendRawContiguousUnsafe%2CPageBuffer%2Cpointer%2Cint"><span class="Identifier">appendRawContiguousUnsafe</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">src</span><span class="Other">:</span> <span class="Identifier">pointer</span><span class="Other">;</span> <span class="Identifier">len</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> {.
     <span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -456,7 +459,7 @@
 </div>
 <div id="appendRawPtr-procs-all">
   <div id="appendRawPtr,PageBuffer,pointer,int">
-  <dt><pre><span class="Keyword">proc</span> <a href="#appendRawPtr%2CPageBuffer%2Cpointer%2Cint"><span class="Identifier">appendRawPtr</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">src</span><span class="Other">:</span> <span class="Identifier">pointer</span><span class="Other">;</span> <span class="Identifier">len</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#appendRawPtr%2CPageBuffer%2Cpointer%2Cint"><span class="Identifier">appendRawPtr</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">src</span><span class="Other">:</span> <span class="Identifier">pointer</span><span class="Other">;</span> <span class="Identifier">len</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -477,7 +480,7 @@
 </div>
 <div id="appendStringContiguousUnsafe-procs-all">
   <div id="appendStringContiguousUnsafe,PageBuffer,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#appendStringContiguousUnsafe%2CPageBuffer%2Cstring"><span class="Identifier">appendStringContiguousUnsafe</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">text</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#appendStringContiguousUnsafe%2CPageBuffer%2Cstring"><span class="Identifier">appendStringContiguousUnsafe</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">text</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -489,7 +492,7 @@
 </div>
 <div id="clear-procs-all">
   <div id="clear,PageBuffer">
-  <dt><pre><span class="Keyword">proc</span> <a href="#clear%2CPageBuffer"><span class="Identifier">clear</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#clear%2CPageBuffer"><span class="Identifier">clear</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -512,7 +515,7 @@
 </div>
 <div id="ensureContiguousWritable-procs-all">
   <div id="ensureContiguousWritable,PageBuffer,int">
-  <dt><pre><span class="Keyword">proc</span> <a href="#ensureContiguousWritable%2CPageBuffer%2Cint"><span class="Identifier">ensureContiguousWritable</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">requiredBytes</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#ensureContiguousWritable%2CPageBuffer%2Cint"><span class="Identifier">ensureContiguousWritable</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">requiredBytes</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.
     <span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -524,7 +527,7 @@
 </div>
 <div id="firstPageData-procs-all">
   <div id="firstPageData,PageBuffer">
-  <dt><pre><span class="Keyword">proc</span> <a href="#firstPageData%2CPageBuffer"><span class="Identifier">firstPageData</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Keyword">tuple</span><span class="Other">[</span><span class="Identifier">dataPtr</span><span class="Other">:</span> <span class="Identifier">pointer</span><span class="Other">,</span> <span class="Identifier">dataLen</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">]</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#firstPageData%2CPageBuffer"><span class="Identifier">firstPageData</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Keyword">tuple</span><span class="Other">[</span><span class="Identifier">dataPtr</span><span class="Other">:</span> <span class="Identifier">pointer</span><span class="Other">,</span> <span class="Identifier">dataLen</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">]</span> {.
     <span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -536,7 +539,7 @@
 </div>
 <div id="flushTo-procs-all">
   <div id="flushTo,PageBuffer,proc(string)">
-  <dt><pre><span class="Keyword">proc</span> <a href="#flushTo%2CPageBuffer%2Cproc%28string%29"><span class="Identifier">flushTo</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#flushTo%2CPageBuffer%2Cproc%28string%29"><span class="Identifier">flushTo</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span>
              <span class="Identifier">writeSegment</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">segment</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">closure</span>.}<span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
@@ -549,7 +552,7 @@
 </div>
 <div id="flushToRaw-procs-all">
   <div id="flushToRaw,PageBuffer,proc(pointer,int)">
-  <dt><pre><span class="Keyword">proc</span> <a href="#flushToRaw%2CPageBuffer%2Cproc%28pointer%2Cint%29"><span class="Identifier">flushToRaw</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">writeSegment</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">segmentPtr</span><span class="Other">:</span> <span class="Identifier">pointer</span><span class="Other">;</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#flushToRaw%2CPageBuffer%2Cproc%28pointer%2Cint%29"><span class="Identifier">flushToRaw</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">writeSegment</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">segmentPtr</span><span class="Other">:</span> <span class="Identifier">pointer</span><span class="Other">;</span>
     <span class="Identifier">segmentLen</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">closure</span>.}<span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
@@ -574,7 +577,7 @@
 </div>
 <div id="initPageBuffer-procs-all">
   <div id="initPageBuffer,int">
-  <dt><pre><span class="Keyword">proc</span> <a href="#initPageBuffer%2Cint"><span class="Identifier">initPageBuffer</span></a><span class="Other">(</span><span class="Identifier">pageSize</span><span class="Other">:</span> <span class="Identifier">int</span> <span class="Other">=</span> <span class="Identifier">DefaultPageBufferSize</span><span class="Other">)</span><span class="Other">:</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#initPageBuffer%2Cint"><span class="Identifier">initPageBuffer</span></a><span class="Other">(</span><span class="Identifier">pageSize</span><span class="Other">:</span> <span class="Identifier">int</span> <span class="Other">=</span> <span class="Identifier">DefaultPageBufferSize</span><span class="Other">)</span><span class="Other">:</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -586,7 +589,7 @@
 </div>
 <div id="isSinglePage-procs-all">
   <div id="isSinglePage,PageBuffer">
-  <dt><pre><span class="Keyword">proc</span> <a href="#isSinglePage%2CPageBuffer"><span class="Identifier">isSinglePage</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#isSinglePage%2CPageBuffer"><span class="Identifier">isSinglePage</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -598,7 +601,7 @@
 </div>
 <div id="pagePoolMetrics-procs-all">
   <div id="pagePoolMetrics_2">
-  <dt><pre><span class="Keyword">proc</span> <a href="#pagePoolMetrics_2"><span class="Identifier">pagePoolMetrics</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="paged_buffer.html#PagePoolMetrics"><span class="Identifier">PagePoolMetrics</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#pagePoolMetrics_2"><span class="Identifier">pagePoolMetrics</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#PagePoolMetrics"><span class="Identifier">PagePoolMetrics</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -610,7 +613,7 @@
 </div>
 <div id="pagePoolPolicy-procs-all">
   <div id="pagePoolPolicy_2">
-  <dt><pre><span class="Keyword">proc</span> <a href="#pagePoolPolicy_2"><span class="Identifier">pagePoolPolicy</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="paged_buffer.html#PagePoolPolicy"><span class="Identifier">PagePoolPolicy</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#pagePoolPolicy_2"><span class="Identifier">pagePoolPolicy</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#PagePoolPolicy"><span class="Identifier">PagePoolPolicy</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
                                         <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -622,7 +625,7 @@
 </div>
 <div id="release-procs-all">
   <div id="release,PageBuffer">
-  <dt><pre><span class="Keyword">proc</span> <a href="#release%2CPageBuffer"><span class="Identifier">release</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#release%2CPageBuffer"><span class="Identifier">release</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -633,7 +636,7 @@
 </div>
 <div id="reserveContiguousWritable-procs-all">
   <div id="reserveContiguousWritable,PageBuffer,int">
-  <dt><pre><span class="Keyword">proc</span> <a href="#reserveContiguousWritable%2CPageBuffer%2Cint"><span class="Identifier">reserveContiguousWritable</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">requiredBytes</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">pointer</span> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#reserveContiguousWritable%2CPageBuffer%2Cint"><span class="Identifier">reserveContiguousWritable</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">requiredBytes</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">pointer</span> {.
     <span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -645,7 +648,7 @@
 </div>
 <div id="reservePages-procs-all">
   <div id="reservePages,PageBuffer,int">
-  <dt><pre><span class="Keyword">proc</span> <a href="#reservePages%2CPageBuffer%2Cint"><span class="Identifier">reservePages</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">count</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#reservePages%2CPageBuffer%2Cint"><span class="Identifier">reservePages</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">;</span> <span class="Identifier">count</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -683,7 +686,7 @@
 </div>
 <div id="takeStringAndClear-procs-all">
   <div id="takeStringAndClear,PageBuffer">
-  <dt><pre><span class="Keyword">proc</span> <a href="#takeStringAndClear%2CPageBuffer"><span class="Identifier">takeStringAndClear</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="paged_buffer.html#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#takeStringAndClear%2CPageBuffer"><span class="Identifier">takeStringAndClear</span></a><span class="Other">(</span><span class="Identifier">buf</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="#PageBuffer"><span class="Identifier">PageBuffer</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -715,7 +718,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:22 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 19:21:37 UTC</small>
       </div>
     </div>
   </div>

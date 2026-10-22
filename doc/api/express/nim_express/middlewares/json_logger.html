@@ -16,13 +16,16 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.10">
 
 <!-- JS -->
-<script type="text/javascript" src="../../dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="../../dochack.js?v=2.2.10"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">nim_express/middlewares/json_logger</h1>
       <div class="row">
@@ -138,7 +141,7 @@
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
     <div id="JsonLogField">
-  <dt><pre><a href="json_logger.html#JsonLogField"><span class="Identifier">JsonLogField</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
+  <dt><pre><a href="#JsonLogField"><span class="Identifier">JsonLogField</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
   <span class="Identifier">jlfTimestamp</span><span class="Other">,</span> <span class="Identifier">jlfMethod</span><span class="Other">,</span> <span class="Identifier">jlfPath</span><span class="Other">,</span> <span class="Identifier">jlfStatus</span><span class="Other">,</span> <span class="Identifier">jlfDurationMs</span><span class="Other">,</span> <span class="Identifier">jlfRequestId</span><span class="Other">,</span>
   <span class="Identifier">jlfTraceId</span><span class="Other">,</span> <span class="Identifier">jlfRemoteIp</span><span class="Other">,</span> <span class="Identifier">jlfUserAgent</span><span class="Other">,</span> <span class="Identifier">jlfContentLength</span><span class="Other">,</span> <span class="Identifier">jlfError</span></pre></dt>
   <dd>
@@ -148,10 +151,10 @@
   </dd>
 </div>
 <div id="JsonLoggerOptions">
-  <dt><pre><a href="json_logger.html#JsonLoggerOptions"><span class="Identifier">JsonLoggerOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
-  <span class="Identifier">sink</span><span class="Operator">*</span><span class="Other">:</span> <a href="json_logger.html#JsonLogSink"><span class="Identifier">JsonLogSink</span></a>
-  <span class="Identifier">includeFields</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">set</span><span class="Other">[</span><a href="json_logger.html#JsonLogField"><span class="Identifier">JsonLogField</span></a><span class="Other">]</span>
-  <span class="Identifier">excludeFields</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">set</span><span class="Other">[</span><a href="json_logger.html#JsonLogField"><span class="Identifier">JsonLogField</span></a><span class="Other">]</span>
+  <dt><pre><a href="#JsonLoggerOptions"><span class="Identifier">JsonLoggerOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <span class="Identifier">sink</span><span class="Operator">*</span><span class="Other">:</span> <a href="#JsonLogSink"><span class="Identifier">JsonLogSink</span></a>
+  <span class="Identifier">includeFields</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">set</span><span class="Other">[</span><a href="#JsonLogField"><span class="Identifier">JsonLogField</span></a><span class="Other">]</span>
+  <span class="Identifier">excludeFields</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">set</span><span class="Other">[</span><a href="#JsonLogField"><span class="Identifier">JsonLogField</span></a><span class="Other">]</span>
   <span class="Identifier">skipPaths</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">]</span>
   <span class="Identifier">skipHealthChecks</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>
   <span class="Identifier">maxErrorTraceLen</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span></pre></dt>
@@ -162,7 +165,7 @@
   </dd>
 </div>
 <div id="JsonLogSink">
-  <dt><pre><a href="json_logger.html#JsonLogSink"><span class="Identifier">JsonLogSink</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">line</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">closure</span>.}</pre></dt>
+  <dt><pre><a href="#JsonLogSink"><span class="Identifier">JsonLogSink</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">line</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">closure</span>.}</pre></dt>
   <dd>
     
     
@@ -176,7 +179,7 @@
   <h1><a class="toc-backref" href="#10">Consts</a></h1>
   <dl class="item">
     <div id="DefaultSkipPaths">
-  <dt><pre><a href="json_logger.html#DefaultSkipPaths"><span class="Identifier">DefaultSkipPaths</span></a> <span class="Other">=</span> <span class="Other">[</span><span class="StringLit">&quot;/health&quot;</span><span class="Other">,</span> <span class="StringLit">&quot;/healthz&quot;</span><span class="Other">,</span> <span class="StringLit">&quot;/ready&quot;</span><span class="Other">,</span> <span class="StringLit">&quot;/readyz&quot;</span><span class="Other">,</span> <span class="StringLit">&quot;/livez&quot;</span><span class="Other">]</span></pre></dt>
+  <dt><pre><a href="#DefaultSkipPaths"><span class="Identifier">DefaultSkipPaths</span></a> <span class="Other">=</span> <span class="Other">[</span><span class="StringLit">&quot;/health&quot;</span><span class="Other">,</span> <span class="StringLit">&quot;/healthz&quot;</span><span class="Other">,</span> <span class="StringLit">&quot;/ready&quot;</span><span class="Other">,</span> <span class="StringLit">&quot;/readyz&quot;</span><span class="Other">,</span> <span class="StringLit">&quot;/livez&quot;</span><span class="Other">]</span></pre></dt>
   <dd>
     
     
@@ -184,7 +187,7 @@
   </dd>
 </div>
 <div id="MaxErrorTraceLen">
-  <dt><pre><a href="json_logger.html#MaxErrorTraceLen"><span class="Identifier">MaxErrorTraceLen</span></a> <span class="Other">=</span> <span class="DecNumber">2048</span></pre></dt>
+  <dt><pre><a href="#MaxErrorTraceLen"><span class="Identifier">MaxErrorTraceLen</span></a> <span class="Other">=</span> <span class="DecNumber">2048</span></pre></dt>
   <dd>
     
     
@@ -223,7 +226,7 @@
 </div>
 <div id="defaultJsonLoggerOptions-procs-all">
   <div id="defaultJsonLoggerOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultJsonLoggerOptions"><span class="Identifier">defaultJsonLoggerOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="json_logger.html#JsonLoggerOptions"><span class="Identifier">JsonLoggerOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultJsonLoggerOptions"><span class="Identifier">defaultJsonLoggerOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#JsonLoggerOptions"><span class="Identifier">JsonLoggerOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -259,7 +262,7 @@
 </div>
 <div id="jsonLogger-procs-all">
   <div id="jsonLogger,JsonLoggerOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#jsonLogger%2CJsonLoggerOptions"><span class="Identifier">jsonLogger</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="json_logger.html#JsonLoggerOptions"><span class="Identifier">JsonLoggerOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultJsonLoggerOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#jsonLogger%2CJsonLoggerOptions"><span class="Identifier">jsonLogger</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#JsonLoggerOptions"><span class="Identifier">JsonLoggerOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultJsonLoggerOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -271,7 +274,7 @@
 </div>
 <div id="shouldInclude-procs-all">
   <div id="shouldInclude,JsonLoggerOptions,JsonLogField">
-  <dt><pre><span class="Keyword">proc</span> <a href="#shouldInclude%2CJsonLoggerOptions%2CJsonLogField"><span class="Identifier">shouldInclude</span></a><span class="Other">(</span><span class="Identifier">opts</span><span class="Other">:</span> <a href="json_logger.html#JsonLoggerOptions"><span class="Identifier">JsonLoggerOptions</span></a><span class="Other">;</span> <span class="Identifier">field</span><span class="Other">:</span> <a href="json_logger.html#JsonLogField"><span class="Identifier">JsonLogField</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#shouldInclude%2CJsonLoggerOptions%2CJsonLogField"><span class="Identifier">shouldInclude</span></a><span class="Other">(</span><span class="Identifier">opts</span><span class="Other">:</span> <a href="#JsonLoggerOptions"><span class="Identifier">JsonLoggerOptions</span></a><span class="Other">;</span> <span class="Identifier">field</span><span class="Other">:</span> <a href="#JsonLogField"><span class="Identifier">JsonLogField</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -291,7 +294,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:23 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 19:21:38 UTC</small>
       </div>
     </div>
   </div>

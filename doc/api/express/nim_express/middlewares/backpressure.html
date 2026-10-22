@@ -16,13 +16,16 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.10">
 
 <!-- JS -->
-<script type="text/javascript" src="../../dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="../../dochack.js?v=2.2.10"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">nim_express/middlewares/backpressure</h1>
       <div class="row">
@@ -132,12 +135,12 @@
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
     <div id="BackpressureOptions">
-  <dt><pre><a href="backpressure.html#BackpressureOptions"><span class="Identifier">BackpressureOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <dt><pre><a href="#BackpressureOptions"><span class="Identifier">BackpressureOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">maxConnections</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">maxPendingResponses</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">maxResponseTimeMs</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
   <span class="Identifier">retryAfterSeconds</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
-  <span class="Identifier">loadMetricsHook</span><span class="Operator">*</span><span class="Other">:</span> <a href="backpressure.html#LoadMetricsHook"><span class="Identifier">LoadMetricsHook</span></a></pre></dt>
+  <span class="Identifier">loadMetricsHook</span><span class="Operator">*</span><span class="Other">:</span> <a href="#LoadMetricsHook"><span class="Identifier">LoadMetricsHook</span></a></pre></dt>
   <dd>
     
     
@@ -145,7 +148,7 @@
   </dd>
 </div>
 <div id="BackpressureState">
-  <dt><pre><a href="backpressure.html#BackpressureState"><span class="Identifier">BackpressureState</span></a> <span class="Other">=</span> <span class="Keyword">ref</span> <span class="Keyword">object</span></pre></dt>
+  <dt><pre><a href="#BackpressureState"><span class="Identifier">BackpressureState</span></a> <span class="Other">=</span> <span class="Keyword">ref</span> <span class="Keyword">object</span></pre></dt>
   <dd>
     
     
@@ -153,7 +156,7 @@
   </dd>
 </div>
 <div id="LoadMetricsHook">
-  <dt><pre><a href="backpressure.html#LoadMetricsHook"><span class="Identifier">LoadMetricsHook</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <span class="Keyword">tuple</span><span class="Other">[</span><span class="Identifier">shouldShed</span><span class="Other">:</span> <span class="Identifier">bool</span><span class="Other">,</span> <span class="Identifier">retryAfterSeconds</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">]</span> {.
+  <dt><pre><a href="#LoadMetricsHook"><span class="Identifier">LoadMetricsHook</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <span class="Keyword">tuple</span><span class="Other">[</span><span class="Identifier">shouldShed</span><span class="Other">:</span> <span class="Identifier">bool</span><span class="Other">,</span> <span class="Identifier">retryAfterSeconds</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">]</span> {.
     <span class="Identifier">closure</span>.}</pre></dt>
   <dd>
     
@@ -169,7 +172,7 @@
   <dl class="item">
     <div id="activeConnectionCount-procs-all">
   <div id="activeConnectionCount,BackpressureState">
-  <dt><pre><span class="Keyword">proc</span> <a href="#activeConnectionCount%2CBackpressureState"><span class="Identifier">activeConnectionCount</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="backpressure.html#BackpressureState"><span class="Identifier">BackpressureState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int64</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#activeConnectionCount%2CBackpressureState"><span class="Identifier">activeConnectionCount</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="#BackpressureState"><span class="Identifier">BackpressureState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int64</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
     <span class="Identifier">noSideEffect</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -191,7 +194,7 @@
   </dd>
 </div>
 <div id="backpressure,BackpressureOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#backpressure%2CBackpressureOptions"><span class="Identifier">backpressure</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="backpressure.html#BackpressureOptions"><span class="Identifier">BackpressureOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultBackpressureOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#backpressure%2CBackpressureOptions"><span class="Identifier">backpressure</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#BackpressureOptions"><span class="Identifier">BackpressureOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultBackpressureOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ReadEnvEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -200,8 +203,8 @@
   </dd>
 </div>
 <div id="backpressure,BackpressureState,BackpressureOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#backpressure%2CBackpressureState%2CBackpressureOptions"><span class="Identifier">backpressure</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="backpressure.html#BackpressureState"><span class="Identifier">BackpressureState</span></a><span class="Other">;</span>
-                  <span class="Identifier">options</span><span class="Other">:</span> <a href="backpressure.html#BackpressureOptions"><span class="Identifier">BackpressureOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultBackpressureOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#backpressure%2CBackpressureState%2CBackpressureOptions"><span class="Identifier">backpressure</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="#BackpressureState"><span class="Identifier">BackpressureState</span></a><span class="Other">;</span>
+                  <span class="Identifier">options</span><span class="Other">:</span> <a href="#BackpressureOptions"><span class="Identifier">BackpressureOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultBackpressureOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ReadEnvEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -213,7 +216,7 @@
 </div>
 <div id="defaultBackpressureOptions-procs-all">
   <div id="defaultBackpressureOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultBackpressureOptions"><span class="Identifier">defaultBackpressureOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="backpressure.html#BackpressureOptions"><span class="Identifier">BackpressureOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultBackpressureOptions"><span class="Identifier">defaultBackpressureOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#BackpressureOptions"><span class="Identifier">BackpressureOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -225,7 +228,7 @@
 </div>
 <div id="newBackpressureState-procs-all">
   <div id="newBackpressureState">
-  <dt><pre><span class="Keyword">proc</span> <a href="#newBackpressureState"><span class="Identifier">newBackpressureState</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="backpressure.html#BackpressureState"><span class="Identifier">BackpressureState</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#newBackpressureState"><span class="Identifier">newBackpressureState</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#BackpressureState"><span class="Identifier">BackpressureState</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -237,7 +240,7 @@
 </div>
 <div id="pendingResponseCount-procs-all">
   <div id="pendingResponseCount,BackpressureState">
-  <dt><pre><span class="Keyword">proc</span> <a href="#pendingResponseCount%2CBackpressureState"><span class="Identifier">pendingResponseCount</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="backpressure.html#BackpressureState"><span class="Identifier">BackpressureState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int64</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#pendingResponseCount%2CBackpressureState"><span class="Identifier">pendingResponseCount</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="#BackpressureState"><span class="Identifier">BackpressureState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int64</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
     <span class="Identifier">noSideEffect</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -249,7 +252,7 @@
 </div>
 <div id="resetBackpressureState-procs-all">
   <div id="resetBackpressureState,BackpressureState">
-  <dt><pre><span class="Keyword">proc</span> <a href="#resetBackpressureState%2CBackpressureState"><span class="Identifier">resetBackpressureState</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="backpressure.html#BackpressureState"><span class="Identifier">BackpressureState</span></a><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#resetBackpressureState%2CBackpressureState"><span class="Identifier">resetBackpressureState</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="#BackpressureState"><span class="Identifier">BackpressureState</span></a><span class="Other">)</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -261,7 +264,7 @@
 </div>
 <div id="shedRequestCount-procs-all">
   <div id="shedRequestCount,BackpressureState">
-  <dt><pre><span class="Keyword">proc</span> <a href="#shedRequestCount%2CBackpressureState"><span class="Identifier">shedRequestCount</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="backpressure.html#BackpressureState"><span class="Identifier">BackpressureState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int64</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span class="Identifier">noSideEffect</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#shedRequestCount%2CBackpressureState"><span class="Identifier">shedRequestCount</span></a><span class="Other">(</span><span class="Identifier">state</span><span class="Other">:</span> <a href="#BackpressureState"><span class="Identifier">BackpressureState</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int64</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span class="Identifier">noSideEffect</span><span class="Other">,</span>
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -281,7 +284,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:23 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 19:21:38 UTC</small>
       </div>
     </div>
   </div>

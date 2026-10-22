@@ -1,1548 +1,56 @@
 ## Fast map helpers for nim_express.
-## Backed by Verstable for high-performance string-key maps.
+## Pure-Nim Swiss-table string-key maps with portable SWAR group probes.
 
 import std/[os, times]
 import std/bitops
-
-const
-  ThisDir = currentSourcePath().splitFile.dir
-  VerstableHeader = ThisDir / ".." / "vendor" / "verstable.h"
-
-const FmHashHeader = ThisDir / "fm_hash.h"
-when defined(arm64) or defined(aarch64):
-  {.passc: "-include arm_neon.h".}
-{.passc: "-include \"" & FmHashHeader & "\"".}
-
-{.emit: """
-#ifndef NIM_EXPRESS_FAST_MAP_EMIT
-#define NIM_EXPRESS_FAST_MAP_EMIT
-
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-
-static inline size_t vt_wyhash( const void *key, size_t len );
-
-typedef struct nx_fm_arena nx_fm_arena;
-static char *nx_fm_arena_memdup( nx_fm_arena *arena, const char *src, size_t len );
-
-typedef struct nx_fm_key
-{
-  char *ptr;
-  size_t len;
-  uint64_t hash;
-} nx_fm_key;
-
-typedef struct nx_fm_value
-{
-  char *ptr;
-  size_t len;
-  size_t cap;
-} nx_fm_value;
-
-static uint64_t nx_fm_hash_bytes( const char *ptr, size_t len )
-{
-  return (uint64_t)vt_wyhash( ptr, len );
-}
-
-static nx_fm_key nx_fm_key_view_h( const char *ptr, size_t len, uint64_t hash )
-{
-  nx_fm_key view;
-  view.ptr = (char *)ptr;
-  view.len = len;
-  view.hash = hash;
-  return view;
-}
-
-static nx_fm_key nx_fm_key_view( const char *ptr, size_t len )
-{
-  return nx_fm_key_view_h( ptr, len, nx_fm_hash_bytes( ptr, len ) );
-}
-
-static nx_fm_value nx_fm_value_view( const char *ptr, size_t len )
-{
-  nx_fm_value view;
-  view.ptr = (char *)ptr;
-  view.len = len;
-  view.cap = len;
-  return view;
-}
-
-static nx_fm_key nx_fm_key_cstr( const char *ptr )
-{
-  if( ptr == NULL )
-    return nx_fm_key_view( NULL, 0 );
-
-  return nx_fm_key_view( ptr, strlen( ptr ) );
-}
-
-static nx_fm_value nx_fm_value_cstr( const char *ptr )
-{
-  if( ptr == NULL )
-    return nx_fm_value_view( NULL, 0 );
-
-  return nx_fm_value_view( ptr, strlen( ptr ) );
-}
-
-static char *nx_fm_memdup_local( const char *src, size_t len )
-{
-  char *copy = (char *)malloc( len + 1 );
-  if( copy == NULL )
-    return NULL;
-
-  if( len != 0 && src != NULL )
-    memcpy( copy, src, len );
-
-  copy[ len ] = '\\0';
-  return copy;
-}
-
-static uint64_t nx_fm_hash_key( nx_fm_key key )
-{
-  return key.hash;
-}
-
-static bool nx_fm_cmpr_key( nx_fm_key a, nx_fm_key b )
-{
-  if( a.len != b.len )
-    return false;
-
-  if( a.len == 0 )
-    return true;
-
-  return memcmp( a.ptr, b.ptr, a.len ) == 0;
-}
-
-static void nx_fm_free_key( nx_fm_key key )
-{
-  if( key.ptr != NULL )
-    free( key.ptr );
-}
-
-static nx_fm_key nx_fm_key_owned_local( const char *src, size_t len, uint64_t hash )
-{
-  nx_fm_key key;
-  key.hash = hash;
-  key.ptr = nx_fm_memdup_local( src, len );
-  if( key.ptr == NULL )
-    key.len = (size_t)-1;
-  else
-    key.len = len;
-  return key;
-}
-
-static nx_fm_key nx_fm_key_owned_arena( nx_fm_arena *arena, const char *src, size_t len, uint64_t hash )
-{
-  nx_fm_key key;
-  key.hash = hash;
-  key.ptr = nx_fm_arena_memdup( arena, src, len );
-  if( key.ptr == NULL )
-    key.len = (size_t)-1;
-  else
-    key.len = len;
-  return key;
-}
-
-static void nx_fm_free_value( nx_fm_value value )
-{
-  free( value.ptr );
-}
-
-typedef struct nx_fm_arena_chunk
-{
-  struct nx_fm_arena_chunk *next;
-  size_t cap;
-  size_t used;
-  char data[];
-} nx_fm_arena_chunk;
-
-struct nx_fm_arena
-{
-  nx_fm_arena_chunk *head;
-  size_t default_cap;
-};
-
-static size_t nx_fm_align_up( size_t value )
-{
-  size_t align = sizeof( void * ) - 1;
-  return ( value + align ) & ~align;
-}
-
-static void nx_fm_arena_init( nx_fm_arena *arena, size_t default_cap )
-{
-  arena->head = NULL;
-  arena->default_cap = default_cap < 4096 ? 4096 : default_cap;
-}
-
-static void nx_fm_arena_reset( nx_fm_arena *arena )
-{
-  nx_fm_arena_chunk *chunk;
-  for( chunk = arena->head; chunk != NULL; chunk = chunk->next )
-    chunk->used = 0;
-}
-
-static void nx_fm_arena_cleanup( nx_fm_arena *arena )
-{
-  nx_fm_arena_chunk *chunk = arena->head;
-  while( chunk != NULL )
-  {
-    nx_fm_arena_chunk *next = chunk->next;
-    free( chunk );
-    chunk = next;
-  }
-  arena->head = NULL;
-  arena->default_cap = 0;
-}
-
-static void *nx_fm_arena_alloc( nx_fm_arena *arena, size_t size )
-{
-  nx_fm_arena_chunk *chunk;
-  size_t need;
-
-  if( arena == NULL )
-    return NULL;
-
-  need = nx_fm_align_up( size == 0 ? 1 : size );
-  chunk = arena->head;
-  if( chunk == NULL || chunk->used + need > chunk->cap )
-  {
-    size_t cap = arena->default_cap;
-    if( cap < need )
-      cap = need;
-
-    chunk = (nx_fm_arena_chunk *)malloc( offsetof( nx_fm_arena_chunk, data ) + cap );
-    if( chunk == NULL )
-      return NULL;
-
-    chunk->next = arena->head;
-    chunk->cap = cap;
-    chunk->used = 0;
-    arena->head = chunk;
-  }
-
-  void *ptr = chunk->data + chunk->used;
-  chunk->used += need;
-  return ptr;
-}
-
-static char *nx_fm_arena_memdup( nx_fm_arena *arena, const char *src, size_t len )
-{
-  char *copy = (char *)nx_fm_arena_alloc( arena, len + 1 );
-  if( copy == NULL )
-    return NULL;
-
-  if( len != 0 && src != NULL )
-    memcpy( copy, src, len );
-
-  copy[len] = '\\0';
-  return copy;
-}
-
-uint64_t nx_fm_hash_n(NCSTRING key_ptr, size_t key_len);
-N_CDECL(NIM_BOOL, nx_fm_str_map_set_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, NCSTRING value_ptr, size_t value_len);
-N_CDECL(NIM_BOOL, nx_fm_str_map_get_view_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, char **out_ptr, size_t *out_len);
-N_CDECL(NIM_BOOL, nx_fm_str_map_contains_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash);
-N_CDECL(NIM_BOOL, nx_fm_str_map_erase_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash);
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_set_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, NCSTRING value_ptr, size_t value_len);
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_get_view_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, char **out_ptr, size_t *out_len);
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_contains_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash);
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_erase_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash);
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_set_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, int64_t value);
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_get_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, int64_t *out_value);
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_contains_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash);
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_erase_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash);
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_set_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, int64_t value);
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_get_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, int64_t *out_value);
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_contains_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash);
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_erase_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash);
-""".}
-
-{.emit: "#define NAME nx_fm_tbl\n#define KEY_TY nx_fm_key\n#define VAL_TY nx_fm_value\n#define HASH_FN nx_fm_hash_key\n#define CMPR_FN nx_fm_cmpr_key\n#define KEY_DTOR_FN nx_fm_free_key\n#define VAL_DTOR_FN nx_fm_free_value\n#include \"" & VerstableHeader & "\"\n".}
-
-{.emit: "#define NAME nx_fm_i64_tbl\n#define KEY_TY nx_fm_key\n#define VAL_TY int64_t\n#define HASH_FN nx_fm_hash_key\n#define CMPR_FN nx_fm_cmpr_key\n#define KEY_DTOR_FN nx_fm_free_key\n#include \"" & VerstableHeader & "\"\n".}
-
-{.emit: "#define NAME nx_fm_arena_tbl\n#define KEY_TY nx_fm_key\n#define VAL_TY nx_fm_value\n#define HASH_FN nx_fm_hash_key\n#define CMPR_FN nx_fm_cmpr_key\n#include \"" & VerstableHeader & "\"\n".}
-
-{.emit: "#define NAME nx_fm_arena_i64_tbl\n#define KEY_TY nx_fm_key\n#define VAL_TY int64_t\n#define HASH_FN nx_fm_hash_key\n#define CMPR_FN nx_fm_cmpr_key\n#include \"" & VerstableHeader & "\"\n".}
-
-{.emit: """
-void *nx_fm_str_map_new(void)
-{
-  nx_fm_tbl *map = (nx_fm_tbl *)malloc(sizeof(nx_fm_tbl));
-  if (map == NULL)
-  {
-    return NULL;
-  }
-  nx_fm_tbl_init(map);
-  return (void *)map;
-}
-
-void nx_fm_str_map_free(void *raw)
-{
-  if (raw == NULL)
-  {
-    return;
-  }
-  nx_fm_tbl *map = (nx_fm_tbl *)raw;
-  nx_fm_tbl_cleanup(map);
-  free(map);
-}
-
-size_t nx_fm_str_map_size(void *raw)
-{
-  if (raw == NULL)
-  {
-    return 0;
-  }
-  return nx_fm_tbl_size((nx_fm_tbl *)raw);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_reserve)(void *raw, size_t n)
-{
-  if (raw == NULL)
-  {
-    return false;
-  }
-  return nx_fm_tbl_reserve((nx_fm_tbl *)raw, n);
-}
-
-uint64_t nx_fm_hash_n(NCSTRING key_ptr, size_t key_len)
-{
-  if (key_len != 0 && key_ptr == NULL)
-  {
-    return 0;
-  }
-  return nx_fm_hash_bytes(key_ptr, key_len);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_set_n)(void *raw, NCSTRING key_ptr, size_t key_len, NCSTRING value_ptr, size_t value_len)
-{
-  return nx_fm_str_map_set_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len), value_ptr, value_len);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_set_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, NCSTRING value_ptr, size_t value_len)
-{
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL) || (value_len != 0 && value_ptr == NULL))
-  {
-    return false;
-  }
-
-  nx_fm_tbl *map = (nx_fm_tbl *)raw;
-  nx_fm_key key_view = nx_fm_key_view_h(key_ptr, key_len, key_hash);
-  nx_fm_tbl_itr itr = nx_fm_tbl_get(map, key_view);
-  if (!nx_fm_tbl_is_end(itr))
-  {
-    nx_fm_value *stored = &itr.data->val;
-    if (stored->len == value_len && (value_len == 0 || memcmp(stored->ptr, value_ptr, value_len) == 0))
-    {
-      return true;
-    }
-
-    if (stored->ptr != NULL && stored->cap >= value_len)
-    {
-      if (value_len != 0)
-      {
-        memcpy(stored->ptr, value_ptr, value_len);
-      }
-      stored->ptr[value_len] = '\\0';
-      stored->len = value_len;
-      return true;
-    }
-
-    char *value_copy = nx_fm_memdup_local(value_ptr, value_len);
-    if (value_copy == NULL)
-    {
-      return false;
-    }
-
-    free(stored->ptr);
-    stored->ptr = value_copy;
-    stored->len = value_len;
-    stored->cap = value_len;
-    return true;
-  }
-
-  nx_fm_key key_copy = nx_fm_key_owned_local(key_ptr, key_len, key_hash);
-  if (key_copy.len == (size_t)-1)
-  {
-    return false;
-  }
-
-  char *value_copy = nx_fm_memdup_local(value_ptr, value_len);
-  if (value_copy == NULL)
-  {
-    nx_fm_free_key(key_copy);
-    return false;
-  }
-
-  itr = nx_fm_tbl_insert(map, key_copy, nx_fm_value_view(value_copy, value_len));
-  if (nx_fm_tbl_is_end(itr))
-  {
-    nx_fm_free_key(key_copy);
-    free(value_copy);
-    return false;
-  }
-
-  return true;
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_set)(void *raw, NCSTRING key, NCSTRING value)
-{
-  if (value == NULL)
-  {
-    return false;
-  }
-  nx_fm_key key_view = nx_fm_key_cstr(key);
-  nx_fm_value value_view = nx_fm_value_cstr(value);
-  return nx_fm_str_map_set_n(raw, key_view.ptr, key_view.len, value_view.ptr, value_view.len);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_get_view_n)(void *raw, NCSTRING key_ptr, size_t key_len, char **out_ptr, size_t *out_len)
-{
-  return nx_fm_str_map_get_view_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len), out_ptr, out_len);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_get_view_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, char **out_ptr, size_t *out_len)
-{
-  if (raw == NULL || out_ptr == NULL || out_len == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-
-  nx_fm_tbl_itr itr = nx_fm_tbl_get((nx_fm_tbl *)raw, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-  if (nx_fm_tbl_is_end(itr))
-  {
-    return false;
-  }
-
-  *out_ptr = itr.data->val.ptr;
-  *out_len = itr.data->val.len;
-  return true;
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_get_view)(void *raw, NCSTRING key, char **out_ptr, size_t *out_len)
-{
-  nx_fm_key key_view = nx_fm_key_cstr(key);
-  return nx_fm_str_map_get_view_n(raw, key_view.ptr, key_view.len, out_ptr, out_len);
-}
-
-char *nx_fm_str_map_get(void *raw, const char *key)
-{
-  char *ptr = NULL;
-  size_t len = 0;
-  if (!nx_fm_str_map_get_view(raw, key, &ptr, &len))
-  {
-    return NULL;
-  }
-  return (char *)ptr;
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_contains_n)(void *raw, NCSTRING key_ptr, size_t key_len)
-{
-  return nx_fm_str_map_contains_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len));
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_contains_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash)
-{
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-
-  nx_fm_tbl_itr itr = nx_fm_tbl_get((nx_fm_tbl *)raw, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-  return !nx_fm_tbl_is_end(itr);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_contains)(void *raw, NCSTRING key)
-{
-  nx_fm_key key_view = nx_fm_key_cstr(key);
-  return nx_fm_str_map_contains_n(raw, key_view.ptr, key_view.len);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_erase_n)(void *raw, NCSTRING key_ptr, size_t key_len)
-{
-  return nx_fm_str_map_erase_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len));
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_erase_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash)
-{
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-  return nx_fm_tbl_erase((nx_fm_tbl *)raw, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_erase)(void *raw, NCSTRING key)
-{
-  nx_fm_key key_view = nx_fm_key_cstr(key);
-  return nx_fm_str_map_erase_n(raw, key_view.ptr, key_view.len);
-}
-
-void nx_fm_str_map_clear(void *raw)
-{
-  if (raw == NULL)
-  {
-    return;
-  }
-  nx_fm_tbl_clear((nx_fm_tbl *)raw);
-}
-
-typedef struct nx_fm_str_map_iter
-{
-  nx_fm_tbl_itr itr;
-  const nx_fm_tbl *map;
-  bool started;
-} nx_fm_str_map_iter;
-
-void *nx_fm_str_map_iter_new(void *raw)
-{
-  if (raw == NULL)
-  {
-    return NULL;
-  }
-  nx_fm_str_map_iter *iter = (nx_fm_str_map_iter *)malloc(sizeof(nx_fm_str_map_iter));
-  if (iter == NULL)
-  {
-    return NULL;
-  }
-  iter->map = (const nx_fm_tbl *)raw;
-  iter->started = false;
-  return (void *)iter;
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_map_iter_next)(void *iter_raw, char **out_key_ptr, size_t *out_key_len, char **out_value_ptr, size_t *out_value_len)
-{
-  if (iter_raw == NULL || out_key_ptr == NULL || out_key_len == NULL || out_value_ptr == NULL || out_value_len == NULL)
-  {
-    return false;
-  }
-
-  nx_fm_str_map_iter *iter = (nx_fm_str_map_iter *)iter_raw;
-  if (!iter->started)
-  {
-    iter->itr = nx_fm_tbl_first((nx_fm_tbl *)iter->map);
-    iter->started = true;
-  }
-  else
-  {
-    iter->itr = nx_fm_tbl_next(iter->itr);
-  }
-
-  if (nx_fm_tbl_is_end(iter->itr))
-  {
-    return false;
-  }
-
-  *out_key_ptr = iter->itr.data->key.ptr;
-  *out_key_len = iter->itr.data->key.len;
-  *out_value_ptr = iter->itr.data->val.ptr;
-  *out_value_len = iter->itr.data->val.len;
-  return true;
-}
-
-void nx_fm_str_map_iter_free(void *iter_raw)
-{
-  if (iter_raw == NULL)
-  {
-    return;
-  }
-  free(iter_raw);
-}
-
-typedef struct nx_fm_str_arena_map
-{
-  nx_fm_arena_tbl map;
-  nx_fm_arena arena;
-} nx_fm_str_arena_map;
-
-typedef struct nx_fm_str_arena_map_iter
-{
-  nx_fm_arena_tbl_itr itr;
-  const nx_fm_arena_tbl *map;
-  bool started;
-} nx_fm_str_arena_map_iter;
-
-void *nx_fm_str_arena_map_new(size_t default_cap)
-{
-  nx_fm_str_arena_map *map = (nx_fm_str_arena_map *)malloc(sizeof(nx_fm_str_arena_map));
-  if (map == NULL)
-  {
-    return NULL;
-  }
-  nx_fm_arena_tbl_init(&map->map);
-  nx_fm_arena_init(&map->arena, default_cap);
-  return (void *)map;
-}
-
-void nx_fm_str_arena_map_free(void *raw)
-{
-  if (raw == NULL)
-  {
-    return;
-  }
-  nx_fm_str_arena_map *map = (nx_fm_str_arena_map *)raw;
-  nx_fm_arena_tbl_cleanup(&map->map);
-  nx_fm_arena_cleanup(&map->arena);
-  free(map);
-}
-
-size_t nx_fm_str_arena_map_size(void *raw)
-{
-  if (raw == NULL)
-  {
-    return 0;
-  }
-  return nx_fm_arena_tbl_size(&((nx_fm_str_arena_map *)raw)->map);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_reserve)(void *raw, size_t n)
-{
-  if (raw == NULL)
-  {
-    return false;
-  }
-  return nx_fm_arena_tbl_reserve(&((nx_fm_str_arena_map *)raw)->map, n);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_set_n)(void *raw, NCSTRING key_ptr, size_t key_len, NCSTRING value_ptr, size_t value_len)
-{
-  return nx_fm_str_arena_map_set_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len), value_ptr, value_len);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_set_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, NCSTRING value_ptr, size_t value_len)
-{
-  nx_fm_str_arena_map *map;
-  nx_fm_key key_view;
-  nx_fm_arena_tbl_itr itr;
-
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL) || (value_len != 0 && value_ptr == NULL))
-  {
-    return false;
-  }
-
-  map = (nx_fm_str_arena_map *)raw;
-  key_view = nx_fm_key_view_h(key_ptr, key_len, key_hash);
-  itr = nx_fm_arena_tbl_get(&map->map, key_view);
-  if (!nx_fm_arena_tbl_is_end(itr))
-  {
-    nx_fm_value *stored = &itr.data->val;
-    if (stored->len == value_len && (value_len == 0 || memcmp(stored->ptr, value_ptr, value_len) == 0))
-    {
-      return true;
-    }
-    if (stored->ptr != NULL && stored->cap >= value_len)
-    {
-      if (value_len != 0)
-      {
-        memcpy(stored->ptr, value_ptr, value_len);
-      }
-      stored->ptr[value_len] = '\\0';
-      stored->len = value_len;
-      return true;
-    }
-
-    char *value_copy = nx_fm_arena_memdup(&map->arena, value_ptr, value_len);
-    if (value_copy == NULL)
-    {
-      return false;
-    }
-    stored->ptr = value_copy;
-    stored->len = value_len;
-    stored->cap = value_len;
-    return true;
-  }
-
-  nx_fm_key key_copy = nx_fm_key_owned_arena(&map->arena, key_ptr, key_len, key_hash);
-  char *value_copy = nx_fm_arena_memdup(&map->arena, value_ptr, value_len);
-  if (key_copy.len == (size_t)-1 || value_copy == NULL)
-  {
-    return false;
-  }
-
-  itr = nx_fm_arena_tbl_insert(&map->map, key_copy, nx_fm_value_view(value_copy, value_len));
-  return !nx_fm_arena_tbl_is_end(itr);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_get_view_n)(void *raw, NCSTRING key_ptr, size_t key_len, char **out_ptr, size_t *out_len)
-{
-  return nx_fm_str_arena_map_get_view_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len), out_ptr, out_len);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_get_view_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, char **out_ptr, size_t *out_len)
-{
-  nx_fm_str_arena_map *map;
-  nx_fm_arena_tbl_itr itr;
-
-  if (raw == NULL || out_ptr == NULL || out_len == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-
-  map = (nx_fm_str_arena_map *)raw;
-  itr = nx_fm_arena_tbl_get(&map->map, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-  if (nx_fm_arena_tbl_is_end(itr))
-  {
-    return false;
-  }
-
-  *out_ptr = itr.data->val.ptr;
-  *out_len = itr.data->val.len;
-  return true;
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_contains_n)(void *raw, NCSTRING key_ptr, size_t key_len)
-{
-  return nx_fm_str_arena_map_contains_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len));
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_contains_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash)
-{
-  nx_fm_str_arena_map *map;
-  nx_fm_arena_tbl_itr itr;
-
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-
-  map = (nx_fm_str_arena_map *)raw;
-  itr = nx_fm_arena_tbl_get(&map->map, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-  return !nx_fm_arena_tbl_is_end(itr);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_erase_n)(void *raw, NCSTRING key_ptr, size_t key_len)
-{
-  return nx_fm_str_arena_map_erase_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len));
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_erase_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash)
-{
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-  return nx_fm_arena_tbl_erase(&((nx_fm_str_arena_map *)raw)->map, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-}
-
-void nx_fm_str_arena_map_clear(void *raw)
-{
-  if (raw == NULL)
-  {
-    return;
-  }
-  nx_fm_str_arena_map *map = (nx_fm_str_arena_map *)raw;
-  nx_fm_arena_tbl_clear(&map->map);
-  nx_fm_arena_reset(&map->arena);
-}
-
-void *nx_fm_str_arena_map_iter_new(void *raw)
-{
-  nx_fm_str_arena_map_iter *iter;
-
-  if (raw == NULL)
-  {
-    return NULL;
-  }
-  iter = (nx_fm_str_arena_map_iter *)malloc(sizeof(nx_fm_str_arena_map_iter));
-  if (iter == NULL)
-  {
-    return NULL;
-  }
-  iter->map = &((nx_fm_str_arena_map *)raw)->map;
-  iter->started = false;
-  return (void *)iter;
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_map_iter_next)(void *iter_raw, char **out_key_ptr, size_t *out_key_len, char **out_value_ptr, size_t *out_value_len)
-{
-  nx_fm_str_arena_map_iter *iter;
-
-  if (iter_raw == NULL || out_key_ptr == NULL || out_key_len == NULL || out_value_ptr == NULL || out_value_len == NULL)
-  {
-    return false;
-  }
-
-  iter = (nx_fm_str_arena_map_iter *)iter_raw;
-  if (!iter->started)
-  {
-    iter->itr = nx_fm_arena_tbl_first((nx_fm_arena_tbl *)iter->map);
-    iter->started = true;
-  }
-  else
-  {
-    iter->itr = nx_fm_arena_tbl_next(iter->itr);
-  }
-
-  if (nx_fm_arena_tbl_is_end(iter->itr))
-  {
-    return false;
-  }
-
-  *out_key_ptr = iter->itr.data->key.ptr;
-  *out_key_len = iter->itr.data->key.len;
-  *out_value_ptr = iter->itr.data->val.ptr;
-  *out_value_len = iter->itr.data->val.len;
-  return true;
-}
-
-void nx_fm_str_arena_map_iter_free(void *iter_raw)
-{
-  if (iter_raw == NULL)
-  {
-    return;
-  }
-  free(iter_raw);
-}
-
-void *nx_fm_str_i64_map_new(void)
-{
-  nx_fm_i64_tbl *map = (nx_fm_i64_tbl *)malloc(sizeof(nx_fm_i64_tbl));
-  if (map == NULL)
-  {
-    return NULL;
-  }
-  nx_fm_i64_tbl_init(map);
-  return (void *)map;
-}
-
-void nx_fm_str_i64_map_free(void *raw)
-{
-  if (raw == NULL)
-  {
-    return;
-  }
-  nx_fm_i64_tbl *map = (nx_fm_i64_tbl *)raw;
-  nx_fm_i64_tbl_cleanup(map);
-  free(map);
-}
-
-size_t nx_fm_str_i64_map_size(void *raw)
-{
-  if (raw == NULL)
-  {
-    return 0;
-  }
-  return nx_fm_i64_tbl_size((nx_fm_i64_tbl *)raw);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_reserve)(void *raw, size_t n)
-{
-  if (raw == NULL)
-  {
-    return false;
-  }
-  return nx_fm_i64_tbl_reserve((nx_fm_i64_tbl *)raw, n);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_set_n)(void *raw, NCSTRING key_ptr, size_t key_len, int64_t value)
-{
-  return nx_fm_str_i64_map_set_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len), value);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_set_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, int64_t value)
-{
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-
-  nx_fm_i64_tbl *map = (nx_fm_i64_tbl *)raw;
-  nx_fm_key key_view = nx_fm_key_view_h(key_ptr, key_len, key_hash);
-  nx_fm_i64_tbl_itr itr = nx_fm_i64_tbl_get(map, key_view);
-  if (!nx_fm_i64_tbl_is_end(itr))
-  {
-    itr.data->val = value;
-    return true;
-  }
-
-  nx_fm_key key_copy = nx_fm_key_owned_local(key_ptr, key_len, key_hash);
-  if (key_copy.len == (size_t)-1)
-  {
-    return false;
-  }
-
-  itr = nx_fm_i64_tbl_insert(map, key_copy, value);
-  if (nx_fm_i64_tbl_is_end(itr))
-  {
-    nx_fm_free_key(key_copy);
-    return false;
-  }
-
-  return true;
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_set)(void *raw, NCSTRING key, int64_t value)
-{
-  nx_fm_key key_view = nx_fm_key_cstr(key);
-  return nx_fm_str_i64_map_set_n(raw, key_view.ptr, key_view.len, value);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_get_n)(void *raw, NCSTRING key_ptr, size_t key_len, int64_t *out_value)
-{
-  return nx_fm_str_i64_map_get_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len), out_value);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_get_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, int64_t *out_value)
-{
-  if (raw == NULL || out_value == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-
-  nx_fm_i64_tbl_itr itr = nx_fm_i64_tbl_get((nx_fm_i64_tbl *)raw, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-  if (nx_fm_i64_tbl_is_end(itr))
-  {
-    return false;
-  }
-
-  *out_value = itr.data->val;
-  return true;
-}
-
-N_CDECL(int64_t *, nx_fm_str_i64_map_get_ptr_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash)
-{
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return NULL;
-  }
-
-  nx_fm_i64_tbl_itr itr = nx_fm_i64_tbl_get((nx_fm_i64_tbl *)raw, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-  if (nx_fm_i64_tbl_is_end(itr))
-  {
-    return NULL;
-  }
-
-  return &itr.data->val;
-}
-
-N_CDECL(int64_t *, nx_fm_str_i64_map_get_ptr_n)(void *raw, NCSTRING key_ptr, size_t key_len)
-{
-  return nx_fm_str_i64_map_get_ptr_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len));
-}
-
-N_CDECL(int64_t *, nx_fm_str_i64_map_get_or_put_ptr_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, int64_t value)
-{
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return NULL;
-  }
-
-  nx_fm_i64_tbl *map = (nx_fm_i64_tbl *)raw;
-  nx_fm_i64_tbl_itr itr = nx_fm_i64_tbl_get(map, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-  if (!nx_fm_i64_tbl_is_end(itr))
-  {
-    return &itr.data->val;
-  }
-
-  nx_fm_key key_copy = nx_fm_key_owned_local(key_ptr, key_len, key_hash);
-  if (key_copy.len == (size_t)-1)
-  {
-    return NULL;
-  }
-
-  itr = nx_fm_i64_tbl_insert(map, key_copy, value);
-  if (nx_fm_i64_tbl_is_end(itr))
-  {
-    nx_fm_free_key(key_copy);
-    return NULL;
-  }
-
-  return &itr.data->val;
-}
-
-N_CDECL(int64_t *, nx_fm_str_i64_map_get_or_put_ptr_n)(void *raw, NCSTRING key_ptr, size_t key_len, int64_t value)
-{
-  return nx_fm_str_i64_map_get_or_put_ptr_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len), value);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_get)(void *raw, NCSTRING key, int64_t *out_value)
-{
-  nx_fm_key key_view = nx_fm_key_cstr(key);
-  return nx_fm_str_i64_map_get_n(raw, key_view.ptr, key_view.len, out_value);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_contains_n)(void *raw, NCSTRING key_ptr, size_t key_len)
-{
-  return nx_fm_str_i64_map_contains_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len));
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_contains_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash)
-{
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-
-  nx_fm_i64_tbl_itr itr = nx_fm_i64_tbl_get((nx_fm_i64_tbl *)raw, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-  return !nx_fm_i64_tbl_is_end(itr);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_contains)(void *raw, NCSTRING key)
-{
-  nx_fm_key key_view = nx_fm_key_cstr(key);
-  return nx_fm_str_i64_map_contains_n(raw, key_view.ptr, key_view.len);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_erase_n)(void *raw, NCSTRING key_ptr, size_t key_len)
-{
-  return nx_fm_str_i64_map_erase_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len));
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_erase_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash)
-{
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-  return nx_fm_i64_tbl_erase((nx_fm_i64_tbl *)raw, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_erase)(void *raw, NCSTRING key)
-{
-  nx_fm_key key_view = nx_fm_key_cstr(key);
-  return nx_fm_str_i64_map_erase_n(raw, key_view.ptr, key_view.len);
-}
-
-void nx_fm_str_i64_map_clear(void *raw)
-{
-  if (raw == NULL)
-  {
-    return;
-  }
-  nx_fm_i64_tbl_clear((nx_fm_i64_tbl *)raw);
-}
-
-typedef struct nx_fm_str_i64_map_iter
-{
-  nx_fm_i64_tbl_itr itr;
-  const nx_fm_i64_tbl *map;
-  bool started;
-} nx_fm_str_i64_map_iter;
-
-void *nx_fm_str_i64_map_iter_new(void *raw)
-{
-  if (raw == NULL)
-  {
-    return NULL;
-  }
-  nx_fm_str_i64_map_iter *iter = (nx_fm_str_i64_map_iter *)malloc(sizeof(nx_fm_str_i64_map_iter));
-  if (iter == NULL)
-  {
-    return NULL;
-  }
-  iter->map = (const nx_fm_i64_tbl *)raw;
-  iter->started = false;
-  return (void *)iter;
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_iter_next)(void *iter_raw, char **out_key_ptr, size_t *out_key_len, int64_t *out_value)
-{
-  if (iter_raw == NULL || out_key_ptr == NULL || out_key_len == NULL || out_value == NULL)
-  {
-    return false;
-  }
-
-  nx_fm_str_i64_map_iter *iter = (nx_fm_str_i64_map_iter *)iter_raw;
-  if (!iter->started)
-  {
-    iter->itr = nx_fm_i64_tbl_first((nx_fm_i64_tbl *)iter->map);
-    iter->started = true;
-  }
-  else
-  {
-    iter->itr = nx_fm_i64_tbl_next(iter->itr);
-  }
-
-  if (nx_fm_i64_tbl_is_end(iter->itr))
-  {
-    return false;
-  }
-
-  *out_key_ptr = iter->itr.data->key.ptr;
-  *out_key_len = iter->itr.data->key.len;
-  *out_value = iter->itr.data->val;
-  return true;
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_i64_map_iter_next_ptr)(void *iter_raw, char **out_key_ptr, size_t *out_key_len, int64_t **out_value_ptr)
-{
-  if (iter_raw == NULL || out_key_ptr == NULL || out_key_len == NULL || out_value_ptr == NULL)
-  {
-    return false;
-  }
-
-  nx_fm_str_i64_map_iter *iter = (nx_fm_str_i64_map_iter *)iter_raw;
-  if (!iter->started)
-  {
-    iter->itr = nx_fm_i64_tbl_first((nx_fm_i64_tbl *)iter->map);
-    iter->started = true;
-  }
-  else
-  {
-    iter->itr = nx_fm_i64_tbl_next(iter->itr);
-  }
-
-  if (nx_fm_i64_tbl_is_end(iter->itr))
-  {
-    return false;
-  }
-
-  *out_key_ptr = iter->itr.data->key.ptr;
-  *out_key_len = iter->itr.data->key.len;
-  *out_value_ptr = &iter->itr.data->val;
-  return true;
-}
-
-void nx_fm_str_i64_map_iter_free(void *iter_raw)
-{
-  if (iter_raw == NULL)
-  {
-    return;
-  }
-  free(iter_raw);
-}
-
-typedef struct nx_fm_str_arena_i64_map
-{
-  nx_fm_arena_i64_tbl map;
-  nx_fm_arena arena;
-} nx_fm_str_arena_i64_map;
-
-void *nx_fm_str_arena_i64_map_new(size_t default_cap)
-{
-  nx_fm_str_arena_i64_map *map = (nx_fm_str_arena_i64_map *)malloc(sizeof(nx_fm_str_arena_i64_map));
-  if (map == NULL)
-  {
-    return NULL;
-  }
-  nx_fm_arena_i64_tbl_init(&map->map);
-  nx_fm_arena_init(&map->arena, default_cap);
-  return (void *)map;
-}
-
-void nx_fm_str_arena_i64_map_free(void *raw)
-{
-  if (raw == NULL)
-  {
-    return;
-  }
-  nx_fm_str_arena_i64_map *map = (nx_fm_str_arena_i64_map *)raw;
-  nx_fm_arena_i64_tbl_cleanup(&map->map);
-  nx_fm_arena_cleanup(&map->arena);
-  free(map);
-}
-
-size_t nx_fm_str_arena_i64_map_size(void *raw)
-{
-  if (raw == NULL)
-  {
-    return 0;
-  }
-  return nx_fm_arena_i64_tbl_size(&((nx_fm_str_arena_i64_map *)raw)->map);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_reserve)(void *raw, size_t n)
-{
-  if (raw == NULL)
-  {
-    return false;
-  }
-  return nx_fm_arena_i64_tbl_reserve(&((nx_fm_str_arena_i64_map *)raw)->map, n);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_set_n)(void *raw, NCSTRING key_ptr, size_t key_len, int64_t value)
-{
-  return nx_fm_str_arena_i64_map_set_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len), value);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_set_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, int64_t value)
-{
-  nx_fm_str_arena_i64_map *map;
-  nx_fm_key key_view;
-  nx_fm_arena_i64_tbl_itr itr;
-
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-
-  map = (nx_fm_str_arena_i64_map *)raw;
-  key_view = nx_fm_key_view_h(key_ptr, key_len, key_hash);
-  itr = nx_fm_arena_i64_tbl_get(&map->map, key_view);
-  if (!nx_fm_arena_i64_tbl_is_end(itr))
-  {
-    itr.data->val = value;
-    return true;
-  }
-
-  nx_fm_key key_copy = nx_fm_key_owned_arena(&map->arena, key_ptr, key_len, key_hash);
-  if (key_copy.len == (size_t)-1)
-  {
-    return false;
-  }
-
-  itr = nx_fm_arena_i64_tbl_insert(&map->map, key_copy, value);
-  return !nx_fm_arena_i64_tbl_is_end(itr);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_get_n)(void *raw, NCSTRING key_ptr, size_t key_len, int64_t *out_value)
-{
-  return nx_fm_str_arena_i64_map_get_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len), out_value);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_get_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, int64_t *out_value)
-{
-  nx_fm_str_arena_i64_map *map;
-  nx_fm_arena_i64_tbl_itr itr;
-
-  if (raw == NULL || out_value == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-
-  map = (nx_fm_str_arena_i64_map *)raw;
-  itr = nx_fm_arena_i64_tbl_get(&map->map, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-  if (nx_fm_arena_i64_tbl_is_end(itr))
-  {
-    return false;
-  }
-
-  *out_value = itr.data->val;
-  return true;
-}
-
-N_CDECL(int64_t *, nx_fm_str_arena_i64_map_get_ptr_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash)
-{
-  nx_fm_str_arena_i64_map *map;
-  nx_fm_arena_i64_tbl_itr itr;
-
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return NULL;
-  }
-
-  map = (nx_fm_str_arena_i64_map *)raw;
-  itr = nx_fm_arena_i64_tbl_get(&map->map, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-  if (nx_fm_arena_i64_tbl_is_end(itr))
-  {
-    return NULL;
-  }
-
-  return &itr.data->val;
-}
-
-N_CDECL(int64_t *, nx_fm_str_arena_i64_map_get_ptr_n)(void *raw, NCSTRING key_ptr, size_t key_len)
-{
-  return nx_fm_str_arena_i64_map_get_ptr_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len));
-}
-
-N_CDECL(int64_t *, nx_fm_str_arena_i64_map_get_or_put_ptr_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash, int64_t value)
-{
-  nx_fm_str_arena_i64_map *map;
-  nx_fm_arena_i64_tbl_itr itr;
-
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return NULL;
-  }
-
-  map = (nx_fm_str_arena_i64_map *)raw;
-  itr = nx_fm_arena_i64_tbl_get(&map->map, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-  if (!nx_fm_arena_i64_tbl_is_end(itr))
-  {
-    return &itr.data->val;
-  }
-
-  nx_fm_key key_copy = nx_fm_key_owned_arena(&map->arena, key_ptr, key_len, key_hash);
-  if (key_copy.len == (size_t)-1)
-  {
-    return NULL;
-  }
-
-  itr = nx_fm_arena_i64_tbl_insert(&map->map, key_copy, value);
-  if (nx_fm_arena_i64_tbl_is_end(itr))
-  {
-    return NULL;
-  }
-
-  return &itr.data->val;
-}
-
-N_CDECL(int64_t *, nx_fm_str_arena_i64_map_get_or_put_ptr_n)(void *raw, NCSTRING key_ptr, size_t key_len, int64_t value)
-{
-  return nx_fm_str_arena_i64_map_get_or_put_ptr_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len), value);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_contains_n)(void *raw, NCSTRING key_ptr, size_t key_len)
-{
-  return nx_fm_str_arena_i64_map_contains_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len));
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_contains_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash)
-{
-  nx_fm_str_arena_i64_map *map;
-  nx_fm_arena_i64_tbl_itr itr;
-
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-
-  map = (nx_fm_str_arena_i64_map *)raw;
-  itr = nx_fm_arena_i64_tbl_get(&map->map, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-  return !nx_fm_arena_i64_tbl_is_end(itr);
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_erase_n)(void *raw, NCSTRING key_ptr, size_t key_len)
-{
-  return nx_fm_str_arena_i64_map_erase_h(raw, key_ptr, key_len, nx_fm_hash_n(key_ptr, key_len));
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_erase_h)(void *raw, NCSTRING key_ptr, size_t key_len, uint64_t key_hash)
-{
-  if (raw == NULL || (key_len != 0 && key_ptr == NULL))
-  {
-    return false;
-  }
-  return nx_fm_arena_i64_tbl_erase(&((nx_fm_str_arena_i64_map *)raw)->map, nx_fm_key_view_h(key_ptr, key_len, key_hash));
-}
-
-void nx_fm_str_arena_i64_map_clear(void *raw)
-{
-  if (raw == NULL)
-  {
-    return;
-  }
-  nx_fm_str_arena_i64_map *map = (nx_fm_str_arena_i64_map *)raw;
-  nx_fm_arena_i64_tbl_clear(&map->map);
-  nx_fm_arena_reset(&map->arena);
-}
-
-typedef struct nx_fm_str_arena_i64_map_iter
-{
-  nx_fm_arena_i64_tbl_itr itr;
-  const nx_fm_arena_i64_tbl *map;
-  bool started;
-} nx_fm_str_arena_i64_map_iter;
-
-void *nx_fm_str_arena_i64_map_iter_new(void *raw)
-{
-  if (raw == NULL)
-  {
-    return NULL;
-  }
-  nx_fm_str_arena_i64_map_iter *iter = (nx_fm_str_arena_i64_map_iter *)malloc(sizeof(nx_fm_str_arena_i64_map_iter));
-  if (iter == NULL)
-  {
-    return NULL;
-  }
-  iter->map = &((nx_fm_str_arena_i64_map *)raw)->map;
-  iter->started = false;
-  return (void *)iter;
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_iter_next)(void *iter_raw, char **out_key_ptr, size_t *out_key_len, int64_t *out_value)
-{
-  if (iter_raw == NULL || out_key_ptr == NULL || out_key_len == NULL || out_value == NULL)
-  {
-    return false;
-  }
-
-  nx_fm_str_arena_i64_map_iter *iter = (nx_fm_str_arena_i64_map_iter *)iter_raw;
-  if (!iter->started)
-  {
-    iter->itr = nx_fm_arena_i64_tbl_first((nx_fm_arena_i64_tbl *)iter->map);
-    iter->started = true;
-  }
-  else
-  {
-    iter->itr = nx_fm_arena_i64_tbl_next(iter->itr);
-  }
-
-  if (nx_fm_arena_i64_tbl_is_end(iter->itr))
-  {
-    return false;
-  }
-
-  *out_key_ptr = iter->itr.data->key.ptr;
-  *out_key_len = iter->itr.data->key.len;
-  *out_value = iter->itr.data->val;
-  return true;
-}
-
-N_CDECL(NIM_BOOL, nx_fm_str_arena_i64_map_iter_next_ptr)(void *iter_raw, char **out_key_ptr, size_t *out_key_len, int64_t **out_value_ptr)
-{
-  if (iter_raw == NULL || out_key_ptr == NULL || out_key_len == NULL || out_value_ptr == NULL)
-  {
-    return false;
-  }
-
-  nx_fm_str_arena_i64_map_iter *iter = (nx_fm_str_arena_i64_map_iter *)iter_raw;
-  if (!iter->started)
-  {
-    iter->itr = nx_fm_arena_i64_tbl_first((nx_fm_arena_i64_tbl *)iter->map);
-    iter->started = true;
-  }
-  else
-  {
-    iter->itr = nx_fm_arena_i64_tbl_next(iter->itr);
-  }
-
-  if (nx_fm_arena_i64_tbl_is_end(iter->itr))
-  {
-    return false;
-  }
-
-  *out_key_ptr = iter->itr.data->key.ptr;
-  *out_key_len = iter->itr.data->key.len;
-  *out_value_ptr = &iter->itr.data->val;
-  return true;
-}
-
-void nx_fm_str_arena_i64_map_iter_free(void *iter_raw)
-{
-  if (iter_raw == NULL)
-  {
-    return;
-  }
-  free(iter_raw);
-}
-
-/* ── Swiss table SIMD helpers ────────────────────────────────────── */
-
-#define NX_SW_GROUP 16
-
-#ifdef __aarch64__
-#include <arm_neon.h>
-
-static inline uint64_t nx_sw_match16( const uint8_t *ctrl, uint8_t h2 )
-{
-  uint8x16_t v  = vld1q_u8( ctrl );
-  uint8x16_t eq = vceqq_u8( v, vdupq_n_u8( h2 ) );
-  uint8x8_t  pk = vshrn_n_u16( vreinterpretq_u16_u8( eq ), 4 );
-  return vget_lane_u64( vreinterpret_u64_u8( pk ), 0 );
-}
-
-static inline uint64_t nx_sw_match_empty_or_del16( const uint8_t *ctrl )
-{
-  uint8x16_t v   = vld1q_u8( ctrl );
-  uint8x16_t msb = vreinterpretq_u8_s8(
-    vshrq_n_s8( vreinterpretq_s8_u8( v ), 7 ) );
-  uint8x8_t  pk  = vshrn_n_u16( vreinterpretq_u16_u8( msb ), 4 );
-  return vget_lane_u64( vreinterpret_u64_u8( pk ), 0 );
-}
-
-static inline uint64_t nx_sw_match_empty16( const uint8_t *ctrl )
-{
-  return nx_sw_match16( ctrl, 0xFF );
-}
-
-#else
-
-static inline uint64_t nx_sw_match16( const uint8_t *ctrl, uint8_t h2 )
-{
-  uint64_t mask = 0;
-  for( int i = 0; i < 16; i++ )
-    if( ctrl[i] == h2 )
-      mask |= ( 0xFULL << ( i * 4 ) );
-  return mask;
-}
-
-static inline uint64_t nx_sw_match_empty_or_del16( const uint8_t *ctrl )
-{
-  uint64_t mask = 0;
-  for( int i = 0; i < 16; i++ )
-    if( ctrl[i] & 0x80 )
-      mask |= ( 0xFULL << ( i * 4 ) );
-  return mask;
-}
-
-static inline uint64_t nx_sw_match_empty16( const uint8_t *ctrl )
-{
-  return nx_sw_match16( ctrl, 0xFF );
-}
-#endif
-
-static inline int nx_sw_ctz_nibble( uint64_t mask )
-{
-  return __builtin_ctzll( mask ) >> 2;
-}
-
-static inline uint64_t nx_sw_clear_lowest_nibble( uint64_t mask )
-{
-  int bit = __builtin_ctzll( mask ) & ~3;
-  return mask & ~( 0xFULL << bit );
-}
-
-/* ── Inline hash (bypasses FFI overhead + null check) ──────────── */
-
-static inline uint64_t nx_fm_hash_inline( const char *key, size_t len )
-{
-  return (uint64_t)vt_wyhash( key, len );
-}
-
-static inline void nx_fm_prefetch( const void *p )
-{
-  __builtin_prefetch( p, 0, 1 );
-}
-
-#endif
-""".}
-
-proc nimSwMatch16(ctrl: ptr uint8, h2: uint8): uint64 {.inline.} =
-  let bytes = cast[ptr UncheckedArray[uint8]](ctrl)
-  var mask = 0'u64
-  for i in 0 ..< 16:
-    if bytes[i] == h2:
-      mask = mask or (0xF'u64 shl (i * 4))
-  mask
-
-proc nimSwMatchEmpty16(ctrl: ptr uint8): uint64 {.inline.} =
-  nimSwMatch16(ctrl, 0xFF'u8)
-
-proc nimSwMatchEmptyOrDel16(ctrl: ptr uint8): uint64 {.inline.} =
-  let bytes = cast[ptr UncheckedArray[uint8]](ctrl)
-  var mask = 0'u64
-  for i in 0 ..< 16:
-    if (bytes[i] and 0x80'u8) != 0:
-      mask = mask or (0xF'u64 shl (i * 4))
-  mask
-
-proc nimSwCtzNibble(mask: uint64): int {.inline.} =
-  var idx = 0
-  var scan = mask
-  while idx < 16:
-    if (scan and 0xF'u64) != 0:
-      return idx
-    scan = scan shr 4
-    inc idx
-  16
-
-proc nimSwClearLowestNibble(mask: uint64): uint64 {.inline.} =
-  let idx = nimSwCtzNibble(mask)
-  if idx >= 16:
-    return mask
-  mask and not(0xF'u64 shl (idx * 4))
+import ./swar_group
+
+const nimWyHashUseMulhi = defined(amd64) and (defined(gcc) or defined(clang)) and
+  not defined(js) and not defined(vcc) and not defined(nimWyHashPortable)
+
+proc nimWyMulhi(a, b: uint64): uint64 {.inline.} =
+  # Exact high 64 bits of the 128-bit product; x86-64 gets one mulhi
+  # instruction instead of the four 32-bit multiplies below.
+  var r: uint64
+  when nimWyHashUseMulhi:
+    {.emit: "uint64_t nx_a = `a`, nx_b = `b`; `r` = (uint64_t)((__uint128_t)nx_a * nx_b >> 64);".}
+  else:
+    let ha = a shr 32
+    let la = a and 0xFFFF_FFFF'u64
+    let hb = b shr 32
+    let lb = b and 0xFFFF_FFFF'u64
+    let rm0 = ha * lb
+    let rm1 = hb * la
+    let t = (la * lb) + (rm0 shl 32)
+    var carry = (if t < (la * lb): 1'u64 else: 0'u64)
+    let loCheck = t + (rm1 shl 32)
+    if loCheck < t:
+      inc carry
+    r = (ha * hb) + (rm0 shr 32) + (rm1 shr 32) + carry
+  r
 
 proc nimWyMum(a, b: var uint64) {.inline.} =
-  let ha = a shr 32
-  let la = a and 0xFFFF_FFFF'u64
-  let hb = b shr 32
-  let lb = b and 0xFFFF_FFFF'u64
-  let rh = ha * hb
-  let rm0 = ha * lb
-  let rm1 = hb * la
-  let rl = la * lb
-  let t = rl + (rm0 shl 32)
-  var carry = (if t < rl: 1'u64 else: 0'u64)
-  let lo = t + (rm1 shl 32)
-  if lo < t:
-    inc carry
-  a = lo
-  b = rh + (rm0 shr 32) + (rm1 shr 32) + carry
+  when nimWyHashUseMulhi:
+    let lo = a * b
+    let hi = nimWyMulhi(a, b)
+    a = lo
+    b = hi
+  else:
+    let ha = a shr 32
+    let la = a and 0xFFFF_FFFF'u64
+    let hb = b shr 32
+    let lb = b and 0xFFFF_FFFF'u64
+    let rh = ha * hb
+    let rm0 = ha * lb
+    let rm1 = hb * la
+    let rl = la * lb
+    let t = rl + (rm0 shl 32)
+    var carry = (if t < rl: 1'u64 else: 0'u64)
+    let lo = t + (rm1 shl 32)
+    if lo < t:
+      inc carry
+    a = lo
+    b = rh + (rm0 shr 32) + (rm1 shr 32) + carry
 
 proc nimWyMix(a, b: uint64): uint64 {.inline.} =
   var x = a
@@ -1575,15 +83,11 @@ proc makeFastMapHashSeed(): uint64 =
 
 let FastMapHashSeed = makeFastMapHashSeed()
 
-proc vt_set_hash_seed(seed: uint64) {.importc: "vt_set_hash_seed", nodecl.}
 
-## Installs the process-wide `FastMapHashSeed` into the C hash backend of the
-## calling translation unit so C-side hashing matches `hashKey` and no longer
-## uses the fixed public wyhash seed.
-## The value is pre-mixed exactly like `nimWyHash` so both sides hash
-## identical keys to identical values.
+## No-op retained for source compatibility. The pure-Nim backends
+## carry the process seed directly, so no cross-language sync is needed.
 proc syncFastMapCSeed*() {.inline.} =
-  vt_set_hash_seed(FastMapHashSeed xor 0xca813bf4c7abf0a9'u64)
+  discard
 
 syncFastMapCSeed()
 
@@ -1642,8 +146,6 @@ proc hashBytes*(key: pointer, len: int): uint64 {.inline.} =
 
 const
   DefaultFastMapArenaChunkSize = 4096
-  UseNimStringFastMapBackend = not defined(nxFastMapLegacyStringBackend)
-  UseNimInt64FastMapBackend = not defined(nxFastMapLegacyInt64Backend)
   FastMapCtrlEmpty = 0xFF'u8
   FastMapCtrlDeleted = 0x80'u8
   FastMapMaxInlineStringLen = int(high(uint16))
@@ -1656,11 +158,8 @@ type
     len*: int
 
   FastMapStorageKind = enum
-    fmskString
     fmskStringNim
-    fmskInt64C
     fmskInt64Nim
-    fmskStringArena
     fmskInt64Arena
     fmskNimGeneric
 
@@ -1680,8 +179,10 @@ type
     chunks: seq[pointer]   ## All allocated chunks (for bulk free)
     current: pointer       ## Write head in current chunk
     remaining: int         ## Bytes remaining in current chunk
-    chunkSize: int         ## Size of each chunk
+    chunkSize: int         ## Maximum (ramped-to) size of each chunk
     usedBytes: int         ## Bytes handed out across live chunks since reset/compact
+    ramp: int              ## Current geometric chunk target (0 = before first grow)
+    firstChunkSize: int    ## Real byte size of chunks[0] (for arenaReset)
 
   FastMapStringNimStorage = ref object
     count: int
@@ -1693,6 +194,8 @@ type
     entries: pointer      ## c_malloc'd FastMapStringNimEntry array, size = capacity
     arena: FastMapBumpArena  ## Bump allocator for key/value strings
     liveBytes: int        ## Bytes referenced by currently occupied entries
+    hashConsistent: bool  ## False once any write supplied a caller hash; then
+                          ## duplicate lookups fall back to a key-only scan
 
   FastMapNimStorage[V] = ref object
     count: int
@@ -1702,98 +205,27 @@ type
     ctrl: seq[uint8]
     entries: seq[FastMapNimEntry[V]]
 
-  FastMapInt64NimStorage = FastMapNimStorage[int64]
 
-  FastMap*[V] = ref object
+  FastMapStorageObj*[V] = object
     raw: pointer
     kind: FastMapStorageKind
     nimString: FastMapStringNimStorage
-    nimInt64: FastMapInt64NimStorage
     nimGenericStorage: FastMapNimStorage[V]
+
+  FastMap*[V] = ref object
+    storage: FastMapStorageObj[V]
 
   FastHashMap*[V] = FastMap[V]
   FastHashTable*[V] = FastMap[V]
 
 # Compatibility audit markers retained for tests that verify storage cleanup
-# contracts across helper backends:
+# contracts:
 # proc releaseFastMapStorage(storage: var FastMapStorageObj)
 # proc `=destroy`(storage: var FastMapStorageObj)
 
-proc nx_fm_str_map_new(): pointer {.cdecl, importc.}
-proc nx_fm_str_map_free(raw: pointer) {.cdecl, importc.}
-proc nx_fm_str_map_size(raw: pointer): csize_t {.cdecl, importc.}
-proc nx_fm_str_map_reserve(raw: pointer, n: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_map_set_n(raw: pointer, keyPtr: cstring, keyLen: csize_t, valuePtr: cstring, valueLen: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_map_set_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64, valuePtr: cstring, valueLen: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_map_get_view_n(raw: pointer, keyPtr: cstring, keyLen: csize_t, outPtr: ptr cstring, outLen: ptr csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_map_get_view_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64, outPtr: ptr cstring, outLen: ptr csize_t): bool {.cdecl, importc, used.}
-proc nx_fm_str_map_contains_n(raw: pointer, keyPtr: cstring, keyLen: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_map_contains_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64): bool {.cdecl, importc, used.}
-proc nx_fm_str_map_erase_n(raw: pointer, keyPtr: cstring, keyLen: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_map_erase_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64): bool {.cdecl, importc, used.}
-proc nx_fm_str_map_clear(raw: pointer) {.cdecl, importc.}
-proc nx_fm_str_map_iter_new(raw: pointer): pointer {.cdecl, importc.}
-proc nx_fm_str_map_iter_next(iter: pointer, outKeyPtr: ptr cstring, outKeyLen: ptr csize_t, outValuePtr: ptr cstring, outValueLen: ptr csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_map_iter_free(iter: pointer) {.cdecl, importc.}
-proc nx_fm_str_arena_map_new(defaultCap: csize_t): pointer {.cdecl, importc.}
-proc nx_fm_str_arena_map_free(raw: pointer) {.cdecl, importc.}
-proc nx_fm_str_arena_map_size(raw: pointer): csize_t {.cdecl, importc.}
-proc nx_fm_str_arena_map_reserve(raw: pointer, n: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_arena_map_set_n(raw: pointer, keyPtr: cstring, keyLen: csize_t, valuePtr: cstring, valueLen: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_arena_map_set_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64, valuePtr: cstring, valueLen: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_arena_map_get_view_n(raw: pointer, keyPtr: cstring, keyLen: csize_t, outPtr: ptr cstring, outLen: ptr csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_arena_map_get_view_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64, outPtr: ptr cstring, outLen: ptr csize_t): bool {.cdecl, importc, used.}
-proc nx_fm_str_arena_map_contains_n(raw: pointer, keyPtr: cstring, keyLen: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_arena_map_contains_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64): bool {.cdecl, importc, used.}
-proc nx_fm_str_arena_map_erase_n(raw: pointer, keyPtr: cstring, keyLen: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_arena_map_erase_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64): bool {.cdecl, importc, used.}
-proc nx_fm_str_arena_map_clear(raw: pointer) {.cdecl, importc.}
-proc nx_fm_str_arena_map_iter_new(raw: pointer): pointer {.cdecl, importc.}
-proc nx_fm_str_arena_map_iter_next(iter: pointer, outKeyPtr: ptr cstring, outKeyLen: ptr csize_t, outValuePtr: ptr cstring, outValueLen: ptr csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_arena_map_iter_free(iter: pointer) {.cdecl, importc.}
+proc releaseFastMapStorage[V](storage: var FastMapStorageObj[V])
 
-proc nx_fm_str_i64_map_new(): pointer {.cdecl, importc.}
-proc nx_fm_str_i64_map_free(raw: pointer) {.cdecl, importc.}
-proc nx_fm_str_i64_map_size(raw: pointer): csize_t {.cdecl, importc.}
-proc nx_fm_str_i64_map_reserve(raw: pointer, n: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_i64_map_set_n(raw: pointer, keyPtr: cstring, keyLen: csize_t, value: int64): bool {.cdecl, importc.}
-proc nx_fm_str_i64_map_set_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64, value: int64): bool {.cdecl, importc, used.}
-proc nx_fm_str_i64_map_get_n(raw: pointer, keyPtr: cstring, keyLen: csize_t, outValue: ptr int64): bool {.cdecl, importc.}
-proc nx_fm_str_i64_map_get_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64, outValue: ptr int64): bool {.cdecl, importc, used.}
-proc nx_fm_str_i64_map_get_ptr_n(raw: pointer, keyPtr: cstring, keyLen: csize_t): ptr int64 {.cdecl, importc.}
-proc nx_fm_str_i64_map_get_ptr_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64): ptr int64 {.cdecl, importc, used.}
-proc nx_fm_str_i64_map_get_or_put_ptr_n(raw: pointer, keyPtr: cstring, keyLen: csize_t, value: int64): ptr int64 {.cdecl, importc.}
-proc nx_fm_str_i64_map_get_or_put_ptr_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64, value: int64): ptr int64 {.cdecl, importc, used.}
-proc nx_fm_str_i64_map_contains_n(raw: pointer, keyPtr: cstring, keyLen: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_i64_map_contains_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64): bool {.cdecl, importc, used.}
-proc nx_fm_str_i64_map_erase_n(raw: pointer, keyPtr: cstring, keyLen: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_i64_map_erase_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64): bool {.cdecl, importc, used.}
-proc nx_fm_str_i64_map_clear(raw: pointer) {.cdecl, importc.}
-proc nx_fm_str_i64_map_iter_new(raw: pointer): pointer {.cdecl, importc.}
-proc nx_fm_str_i64_map_iter_next(iter: pointer, outKeyPtr: ptr cstring, outKeyLen: ptr csize_t, outValue: ptr int64): bool {.cdecl, importc.}
-proc nx_fm_str_i64_map_iter_next_ptr(iter: pointer, outKeyPtr: ptr cstring, outKeyLen: ptr csize_t, outValuePtr: ptr ptr int64): bool {.cdecl, importc.}
-proc nx_fm_str_i64_map_iter_free(iter: pointer) {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_new(defaultCap: csize_t): pointer {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_free(raw: pointer) {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_size(raw: pointer): csize_t {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_reserve(raw: pointer, n: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_set_n(raw: pointer, keyPtr: cstring, keyLen: csize_t, value: int64): bool {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_set_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64, value: int64): bool {.cdecl, importc, used.}
-proc nx_fm_str_arena_i64_map_get_n(raw: pointer, keyPtr: cstring, keyLen: csize_t, outValue: ptr int64): bool {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_get_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64, outValue: ptr int64): bool {.cdecl, importc, used.}
-proc nx_fm_str_arena_i64_map_get_ptr_n(raw: pointer, keyPtr: cstring, keyLen: csize_t): ptr int64 {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_get_ptr_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64): ptr int64 {.cdecl, importc, used.}
-proc nx_fm_str_arena_i64_map_get_or_put_ptr_n(raw: pointer, keyPtr: cstring, keyLen: csize_t, value: int64): ptr int64 {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_get_or_put_ptr_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64, value: int64): ptr int64 {.cdecl, importc, used.}
-proc nx_fm_str_arena_i64_map_contains_n(raw: pointer, keyPtr: cstring, keyLen: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_contains_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64): bool {.cdecl, importc, used.}
-proc nx_fm_str_arena_i64_map_erase_n(raw: pointer, keyPtr: cstring, keyLen: csize_t): bool {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_erase_h(raw: pointer, keyPtr: cstring, keyLen: csize_t, keyHash: uint64): bool {.cdecl, importc, used.}
-proc nx_fm_str_arena_i64_map_clear(raw: pointer) {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_iter_new(raw: pointer): pointer {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_iter_next(iter: pointer, outKeyPtr: ptr cstring, outKeyLen: ptr csize_t, outValue: ptr int64): bool {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_iter_next_ptr(iter: pointer, outKeyPtr: ptr cstring, outKeyLen: ptr csize_t, outValuePtr: ptr ptr int64): bool {.cdecl, importc.}
-proc nx_fm_str_arena_i64_map_iter_free(iter: pointer) {.cdecl, importc.}
+
 
 proc c_strlen(value: cstring): csize_t {.importc: "strlen", header: "<string.h>".}
 
@@ -1929,7 +361,7 @@ proc nextFastMapPow2(n: int): int {.inline.} =
 proc desiredFastMapNimCap(count: int): int {.inline.} =
   if count < 0 or count > (high(int) div 2):
     raiseFastMapCapacityOverflow()
-  nextFastMapPow2(max(8, count * 2))
+  nextFastMapPow2(max(16, count * 2))
 
 proc hashFastMapString(key: string): uint64 {.inline.} =
   nimFmHash(key.stringPtr, key.len)
@@ -1952,18 +384,30 @@ proc c_free(p: pointer) {.importc: "free", header: "<stdlib.h>".}
 proc c_memset(p: pointer, val: cint, size: csize_t): pointer {.importc: "memset", header: "<string.h>", discardable.}
 proc c_calloc(count: csize_t, size: csize_t): pointer {.importc: "calloc", header: "<stdlib.h>".}
 
-const FastMapArenaDefaultChunkSize = 256 * 1024  ## 256KB per chunk
+const FastMapArenaDefaultChunkSize = 256 * 1024  ## 256KB per chunk (growth cap)
+const FastMapArenaMinChunkSize = 64  ## First arena chunk size before geometric ramp
 
 proc arenaGrow(arena: var FastMapBumpArena, minSize: int) {.inline.} =
   if minSize < 0 or arena.chunkSize < 0:
     raiseFastMapCapacityOverflow()
-  let sz = max(arena.chunkSize, minSize)
+  # Geometric ramp: start small so thousands of small maps do not each pin a
+  # full chunk, then double until the configured chunk size cap is reached.
+  var sz = arena.chunkSize
+  if arena.ramp > 0 and arena.ramp < sz:
+    sz = arena.ramp
+  elif arena.ramp == 0 and sz > FastMapArenaMinChunkSize:
+    sz = FastMapArenaMinChunkSize
+  if sz < minSize:
+    sz = minSize
   let chunk = c_malloc(csize_t(sz))
   if chunk == nil:
     raiseFastMapOutOfMem()
+  if arena.chunks.len == 0:
+    arena.firstChunkSize = sz
   arena.chunks.add(chunk)
   arena.current = chunk
   arena.remaining = sz
+  arena.ramp = sz shl 1
 
 proc arenaAlloc(arena: var FastMapBumpArena, size: int): pointer {.inline.} =
   ## Bump-allocate `size` bytes from the arena. O(1) fast path.
@@ -1984,6 +428,8 @@ proc arenaFreeAll(arena: var FastMapBumpArena) =
   arena.current = nil
   arena.remaining = 0
   arena.usedBytes = 0
+  arena.ramp = 0
+  arena.firstChunkSize = 0
 
 proc arenaReset(arena: var FastMapBumpArena) =
   ## Reset arena for reuse (free all chunks except the first, reset write head).
@@ -1995,8 +441,9 @@ proc arenaReset(arena: var FastMapBumpArena) =
   let firstChunk = arena.chunks[0]
   arena.chunks.setLen(1)
   arena.current = firstChunk
-  arena.remaining = arena.chunkSize
+  arena.remaining = arena.firstChunkSize
   arena.usedBytes = 0
+  arena.ramp = arena.firstChunkSize shl 1
 
 proc arenaStrDupKV(arena: var FastMapBumpArena, keyPtr: pointer, keyLen: int, valPtr: pointer, valLen: int): pointer {.inline.} =
   ## Allocate key+value as a single block: [key keyLen bytes]['\0'][val valLen bytes]['\0']
@@ -2127,6 +574,7 @@ proc initFastMapStringNimStorage(): FastMapStringNimStorage =
   result.ctrl = nil
   result.entries = nil
   result.arena.chunkSize = FastMapArenaDefaultChunkSize
+  result.hashConsistent = true
 
 proc updateFastMapStringThresholds(storage: FastMapStringNimStorage) {.inline.} =
   if storage == nil or storage.capacity == 0:
@@ -2139,12 +587,15 @@ proc updateFastMapStringThresholds(storage: FastMapStringNimStorage) {.inline.} 
   storage.growAt = max(1, (storage.capacity * 7) div 8)
   storage.rebuildAt = max(1, (storage.capacity * 15) div 16)
 
-proc initFastMapInt64NimStorage(): FastMapInt64NimStorage =
-  initFastMapNimStorage[int64]()
 
 proc resetFastMapCtrl[V](storage: FastMapNimStorage[V]) =
-  for i in 0..<storage.ctrl.len:
-    storage.ctrl[i] = FastMapCtrlEmpty
+  if storage.ctrl.len > 0:
+    # Empty ctrl is the 0xFF sentinel, not zero: fill explicitly.
+    let base = addr storage.ctrl[0]
+    var i = 0
+    while i < storage.ctrl.len:
+      cast[ptr UncheckedArray[uint8]](base)[i] = FastMapCtrlEmpty
+      inc i
 
 proc rehashFastMapStringNim(storage: FastMapStringNimStorage, newCap: int)
 proc clearFastMapString(storage: FastMapStringNimStorage)
@@ -2273,17 +724,17 @@ proc findFastMapStringFoundIdx(storage: FastMapStringNimStorage, key: string, ha
   var stride = 0
   while true:
     let ctrlBase = cast[ptr uint8](cast[uint](ctrl) + uint(offset))
-    var matchMask = nimSwMatch16(ctrlBase, h2)
+    var matchMask = swarMatch16(ctrlBase, h2)
     while matchMask != 0:
-      let slotOff = nimSwCtzNibble(matchMask)
+      let slotOff = swarFirstSlot(matchMask)
       let idx = (offset + slotOff) and mask
       let entry = cast[ptr FastMapStringNimEntry](entriesBase + uint(idx) * entrySize)
       if entry.hash == hash and entry.keyLen == uint16(kLen) and
           (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
         homeBucket = idx
         return idx
-      matchMask = nimSwClearLowestNibble(matchMask)
-    let emptyMask = nimSwMatchEmpty16(ctrlBase)
+      matchMask = swarClearLowest(matchMask)
+    let emptyMask = swarMatchEmpty16(ctrlBase)
     if emptyMask != 0:
       return -1
     stride += SwGroupSize
@@ -2300,16 +751,16 @@ proc swGroupLookupLen(ctrl: ptr UncheckedArray[uint8], entriesBase: uint, entryS
   var stride = 0
   while true:
     let ctrlBase = cast[ptr uint8](cast[uint](ctrl) + uint(offset))
-    var matchMask = nimSwMatch16(ctrlBase, h2)
+    var matchMask = swarMatch16(ctrlBase, h2)
     while matchMask != 0:
-      let slotOff = nimSwCtzNibble(matchMask)
+      let slotOff = swarFirstSlot(matchMask)
       let idx = (offset + slotOff) and mask
       let entry = addr entries[idx]
       if entry.hash == hash and entry.keyLen == uint16(kLen) and
           (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
         return int(entry.valLen)
-      matchMask = nimSwClearLowestNibble(matchMask)
-    let emptyMask = nimSwMatchEmpty16(ctrlBase)
+      matchMask = swarClearLowest(matchMask)
+    let emptyMask = swarMatchEmpty16(ctrlBase)
     if emptyMask != 0:
       return -1
     stride += SwGroupSize
@@ -2341,16 +792,16 @@ proc findFastMapStringIdxByPtr(storage: FastMapStringNimStorage, kPtr: pointer, 
   var stride = 0
   while true:
     let ctrlBase = cast[ptr uint8](cast[uint](ctrl) + uint(offset))
-    var matchMask = nimSwMatch16(ctrlBase, h2)
+    var matchMask = swarMatch16(ctrlBase, h2)
     while matchMask != 0:
-      let slotOff = nimSwCtzNibble(matchMask)
+      let slotOff = swarFirstSlot(matchMask)
       let idx = (offset + slotOff) and mask
       let entry = addr entries[idx]
       if entry.hash == hash and entry.keyLen == uint16(kLen) and
           (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
         return idx
-      matchMask = nimSwClearLowestNibble(matchMask)
-    let emptyMask = nimSwMatchEmpty16(ctrlBase)
+      matchMask = swarClearLowest(matchMask)
+    let emptyMask = swarMatchEmpty16(ctrlBase)
     if emptyMask != 0:
       return -1
     stride += SwGroupSize
@@ -2389,7 +840,7 @@ proc lookupFastMapStringLenHashed(storage: FastMapStringNimStorage, kPtr: pointe
   if storage == nil or storage.capacity == 0:
     return -1
   var idx = findFastMapStringIdxByPtr(storage, kPtr, kLen, hash)
-  if idx < 0:
+  if idx < 0 and not storage.hashConsistent:
     idx = findFastMapStringIdxByKeyOnly(storage, kPtr, kLen)
   if idx < 0:
     -1
@@ -2406,17 +857,17 @@ proc swGroupLookupView(ctrl: ptr UncheckedArray[uint8], entriesBase: uint, entry
   var stride = 0
   while true:
     let ctrlBase = cast[ptr uint8](cast[uint](ctrl) + uint(offset))
-    var matchMask = nimSwMatch16(ctrlBase, h2)
+    var matchMask = swarMatch16(ctrlBase, h2)
     while matchMask != 0:
-      let slotOff = nimSwCtzNibble(matchMask)
+      let slotOff = swarFirstSlot(matchMask)
       let idx = (offset + slotOff) and mask
       let entry = addr entries[idx]
       if entry.hash == hash and entry.keyLen == uint16(kLen) and
           (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
         value = FastStringView(data: swEntryValPtr(entry), len: int(entry.valLen))
         return true
-      matchMask = nimSwClearLowestNibble(matchMask)
-    let emptyMask = nimSwMatchEmpty16(ctrlBase)
+      matchMask = swarClearLowest(matchMask)
+    let emptyMask = swarMatchEmpty16(ctrlBase)
     if emptyMask != 0:
       return false
     stride += SwGroupSize
@@ -2427,7 +878,7 @@ proc lookupFastMapStringViewHashed(storage: FastMapStringNimStorage, kPtr: point
   if storage == nil or storage.capacity == 0:
     return false
   var idx = findFastMapStringIdxByPtr(storage, kPtr, kLen, hash)
-  if idx < 0:
+  if idx < 0 and not storage.hashConsistent:
     idx = findFastMapStringIdxByKeyOnly(storage, kPtr, kLen)
   if idx < 0:
     return false
@@ -2455,9 +906,9 @@ proc swFindInsertSlot(storage: FastMapStringNimStorage, hash: uint64): int =
 
   while true:
     let ctrlBase = swCtrlPtr(storage, offset)
-    let freeMask = nimSwMatchEmptyOrDel16(ctrlBase)
+    let freeMask = swarMatchEmptyOrDel16(ctrlBase)
     if freeMask != 0:
-      let slotOff = nimSwCtzNibble(freeMask)
+      let slotOff = swarFirstSlot(freeMask)
       return (offset + slotOff) and mask
     stride += SwGroupSize
     offset = (offset + stride) and mask
@@ -2485,16 +936,17 @@ proc insertFastMapStringRaw(
         storage.liveBytes += entryStorageBytes(key.len, value.len) - oldBytes
         maybeCompactFastMapStringArena(storage)
       return foundIdx
-    let kPtr = if key.len == 0: nil else: cast[pointer](unsafeAddr key[0])
-    let duplicateIdx = findFastMapStringIdxByKeyOnly(storage, kPtr, key.len)
-    if duplicateIdx >= 0:
-      if replace:
-        let entry = swEntryAt(storage, duplicateIdx)
-        let oldBytes = entryStorageBytes(int(entry.keyLen), int(entry.valLen))
-        overwriteEntryValue(entry[], value, storage.arena)
-        storage.liveBytes += entryStorageBytes(key.len, value.len) - oldBytes
-        maybeCompactFastMapStringArena(storage)
-      return duplicateIdx
+    if not storage.hashConsistent:
+      let kPtr = if key.len == 0: nil else: cast[pointer](unsafeAddr key[0])
+      let duplicateIdx = findFastMapStringIdxByKeyOnly(storage, kPtr, key.len)
+      if duplicateIdx >= 0:
+        if replace:
+          let entry = swEntryAt(storage, duplicateIdx)
+          let oldBytes = entryStorageBytes(int(entry.keyLen), int(entry.valLen))
+          overwriteEntryValue(entry[], value, storage.arena)
+          storage.liveBytes += entryStorageBytes(key.len, value.len) - oldBytes
+          maybeCompactFastMapStringArena(storage)
+        return duplicateIdx
 
   # Find empty/deleted slot for new entry
   let idx = swFindInsertSlot(storage, hash)
@@ -2535,9 +987,9 @@ proc rehashFastMapStringNim(storage: FastMapStringNimStorage, newCap: int) =
       var stride = 0
       while true:
         let ctrlBase = swCtrlPtr(storage, offset)
-        let emptyMask = nimSwMatchEmpty16(ctrlBase)
+        let emptyMask = swarMatchEmpty16(ctrlBase)
         if emptyMask != 0:
-          let slotOff = nimSwCtzNibble(emptyMask)
+          let slotOff = swarFirstSlot(emptyMask)
           let idx = (offset + slotOff) and mask
           # Move entry (transfer pointer ownership, no alloc)
           moveEntry(swEntryAt(storage, idx)[], oldEntryArr[i])
@@ -2584,6 +1036,7 @@ proc putFastMapStringHashed(storage: FastMapStringNimStorage, key, value: string
   if storage == nil:
     return false
 
+  storage.hashConsistent = false
   ensureFastMapStringCapacity(storage, storage.count + 1)
   let idx = insertFastMapStringRaw(storage, key, value, hash, replace = true)
   result = idx >= 0
@@ -2645,6 +1098,124 @@ proc clearFastMapString(storage: FastMapStringNimStorage) =
   storage.liveBytes = 0
   arenaReset(storage.arena)
 
+## ── int64 values on FastMapStringNimStorage (arena maps) ─────────────
+## int64 arena maps reuse the Swiss string storage: each entry stores the
+## key plus 8 raw value bytes (valLen is always 8), so lookups, deletes
+## and table management are shared with the string backend.
+
+proc setEntryKV8(entry: var FastMapStringNimEntry, key: string, value: int64, hash: uint64, arena: var FastMapBumpArena) {.inline.} =
+  if key.len > FastMapMaxInlineStringLen:
+    raise newException(ValueError, "FastMap key exceeds maximum length of 65535")
+  entry.hash = hash
+  entry.keyLen = uint16(key.len)
+  entry.valLen = 8'u16
+  entry.keyPtr = arenaStrDupKV(arena, key.stringPtr, key.len, cast[pointer](unsafeAddr value), 8)
+
+proc overwriteEntryValue8(entry: var FastMapStringNimEntry, value: int64) {.inline.} =
+  # Values are always 8 bytes on int64 arena maps, so the overwrite fits
+  # the original allocation in place.
+  let valStart = cast[pointer](cast[uint](entry.keyPtr) + uint(entry.keyLen) + 1)
+  copyMem(valStart, cast[pointer](unsafeAddr value), 8)
+
+proc insertFastMapStringI64Raw(
+  storage: FastMapStringNimStorage,
+  key: string,
+  value: int64,
+  hash: uint64,
+  unique = false,
+  replace = true
+): int =
+  ## Swiss table insert for int64 values. Returns slot index or -1.
+  if storage == nil or storage.capacity == 0:
+    return -1
+
+  if not unique:
+    var homeBucket: int
+    let foundIdx = findFastMapStringFoundIdx(storage, key, hash, homeBucket)
+    if foundIdx >= 0:
+      if replace:
+        let oldBytes = entryStorageBytes(int(swEntryAt(storage, foundIdx).keyLen), 8)
+        overwriteEntryValue8(swEntryAt(storage, foundIdx)[], value)
+        storage.liveBytes += entryStorageBytes(key.len, 8) - oldBytes
+        maybeCompactFastMapStringArena(storage)
+      return foundIdx
+    if not storage.hashConsistent:
+      let kPtr = if key.len == 0: nil else: cast[pointer](unsafeAddr key[0])
+      let duplicateIdx = findFastMapStringIdxByKeyOnly(storage, kPtr, key.len)
+      if duplicateIdx >= 0:
+        if replace:
+          let oldBytes = entryStorageBytes(int(swEntryAt(storage, duplicateIdx).keyLen), 8)
+          overwriteEntryValue8(swEntryAt(storage, duplicateIdx)[], value)
+          storage.liveBytes += entryStorageBytes(key.len, 8) - oldBytes
+          maybeCompactFastMapStringArena(storage)
+        return duplicateIdx
+
+  let idx = swFindInsertSlot(storage, hash)
+  let wasDeleted = swCtrlAt(storage, idx) == FastMapCtrlDeleted
+
+  setEntryKV8(swEntryAt(storage, idx)[], key, value, hash, storage.arena)
+  storage.liveBytes += entryStorageBytes(key.len, 8)
+  swSetCtrl(storage, idx, swH2(hash))
+  inc storage.count
+  if not wasDeleted:
+    inc storage.used
+  idx
+
+## Insert or update an int64 value in Swiss string storage.
+proc putFastMapStringI64Hashed(storage: FastMapStringNimStorage, key: string, value: int64, hash: uint64): bool {.inline.} =
+  if storage == nil:
+    return false
+  # No caller-hash write API exists for int64 maps, so stored hashes always
+  # match hashFastMapString; keep the duplicate-detection fast path enabled.
+  ensureFastMapStringCapacity(storage, storage.count + 1)
+  let idx = insertFastMapStringI64Raw(storage, key, value, hash, replace = true)
+  idx >= 0
+
+## Insert or update an int64 value, hashing the key first.
+proc putFastMapStringI64(storage: FastMapStringNimStorage, key: string, value: int64): bool {.inline.} =
+  putFastMapStringI64Hashed(storage, key, value, hashFastMapString(key))
+
+## Lookup an int64 value; returns false if the key is missing.
+proc tryGetFastMapStringI64(storage: FastMapStringNimStorage, key: string, value: var int64): bool {.inline.} =
+  var homeBucket: int
+  let idx = findFastMapStringFoundIdx(storage, key, hashFastMapString(key), homeBucket)
+  if idx < 0:
+    return false
+  let entry = swEntryAt(storage, idx)
+  copyMem(addr value, swEntryValPtr(entry), 8)
+  true
+
+## Return a zero-copy pointer to a stored int64, or nil if missing.
+proc getFastMapStringI64Ptr(storage: FastMapStringNimStorage, key: string): ptr int64 {.inline.} =
+  var homeBucket: int
+  let idx = findFastMapStringFoundIdx(storage, key, hashFastMapString(key), homeBucket)
+  if idx < 0:
+    return nil
+  cast[ptr int64](swEntryValPtr(swEntryAt(storage, idx)))
+
+## Return a zero-copy pointer to a stored int64 using a precomputed hash.
+proc getFastMapStringI64PtrHashed(storage: FastMapStringNimStorage, key: string,
+    hash: uint64): ptr int64 {.inline.} =
+  if storage == nil or storage.capacity == 0:
+    return nil
+  var homeBucket: int
+  let idx = findFastMapStringFoundIdx(storage, key, hash, homeBucket)
+  if idx < 0:
+    return nil
+  cast[ptr int64](swEntryValPtr(swEntryAt(storage, idx)))
+
+## Return a mutable pointer to the entry, inserting `value` if absent.
+proc getOrPutFastMapStringI64Ptr(storage: FastMapStringNimStorage, key: string, value: int64): ptr int64 {.inline.} =
+  let existing = getFastMapStringI64Ptr(storage, key)
+  if existing != nil:
+    return existing
+  discard putFastMapStringI64(storage, key, value)
+  getFastMapStringI64Ptr(storage, key)
+
+## Check whether an int64 key exists in Swiss string storage.
+proc containsFastMapStringI64(storage: FastMapStringNimStorage, key: string): bool {.inline.} =
+  not getFastMapStringI64Ptr(storage, key).isNil
+
 proc nextFastMapStringOccupiedIdx(storage: FastMapStringNimStorage, idx: var int): bool {.inline.} =
   if storage == nil or storage.capacity == 0:
     return false
@@ -2677,19 +1248,30 @@ proc findFastMapNimSlot[V](storage: FastMapNimStorage[V], key: string, hash: uin
 
   let mask = storage.ctrl.len - 1
   let sig = fastMapCtrl(hash)
-  var idx = int(hash and uint64(mask))
+  let cbase = cast[uint](addr storage.ctrl[0])
+  var offset = (int(hash and uint64(mask))) and not(SwGroupSize - 1)
+  var stride = 0
   var firstDeleted = -1
   while true:
-    let ctrl = storage.ctrl[idx]
-    if ctrl == FastMapCtrlEmpty:
-      return ((if firstDeleted >= 0: firstDeleted else: idx), false)
-    elif ctrl == sig:
-      if storage.entries[idx].hash == hash and fastMapStringEquals(storage.entries[idx].key, key):
-        return (idx, true)
-    elif ctrl == FastMapCtrlDeleted:
+    let gp = cast[pointer](cbase + uint(offset))
+    var m = swarMatch16(gp, sig)
+    while m != 0:
+      let j = (offset + swarFirstSlot(m)) and mask
+      if storage.entries[j].hash == hash and fastMapStringEquals(storage.entries[j].key, key):
+        return (j, true)
+      m = swarClearLowest(m)
+    var free = swarMatchEmptyOrDel16(gp)
+    while free != 0:
+      let j = (offset + swarFirstSlot(free)) and mask
+      if storage.ctrl[j] == FastMapCtrlEmpty:
+        if firstDeleted >= 0:
+          return (firstDeleted, false)
+        return (j, false)
       if firstDeleted < 0:
-        firstDeleted = idx
-    idx = (idx + 1) and mask
+        firstDeleted = j
+      free = swarClearLowest(free)
+    stride += SwGroupSize
+    offset = (offset + stride) and mask
 
 proc findFastMapNimFoundIdx[V](storage: FastMapNimStorage[V], key: string, hash: uint64): int {.inline.} =
   if storage == nil or storage.entries.len == 0:
@@ -2697,15 +1279,21 @@ proc findFastMapNimFoundIdx[V](storage: FastMapNimStorage[V], key: string, hash:
 
   let mask = storage.ctrl.len - 1
   let sig = fastMapCtrl(hash)
-  var idx = int(hash and uint64(mask))
+  let cbase = cast[uint](addr storage.ctrl[0])
+  var offset = (int(hash and uint64(mask))) and not(SwGroupSize - 1)
+  var stride = 0
   while true:
-    let ctrl = storage.ctrl[idx]
-    if ctrl == FastMapCtrlEmpty:
+    let gp = cast[pointer](cbase + uint(offset))
+    var m = swarMatch16(gp, sig)
+    while m != 0:
+      let j = (offset + swarFirstSlot(m)) and mask
+      if storage.entries[j].hash == hash and fastMapStringEquals(storage.entries[j].key, key):
+        return j
+      m = swarClearLowest(m)
+    if swarMatchEmpty16(gp) != 0:
       return -1
-    elif ctrl == sig:
-      if storage.entries[idx].hash == hash and fastMapStringEquals(storage.entries[idx].key, key):
-        return idx
-    idx = (idx + 1) and mask
+    stride += SwGroupSize
+    offset = (offset + stride) and mask
 
 proc rehashFastMapNim[V](storage: FastMapNimStorage[V], newCap: int) =
   let targetCap = desiredFastMapNimCap(max(1, newCap))
@@ -2720,17 +1308,24 @@ proc rehashFastMapNim[V](storage: FastMapNimStorage[V], newCap: int) =
   if oldEntries.len == 0:
     return
 
+  let newCtrlBase = cast[uint](addr storage.ctrl[0])
+  let newMask = storage.ctrl.len - 1
   for i in 0..<oldEntries.len:
     let ctrl = oldCtrl[i]
     if ctrl != FastMapCtrlEmpty and ctrl != FastMapCtrlDeleted:
       let entry = oldEntries[i]
       let hash = entry.hash
-      let sig = fastMapCtrl(hash)
-      let mask = storage.ctrl.len - 1
-      var idx = int(hash and uint64(mask))
-      while storage.ctrl[idx] != FastMapCtrlEmpty:
-        idx = (idx + 1) and mask
-      storage.ctrl[idx] = sig
+      var offset = (int(hash and uint64(newMask))) and not(SwGroupSize - 1)
+      var stride = 0
+      var idx = -1
+      while idx < 0:
+        let free = swarMatchEmpty16(cast[pointer](newCtrlBase + uint(offset)))
+        if free != 0:
+          idx = (offset + swarFirstSlot(free)) and newMask
+        else:
+          stride += SwGroupSize
+          offset = (offset + stride) and newMask
+      storage.ctrl[idx] = fastMapCtrl(hash)
       storage.entries[idx].hash = hash
       storage.entries[idx].key = entry.key
       storage.entries[idx].value = entry.value
@@ -2744,7 +1339,7 @@ proc ensureFastMapNimCapacity[V](storage: FastMapNimStorage[V], targetCount: int
 
   if targetCount >= storage.growAt or storage.used >= storage.rebuildAt:
     rehashFastMapNim(storage, max(targetCount, storage.entries.len))
-  elif storage.count * 4 < storage.used and storage.entries.len > 8:
+  elif storage.count * 4 < storage.used and storage.entries.len > 16:
     rehashFastMapNim(storage, storage.entries.len)
 
 proc reserveFastMapNim[V](storage: FastMapNimStorage[V], n: int): bool =
@@ -2866,52 +1461,14 @@ proc getOrPutFastMapNimPtr[V](storage: FastMapNimStorage[V], key: string, value:
     inc storage.count
   addr storage.entries[insertIdx].value
 
-proc reserveFastMapInt64(storage: FastMapInt64NimStorage, n: int): bool {.inline.} =
-  reserveFastMapNim(storage, n)
 
-proc lenFastMapInt64(storage: FastMapInt64NimStorage): int {.inline.} =
-  lenFastMapNim(storage)
 
-proc putFastMapInt64(storage: FastMapInt64NimStorage, key: string, value: int64): bool {.inline.} =
-  putFastMapNim[int64](storage, key, value)
 
-proc tryGetFastMapInt64(storage: FastMapInt64NimStorage, key: string, value: var int64): bool {.inline.} =
-  tryGetFastMapNim[int64](storage, key, value)
 
-proc getFastMapInt64Ptr(storage: FastMapInt64NimStorage, key: string): ptr int64 {.inline.} =
-  getFastMapNimPtr[int64](storage, key)
 
-proc getOrPutFastMapInt64Ptr(storage: FastMapInt64NimStorage, key: string, value: int64): ptr int64 {.inline.} =
-  getOrPutFastMapNimPtr[int64](storage, key, value)
 
-proc containsFastMapInt64(storage: FastMapInt64NimStorage, key: string): bool {.inline.} =
-  not storage.getFastMapInt64Ptr(key).isNil
 
-proc delFastMapInt64(storage: FastMapInt64NimStorage, key: string): bool =
-  if storage == nil or storage.entries.len == 0:
-    return false
-  let idx = findFastMapNimFoundIdx(storage, key, hashFastMapString(key))
-  if idx < 0:
-    return false
-  storage.ctrl[idx] = FastMapCtrlDeleted
-  dec storage.count
-  if storage.count == 0:
-    storage.used = 0
-    for i in 0..<storage.entries.len:
-      storage.ctrl[i] = FastMapCtrlEmpty
-      storage.entries[i] = default(FastMapNimEntry[int64])
-  elif storage.count * 4 < storage.used and storage.entries.len > 8:
-    rehashFastMapNim(storage, storage.entries.len)
-  true
 
-proc clearFastMapInt64(storage: FastMapInt64NimStorage) =
-  if storage == nil:
-    return
-  storage.count = 0
-  storage.used = 0
-  for i in 0..<storage.entries.len:
-    storage.ctrl[i] = FastMapCtrlEmpty
-    storage.entries[i] = default(FastMapNimEntry[int64])
 
 proc delFastMapGeneric[V](storage: FastMapNimStorage[V], key: string): bool =
   if storage == nil or storage.entries.len == 0:
@@ -2926,7 +1483,7 @@ proc delFastMapGeneric[V](storage: FastMapNimStorage[V], key: string): bool =
     for i in 0..<storage.entries.len:
       storage.ctrl[i] = FastMapCtrlEmpty
       storage.entries[i] = default(FastMapNimEntry[V])
-  elif storage.count * 4 < storage.used and storage.entries.len > 8:
+  elif storage.count * 4 < storage.used and storage.entries.len > 16:
     rehashFastMapNim(storage, storage.entries.len)
   true
 
@@ -2939,61 +1496,56 @@ proc clearFastMapGeneric[V](storage: FastMapNimStorage[V]) =
     storage.ctrl[i] = FastMapCtrlEmpty
     storage.entries[i] = default(FastMapNimEntry[V])
 
-proc releaseFastMapFields[V](map: FastMap[V]) =
-  if map.raw == nil and map.nimString.isNil and map.nimInt64.isNil and
-      map.kind != fmskNimGeneric:
+proc `=destroy`[V](storage: var FastMapStorageObj[V]) =
+  ## Idempotently release all storage owned by this object; fires once when
+  ## the containing `FastMap` ref is released.
+  releaseFastMapStorage(storage)
+
+
+proc releaseFastMapStorage[V](storage: var FastMapStorageObj[V]) =
+  ## Idempotently release all storage owned by this map's storage object.
+  if storage.raw == nil and storage.nimString.isNil and
+      storage.kind != fmskNimGeneric:
     return
-  case map.kind
-  of fmskString:
-    nx_fm_str_map_free(map.raw)
+  case storage.kind
   of fmskStringNim:
-    if not map.nimString.isNil:
-      swFreeTables(map.nimString)
-      arenaFreeAll(map.nimString.arena)
-    map.nimString = nil
-  of fmskInt64C:
-    nx_fm_str_i64_map_free(map.raw)
-  of fmskInt64Nim:
-    map.nimInt64 = nil
-  of fmskStringArena:
-    nx_fm_str_arena_map_free(map.raw)
-  of fmskInt64Arena:
-    nx_fm_str_arena_i64_map_free(map.raw)
+    if not storage.nimString.isNil:
+      swFreeTables(storage.nimString)
+      arenaFreeAll(storage.nimString.arena)
+    storage.nimString = nil
+  of fmskInt64Nim, fmskInt64Arena:
+    # Both int64 kinds live in nimString storage.
+    if not storage.nimString.isNil:
+      swFreeTables(storage.nimString)
+      arenaFreeAll(storage.nimString.arena)
+    storage.nimString = nil
   of fmskNimGeneric:
     discard
-  map.raw = nil
+  storage.raw = nil
 
 proc rawHandle[V](map: FastMap[V]): pointer {.inline.} =
   if map == nil:
     return nil
-  if map.kind == fmskStringNim:
-    return cast[pointer](map.nimString)
-  if map.kind == fmskInt64Nim:
-    return cast[pointer](map.nimInt64)
-  if map.kind == fmskNimGeneric:
-    return cast[pointer](map.nimGenericStorage)
-  map.raw
+  if map.storage.kind == fmskStringNim:
+    return cast[pointer](map.storage.nimString)
+  if map.storage.kind == fmskNimGeneric:
+    return cast[pointer](map.storage.nimGenericStorage)
+  if map.storage.kind == fmskInt64Arena:
+    return cast[pointer](map.storage.nimString)
+  map.storage.raw
 
 ## Create a new empty `FastMap` with a type-specific backend.
 proc newFastMap*[V](): FastMap[V] =
   new(result)
   when V is string:
-    when UseNimStringFastMapBackend:
-      result.kind = fmskStringNim
-      result.nimString = initFastMapStringNimStorage()
-    else:
-      result.kind = fmskString
-      result.raw = nx_fm_str_map_new()
+    result.storage.kind = fmskStringNim
+    result.storage.nimString = initFastMapStringNimStorage()
   elif V is int64:
-    when UseNimInt64FastMapBackend:
-      result.kind = fmskInt64Nim
-      result.nimInt64 = initFastMapInt64NimStorage()
-    else:
-      result.kind = fmskInt64C
-      result.raw = nx_fm_str_i64_map_new()
+    result.storage.kind = fmskInt64Nim
+    result.storage.nimString = initFastMapStringNimStorage()
   else:
-    result.kind = fmskNimGeneric
-    result.nimGenericStorage = initFastMapNimStorage[V]()
+    result.storage.kind = fmskNimGeneric
+    result.storage.nimGenericStorage = initFastMapNimStorage[V]()
 
 ## Create a new `FastMap` reserved for initialSize entries.
 proc newFastMap*[V](initialSize: Natural): FastMap[V] =
@@ -3013,16 +1565,22 @@ proc newFastMap*[V](pairs: openArray[(string, V)]): FastMap[V] =
 ## Create a new `FastMap` backed by an arena allocator with the given chunk size.
 proc newFastArenaMap*[V](arenaChunkSize = DefaultFastMapArenaChunkSize): FastMap[V] =
   new(result)
-  let chunkSize = csize_t(max(64, arenaChunkSize))
+  let chunkSize = max(64, arenaChunkSize)
   when V is string:
-    result.kind = fmskStringArena
-    result.raw = nx_fm_str_arena_map_new(chunkSize)
+    # Pure-Nim arena backend: bump-arena Swiss string storage with the
+    # requested chunk size (behaviorally identical to nimString maps).
+    result.storage.kind = fmskStringNim
+    result.storage.nimString = initFastMapStringNimStorage()
+    result.storage.nimString.arena.chunkSize = chunkSize
   elif V is int64:
-    result.kind = fmskInt64Arena
-    result.raw = nx_fm_str_arena_i64_map_new(chunkSize)
+    # Pure-Nim arena backend: string storage holding 8 raw value bytes
+    # per entry (valLen is always 8).
+    result.storage.kind = fmskInt64Arena
+    result.storage.nimString = initFastMapStringNimStorage()
+    result.storage.nimString.arena.chunkSize = chunkSize
   else:
-    result.kind = fmskNimGeneric
-    result.nimGenericStorage = initFastMapNimStorage[V]()
+    result.storage.kind = fmskNimGeneric
+    result.storage.nimGenericStorage = initFastMapNimStorage[V]()
 
 ## Create a new empty `FastHashMap`.
 proc newFastHashMap*[V](): FastHashMap[V] {.inline.} = newFastMap[V]()
@@ -3064,151 +1622,81 @@ proc newFastTableFrom*[A, B](collection: A, index: proc(x: B): string): FastMap[
 proc close*[V](map: FastMap[V]) {.inline.} =
   if map == nil:
     return
-  releaseFastMapFields(map)
+  releaseFastMapStorage(map.storage)
   when not (V is string or V is int64):
-    map.nimGenericStorage = nil
+    map.storage.nimGenericStorage = nil
 
 ## Return the number of entries in the map.
 proc len*[V](map: FastMap[V]): int {.inline.} =
   if map == nil:
     return 0
   when V is string:
-    case map.kind
-    of fmskString:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return 0
-      int(nx_fm_str_map_size(raw))
+    case map.storage.kind
     of fmskStringNim:
-      lenFastMapString(map.nimString)
-    of fmskStringArena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return 0
-      int(nx_fm_str_arena_map_size(raw))
+      lenFastMapString(map.storage.nimString)
     else:
       0
   elif V is int64:
-    case map.kind
-    of fmskInt64C:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return 0
-      int(nx_fm_str_i64_map_size(raw))
-    of fmskInt64Nim:
-      lenFastMapInt64(map.nimInt64)
-    of fmskInt64Arena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return 0
-      int(nx_fm_str_arena_i64_map_size(raw))
+    case map.storage.kind
+    of fmskInt64Nim, fmskInt64Arena:
+      lenFastMapString(map.storage.nimString)
     else:
       0
   else:
-    if map.nimGenericStorage.isNil: 0
-    else: lenFastMapNim(map.nimGenericStorage)
+    if map.storage.nimGenericStorage.isNil: 0
+    else: lenFastMapNim(map.storage.nimGenericStorage)
 
 ## Reserve capacity for n entries; returns false for invalid maps or counts.
 proc reserve*[V](map: FastMap[V], n: int): bool {.inline.} =
   if map == nil or n < 0:
     return false
   when V is string:
-    case map.kind
-    of fmskString:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_map_reserve(map.raw, csize_t(n))
+    case map.storage.kind
     of fmskStringNim:
-      if map.nimString == nil:
-        map.nimString = initFastMapStringNimStorage()
-      reserveFastMapString(map.nimString, n)
-    of fmskStringArena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_arena_map_reserve(map.raw, csize_t(n))
+      if map.storage.nimString == nil:
+        map.storage.nimString = initFastMapStringNimStorage()
+      reserveFastMapString(map.storage.nimString, n)
     else:
       false
   elif V is int64:
-    case map.kind
-    of fmskInt64C:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_i64_map_reserve(map.raw, csize_t(n))
-    of fmskInt64Nim:
-      if map.nimInt64 == nil:
-        map.nimInt64 = initFastMapInt64NimStorage()
-      reserveFastMapInt64(map.nimInt64, n)
-    of fmskInt64Arena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_arena_i64_map_reserve(map.raw, csize_t(n))
+    case map.storage.kind
+    of fmskInt64Nim, fmskInt64Arena:
+      if map.storage.nimString.isNil:
+        map.storage.nimString = initFastMapStringNimStorage()
+      reserveFastMapString(map.storage.nimString, n)
     else:
       false
   else:
-    if map.nimGenericStorage.isNil: false
-    else: reserveFastMapNim(map.nimGenericStorage, n)
+    if map.storage.nimGenericStorage.isNil: false
+    else: reserveFastMapNim(map.storage.nimGenericStorage, n)
 
 ## Insert or update a key and value entry; returns false if the map is unusable.
 proc put*[V](map: FastMap[V], key: string, value: V): bool {.inline.} =
   when V is string:
-    case map.kind
-    of fmskString:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_map_set_n(raw, cast[cstring](key.stringPtr), csize_t(key.len), cast[cstring](value.stringPtr), csize_t(value.len))
+    case map.storage.kind
     of fmskStringNim:
-      putFastMapString(map.nimString, key, value)
-    of fmskStringArena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_arena_map_set_n(raw, cast[cstring](key.stringPtr), csize_t(key.len), cast[cstring](value.stringPtr), csize_t(value.len))
+      putFastMapString(map.storage.nimString, key, value)
     else:
       false
   elif V is int64:
-    case map.kind
-    of fmskInt64C:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_i64_map_set_n(raw, cast[cstring](key.stringPtr), csize_t(key.len), value)
-    of fmskInt64Nim:
-      putFastMapInt64(map.nimInt64, key, value)
-    of fmskInt64Arena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_arena_i64_map_set_n(raw, cast[cstring](key.stringPtr), csize_t(key.len), value)
+    case map.storage.kind
+    of fmskInt64Nim, fmskInt64Arena:
+      putFastMapStringI64(map.storage.nimString, key, value)
     else:
       false
   else:
-    if map.nimGenericStorage.isNil: false
-    else: putFastMapNim(map.nimGenericStorage, key, value)
+    if map.storage.nimGenericStorage.isNil: false
+    else: putFastMapNim(map.storage.nimGenericStorage, key, value)
 
 ## Insert or update an entry from cstring key and value without allocation.
 proc putC*(map: FastMap[string], key, value: cstring): bool {.inline.} =
   if value == nil:
     return false
-  case map.kind
-  of fmskString:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_map_set_n(raw, cast[cstring](key.cstringPtr), key.cstringLen, cast[cstring](value.cstringPtr), value.cstringLen)
+  case map.storage.kind
   of fmskStringNim:
-    if map.nimString == nil:
-      map.nimString = initFastMapStringNimStorage()
-    putFastMapString(map.nimString, key.toOwnedString, value.toOwnedString)
-  of fmskStringArena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_arena_map_set_n(raw, cast[cstring](key.cstringPtr), key.cstringLen, cast[cstring](value.cstringPtr), value.cstringLen)
+    if map.storage.nimString == nil:
+      map.storage.nimString = initFastMapStringNimStorage()
+    putFastMapString(map.storage.nimString, key.toOwnedString, value.toOwnedString)
   else:
     false
 
@@ -3216,41 +1704,24 @@ proc putC*(map: FastMap[string], key, value: cstring): bool {.inline.} =
 proc putView*(map: FastMap[string], key, value: FastStringView): bool {.inline.} =
   if not key.isValidFastStringView or not value.isValidFastStringView:
     return false
-  case map.kind
-  of fmskString:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_map_set_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen, cast[cstring](value.toFastStringViewPtr), value.toFastStringViewLen)
+  case map.storage.kind
   of fmskStringNim:
-    if map.nimString == nil:
-      map.nimString = initFastMapStringNimStorage()
-    putFastMapString(map.nimString, key.toOwnedString, value.toOwnedString)
-  of fmskStringArena:
-    let raw = map.rawHandle()
-    if raw == nil:
+    if map.storage.nimString == nil:
+      map.storage.nimString = initFastMapStringNimStorage()
+    # Views carry untrusted lengths; reject before allocating, since the
+    # Swiss string storage caps keys and values at 65535 bytes (the C
+    # backend returns false for oversized updates instead of crashing).
+    if key.len > FastMapMaxInlineStringLen or value.len > FastMapMaxInlineStringLen:
       return false
-    nx_fm_str_arena_map_set_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen, cast[cstring](value.toFastStringViewPtr), value.toFastStringViewLen)
+    putFastMapString(map.storage.nimString, key.toOwnedString, value.toOwnedString)
   else:
     false
 
 ## Insert or update an int64 entry from a cstring key without allocation.
 proc putC*(map: FastMap[int64], key: cstring, value: int64): bool {.inline.} =
-  case map.kind
-  of fmskInt64C:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_i64_map_set_n(raw, cast[cstring](key.cstringPtr), key.cstringLen, value)
-  of fmskInt64Nim:
-    if map.nimInt64 == nil:
-      map.nimInt64 = initFastMapInt64NimStorage()
-    putFastMapInt64(map.nimInt64, key.toOwnedString, value)
-  of fmskInt64Arena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_arena_i64_map_set_n(raw, cast[cstring](key.cstringPtr), key.cstringLen, value)
+  case map.storage.kind
+  of fmskInt64Nim, fmskInt64Arena:
+    putFastMapStringI64(map.storage.nimString, key.toOwnedString, value)
   else:
     false
 
@@ -3258,77 +1729,25 @@ proc putC*(map: FastMap[int64], key: cstring, value: int64): bool {.inline.} =
 proc putView*(map: FastMap[int64], key: FastStringView, value: int64): bool {.inline.} =
   if not key.isValidFastStringView:
     return false
-  case map.kind
-  of fmskInt64C:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_i64_map_set_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen, value)
-  of fmskInt64Nim:
-    if map.nimInt64 == nil:
-      map.nimInt64 = initFastMapInt64NimStorage()
-    putFastMapInt64(map.nimInt64, key.toOwnedString, value)
-  of fmskInt64Arena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_arena_i64_map_set_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen, value)
+  case map.storage.kind
+  of fmskInt64Nim, fmskInt64Arena:
+    putFastMapStringI64(map.storage.nimString, key.toOwnedString, value)
   else:
     false
 
 ## Lookup a value as a `FastStringView` without copying it.
 proc tryGetView*(map: FastMap[string], key: string, value: var FastStringView): bool {.inline.} =
-  case map.kind
-  of fmskString:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    var valuePtr: cstring
-    var valueLen: csize_t
-    if not nx_fm_str_map_get_view_n(raw, cast[cstring](key.stringPtr), csize_t(key.len), addr valuePtr, addr valueLen):
-      return false
-    value = initFastStringView(valuePtr, valueLen)
-    true
+  case map.storage.kind
   of fmskStringNim:
-    lookupFastMapStringView(map.nimString, key, value)
-  of fmskStringArena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    var valuePtr: cstring
-    var valueLen: csize_t
-    if not nx_fm_str_arena_map_get_view_n(raw, cast[cstring](key.stringPtr), csize_t(key.len), addr valuePtr, addr valueLen):
-      return false
-    value = initFastStringView(valuePtr, valueLen)
-    true
+    lookupFastMapStringView(map.storage.nimString, key, value)
   else:
     false
 
 ## Lookup a value as a `FastStringView` from a cstring key without copying.
 proc tryGetView*(map: FastMap[string], key: cstring, value: var FastStringView): bool {.inline.} =
-  case map.kind
-  of fmskString:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    var valuePtr: cstring
-    var valueLen: csize_t
-    if not nx_fm_str_map_get_view_n(raw, cast[cstring](key.cstringPtr), key.cstringLen, addr valuePtr, addr valueLen):
-      return false
-    value = initFastStringView(valuePtr, valueLen)
-    true
+  case map.storage.kind
   of fmskStringNim:
-    tryGetFastMapStringView(map.nimString, key.toOwnedString, value)
-  of fmskStringArena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    var valuePtr: cstring
-    var valueLen: csize_t
-    if not nx_fm_str_arena_map_get_view_n(raw, cast[cstring](key.cstringPtr), key.cstringLen, addr valuePtr, addr valueLen):
-      return false
-    value = initFastStringView(valuePtr, valueLen)
-    true
+    tryGetFastMapStringView(map.storage.nimString, key.toOwnedString, value)
   else:
     false
 
@@ -3336,29 +1755,9 @@ proc tryGetView*(map: FastMap[string], key: cstring, value: var FastStringView):
 proc tryGetView*(map: FastMap[string], key: FastStringView, value: var FastStringView): bool {.inline.} =
   if not key.isValidFastStringView:
     return false
-  case map.kind
-  of fmskString:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    var valuePtr: cstring
-    var valueLen: csize_t
-    if not nx_fm_str_map_get_view_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen, addr valuePtr, addr valueLen):
-      return false
-    value = initFastStringView(valuePtr, valueLen)
-    true
+  case map.storage.kind
   of fmskStringNim:
-    tryGetFastMapStringView(map.nimString, key.toOwnedString, value)
-  of fmskStringArena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    var valuePtr: cstring
-    var valueLen: csize_t
-    if not nx_fm_str_arena_map_get_view_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen, addr valuePtr, addr valueLen):
-      return false
-    value = initFastStringView(valuePtr, valueLen)
-    true
+    tryGetFastMapStringView(map.storage.nimString, key.toOwnedString, value)
   else:
     false
 
@@ -3391,9 +1790,9 @@ proc hashKey*(key: FastStringView): uint64 =
 ## Lookup a value length using a precomputed hash; returns the default if missing.
 proc getLenHashed*(map: FastMap[string], key: string, hash: uint64, default = 0): int {.inline.} =
   ## Lookup with precomputed hash — eliminates hash computation overhead.
-  if map.kind == fmskStringNim:
+  if map.storage.kind == fmskStringNim:
     let kPtr = if key.len == 0: nil else: cast[pointer](unsafeAddr key[0])
-    let len = lookupFastMapStringLenHashed(map.nimString, kPtr, key.len, hash)
+    let len = lookupFastMapStringLenHashed(map.storage.nimString, kPtr, key.len, hash)
     return if len < 0: default else: len
   # Fallback: regular lookup for other backends
   var view: FastStringView
@@ -3403,9 +1802,9 @@ proc getLenHashed*(map: FastMap[string], key: string, hash: uint64, default = 0)
 ## Lookup a value view using a precomputed hash; returns false if missing.
 proc tryGetViewHashed*(map: FastMap[string], key: string, hash: uint64, value: var FastStringView): bool {.inline.} =
   ## Lookup with precomputed hash — eliminates hash computation overhead.
-  if map.kind == fmskStringNim:
+  if map.storage.kind == fmskStringNim:
     let kPtr = if key.len == 0: nil else: cast[pointer](unsafeAddr key[0])
-    return lookupFastMapStringViewHashed(map.nimString, kPtr, key.len, hash, value)
+    return lookupFastMapStringViewHashed(map.storage.nimString, kPtr, key.len, hash, value)
   map.tryGetView(key, value)
 
 ## Return a value view using a precomputed hash, or an empty view if missing.
@@ -3413,29 +1812,21 @@ proc getViewHashed*(map: FastMap[string], key: string, hash: uint64): FastString
   discard map.tryGetViewHashed(key, hash, result)
 
 ## Insert or update an entry using a precomputed key hash.
+## After the first `putHashed` on a map, duplicate detection falls back to a
+## key-only scan for that map, so hashes from `hashKey` stay the fast path.
 proc putHashed*(map: FastMap[string], key: string, hash: uint64, value: string): bool {.inline.} =
-  case map.kind
-  of fmskString:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_map_set_h(raw, cast[cstring](key.stringPtr), csize_t(key.len), hash, cast[cstring](value.stringPtr), csize_t(value.len))
+  case map.storage.kind
   of fmskStringNim:
-    if map.nimString == nil:
-      map.nimString = initFastMapStringNimStorage()
-    putFastMapStringHashed(map.nimString, key, value, hash)
-  of fmskStringArena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_arena_map_set_h(raw, cast[cstring](key.stringPtr), csize_t(key.len), hash, cast[cstring](value.stringPtr), csize_t(value.len))
+    if map.storage.nimString == nil:
+      map.storage.nimString = initFastMapStringNimStorage()
+    putFastMapStringHashed(map.storage.nimString, key, value, hash)
   else:
     false
 
 ## Return the stored value length for a key, or the default if missing.
 proc getLen*(map: FastMap[string], key: string, default = 0): int {.inline.} =
-  if map.kind == fmskStringNim:
-    let len = lookupFastMapStringLen(map.nimString, key)
+  if map.storage.kind == fmskStringNim:
+    let len = lookupFastMapStringLen(map.storage.nimString, key)
     return if len < 0: default else: len
   var view: FastStringView
   if not map.tryGetView(key, view):
@@ -3459,9 +1850,9 @@ proc getLen*(map: FastMap[string], key: FastStringView, default = 0): int {.inli
 ## Lookup a value by key; returns false if the key is missing.
 proc tryGet*[V](map: FastMap[V], key: string, value: var V): bool {.inline.} =
   when V is string:
-    case map.kind
+    case map.storage.kind
     of fmskStringNim:
-      tryGetFastMapString(map.nimString, key, value)
+      tryGetFastMapString(map.storage.nimString, key, value)
     else:
       let raw = map.rawHandle()
       if raw == nil:
@@ -3472,24 +1863,14 @@ proc tryGet*[V](map: FastMap[V], key: string, value: var V): bool {.inline.} =
       value = $view
       true
   elif V is int64:
-    case map.kind
-    of fmskInt64C:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_i64_map_get_n(raw, cast[cstring](key.stringPtr), csize_t(key.len), addr value)
-    of fmskInt64Nim:
-      tryGetFastMapInt64(map.nimInt64, key, value)
-    of fmskInt64Arena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_arena_i64_map_get_n(raw, cast[cstring](key.stringPtr), csize_t(key.len), addr value)
+    case map.storage.kind
+    of fmskInt64Nim, fmskInt64Arena:
+      tryGetFastMapStringI64(map.storage.nimString, key, value)
     else:
       false
   else:
-    if map.nimGenericStorage.isNil: false
-    else: tryGetFastMapNim(map.nimGenericStorage, key, value)
+    if map.storage.nimGenericStorage.isNil: false
+    else: tryGetFastMapNim(map.storage.nimGenericStorage, key, value)
 
 ## Lookup a cstring key value as a `FastStringView` without copying.
 proc tryGetC*(map: FastMap[string], key: cstring, value: var FastStringView): bool {.inline.} =
@@ -3505,11 +1886,11 @@ proc getPtrHashed*[V](map: FastMap[V], key: string, hash: uint64): ptr V {.inlin
   when V is string:
     nil
   elif V is int64:
-    if map.nimInt64.isNil: nil
-    else: getFastMapNimPtrHashed[int64](map.nimInt64, key, hash)
+    if map.storage.nimString.isNil: nil
+    else: getFastMapStringI64PtrHashed(map.storage.nimString, key, hash)
   else:
-    if map.nimGenericStorage.isNil: nil
-    else: getFastMapNimPtrHashed(map.nimGenericStorage, key, hash)
+    if map.storage.nimGenericStorage.isNil: nil
+    else: getFastMapNimPtrHashed(map.storage.nimGenericStorage, key, hash)
 
 ## Lookup a cstring key value as a `FastStringView` without copying.
 proc tryGetViewC*(map: FastMap[string], key: cstring, value: var FastStringView): bool {.inline.} =
@@ -3530,112 +1911,45 @@ proc stringValuePtrOrPut(map: FastMap[string], key, value: string): ptr string {
   nil  ## No longer supported — entries use unmanaged storage
 
 proc int64ValuePtr(map: FastMap[int64], key: string): ptr int64 {.inline.} =
-  case map.kind
-  of fmskInt64C:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return nil
-    nx_fm_str_i64_map_get_ptr_n(raw, cast[cstring](key.stringPtr), csize_t(key.len))
-  of fmskInt64Nim:
-    getFastMapInt64Ptr(map.nimInt64, key)
-  of fmskInt64Arena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return nil
-    nx_fm_str_arena_i64_map_get_ptr_n(raw, cast[cstring](key.stringPtr), csize_t(key.len))
-  else:
-    nil
+  if map.storage.nimString.isNil: nil
+  else: getFastMapStringI64Ptr(map.storage.nimString, key)
 
 proc int64ValuePtrOrPut(map: FastMap[int64], key: string, value: int64): ptr int64 {.inline.} =
-  case map.kind
-  of fmskInt64C:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return nil
-    nx_fm_str_i64_map_get_or_put_ptr_n(raw, cast[cstring](key.stringPtr), csize_t(key.len), value)
-  of fmskInt64Nim:
-    if map.nimInt64 == nil:
-      map.nimInt64 = initFastMapInt64NimStorage()
-    getOrPutFastMapInt64Ptr(map.nimInt64, key, value)
-  of fmskInt64Arena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return nil
-    nx_fm_str_arena_i64_map_get_or_put_ptr_n(raw, cast[cstring](key.stringPtr), csize_t(key.len), value)
-  else:
-    nil
+  if map.storage.nimString.isNil:
+    map.storage.nimString = initFastMapStringNimStorage()
+  getOrPutFastMapStringI64Ptr(map.storage.nimString, key, value)
 
 ## Check whether the map contains a key.
 proc contains*[V](map: FastMap[V], key: string): bool {.inline.} =
   when V is string:
-    case map.kind
-    of fmskString:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_map_contains_n(raw, cast[cstring](key.stringPtr), csize_t(key.len))
+    case map.storage.kind
     of fmskStringNim:
-      containsFastMapString(map.nimString, key)
-    of fmskStringArena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_arena_map_contains_n(raw, cast[cstring](key.stringPtr), csize_t(key.len))
+      containsFastMapString(map.storage.nimString, key)
     else:
       false
   elif V is int64:
-    case map.kind
-    of fmskInt64C:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_i64_map_contains_n(raw, cast[cstring](key.stringPtr), csize_t(key.len))
-    of fmskInt64Nim:
-      containsFastMapInt64(map.nimInt64, key)
-    of fmskInt64Arena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_arena_i64_map_contains_n(raw, cast[cstring](key.stringPtr), csize_t(key.len))
+    case map.storage.kind
+    of fmskInt64Nim, fmskInt64Arena:
+      containsFastMapStringI64(map.storage.nimString, key)
     else:
       false
   else:
-    if map.nimGenericStorage.isNil: false
-    else: not getFastMapNimPtr(map.nimGenericStorage, key).isNil
+    if map.storage.nimGenericStorage.isNil: false
+    else: not getFastMapNimPtr(map.storage.nimGenericStorage, key).isNil
 
 ## Check whether the map contains a cstring key.
 proc containsC*(map: FastMap[string], key: cstring): bool {.inline.} =
-  case map.kind
-  of fmskString:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_map_contains_n(raw, cast[cstring](key.cstringPtr), key.cstringLen)
+  case map.storage.kind
   of fmskStringNim:
-    containsFastMapString(map.nimString, key.toOwnedString)
-  of fmskStringArena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_arena_map_contains_n(raw, cast[cstring](key.cstringPtr), key.cstringLen)
+    containsFastMapString(map.storage.nimString, key.toOwnedString)
   else:
     false
 
 ## Check whether the map contains a cstring key.
 proc containsC*(map: FastMap[int64], key: cstring): bool {.inline.} =
-  case map.kind
-  of fmskInt64C:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_i64_map_contains_n(raw, cast[cstring](key.cstringPtr), key.cstringLen)
-  of fmskInt64Nim:
-    containsFastMapInt64(map.nimInt64, key.toOwnedString)
-  of fmskInt64Arena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_arena_i64_map_contains_n(raw, cast[cstring](key.cstringPtr), key.cstringLen)
+  case map.storage.kind
+  of fmskInt64Nim, fmskInt64Arena:
+    containsFastMapStringI64(map.storage.nimString, key.toOwnedString)
   else:
     false
 
@@ -3643,19 +1957,9 @@ proc containsC*(map: FastMap[int64], key: cstring): bool {.inline.} =
 proc containsView*(map: FastMap[string], key: FastStringView): bool {.inline.} =
   if not key.isValidFastStringView:
     return false
-  case map.kind
-  of fmskString:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_map_contains_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen)
+  case map.storage.kind
   of fmskStringNim:
-    containsFastMapString(map.nimString, key.toOwnedString)
-  of fmskStringArena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_arena_map_contains_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen)
+    containsFastMapString(map.storage.nimString, key.toOwnedString)
   else:
     false
 
@@ -3663,93 +1967,43 @@ proc containsView*(map: FastMap[string], key: FastStringView): bool {.inline.} =
 proc containsView*(map: FastMap[int64], key: FastStringView): bool {.inline.} =
   if not key.isValidFastStringView:
     return false
-  case map.kind
-  of fmskInt64C:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_i64_map_contains_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen)
-  of fmskInt64Nim:
-    containsFastMapInt64(map.nimInt64, key.toOwnedString)
-  of fmskInt64Arena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_arena_i64_map_contains_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen)
+  case map.storage.kind
+  of fmskInt64Nim, fmskInt64Arena:
+    containsFastMapStringI64(map.storage.nimString, key.toOwnedString)
   else:
     false
 
 ## Remove a key from the map; returns false if the key was absent.
 proc del*[V](map: FastMap[V], key: string): bool {.inline.} =
   when V is string:
-    case map.kind
-    of fmskString:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_map_erase_n(raw, cast[cstring](key.stringPtr), csize_t(key.len))
+    case map.storage.kind
     of fmskStringNim:
-      delFastMapString(map.nimString, key)
-    of fmskStringArena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_arena_map_erase_n(raw, cast[cstring](key.stringPtr), csize_t(key.len))
+      delFastMapString(map.storage.nimString, key)
     else:
       false
   elif V is int64:
-    case map.kind
-    of fmskInt64C:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_i64_map_erase_n(raw, cast[cstring](key.stringPtr), csize_t(key.len))
-    of fmskInt64Nim:
-      delFastMapInt64(map.nimInt64, key)
-    of fmskInt64Arena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return false
-      nx_fm_str_arena_i64_map_erase_n(raw, cast[cstring](key.stringPtr), csize_t(key.len))
+    case map.storage.kind
+    of fmskInt64Nim, fmskInt64Arena:
+      delFastMapString(map.storage.nimString, key)
     else:
       false
   else:
-    if map.nimGenericStorage.isNil: false
-    else: delFastMapGeneric(map.nimGenericStorage, key)
+    if map.storage.nimGenericStorage.isNil: false
+    else: delFastMapGeneric(map.storage.nimGenericStorage, key)
 
 ## Remove a cstring key from the map; returns false if the key was absent.
 proc delC*(map: FastMap[string], key: cstring): bool {.inline.} =
-  case map.kind
-  of fmskString:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_map_erase_n(raw, cast[cstring](key.cstringPtr), key.cstringLen)
+  case map.storage.kind
   of fmskStringNim:
-    delFastMapString(map.nimString, key.toOwnedString)
-  of fmskStringArena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_arena_map_erase_n(raw, cast[cstring](key.cstringPtr), key.cstringLen)
+    delFastMapString(map.storage.nimString, key.toOwnedString)
   else:
     false
 
 ## Remove a cstring key from the map; returns false if the key was absent.
 proc delC*(map: FastMap[int64], key: cstring): bool {.inline.} =
-  case map.kind
-  of fmskInt64C:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_i64_map_erase_n(raw, cast[cstring](key.cstringPtr), key.cstringLen)
-  of fmskInt64Nim:
-    delFastMapInt64(map.nimInt64, key.toOwnedString)
-  of fmskInt64Arena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_arena_i64_map_erase_n(raw, cast[cstring](key.cstringPtr), key.cstringLen)
+  case map.storage.kind
+  of fmskInt64Nim, fmskInt64Arena:
+    delFastMapString(map.storage.nimString, key.toOwnedString)
   else:
     false
 
@@ -3757,19 +2011,9 @@ proc delC*(map: FastMap[int64], key: cstring): bool {.inline.} =
 proc delView*(map: FastMap[string], key: FastStringView): bool {.inline.} =
   if not key.isValidFastStringView:
     return false
-  case map.kind
-  of fmskString:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_map_erase_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen)
+  case map.storage.kind
   of fmskStringNim:
-    delFastMapString(map.nimString, key.toOwnedString)
-  of fmskStringArena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_arena_map_erase_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen)
+    delFastMapString(map.storage.nimString, key.toOwnedString)
   else:
     false
 
@@ -3777,58 +2021,28 @@ proc delView*(map: FastMap[string], key: FastStringView): bool {.inline.} =
 proc delView*(map: FastMap[int64], key: FastStringView): bool {.inline.} =
   if not key.isValidFastStringView:
     return false
-  case map.kind
-  of fmskInt64C:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_i64_map_erase_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen)
-  of fmskInt64Nim:
-    delFastMapInt64(map.nimInt64, key.toOwnedString)
-  of fmskInt64Arena:
-    let raw = map.rawHandle()
-    if raw == nil:
-      return false
-    nx_fm_str_arena_i64_map_erase_n(raw, cast[cstring](key.toFastStringViewPtr), key.toFastStringViewLen)
+  case map.storage.kind
+  of fmskInt64Nim, fmskInt64Arena:
+    delFastMapString(map.storage.nimString, key.toOwnedString)
   else:
     false
 
 ## Remove all entries from the map.
 proc clear*[V](map: FastMap[V]) {.inline.} =
   when V is string:
-    case map.kind
-    of fmskString:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return
-      nx_fm_str_map_clear(raw)
+    case map.storage.kind
     of fmskStringNim:
-      clearFastMapString(map.nimString)
-    of fmskStringArena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return
-      nx_fm_str_arena_map_clear(raw)
+      clearFastMapString(map.storage.nimString)
     else:
       discard
   elif V is int64:
-    case map.kind
-    of fmskInt64C:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return
-      nx_fm_str_i64_map_clear(raw)
-    of fmskInt64Nim:
-      clearFastMapInt64(map.nimInt64)
-    of fmskInt64Arena:
-      let raw = map.rawHandle()
-      if raw == nil:
-        return
-      nx_fm_str_arena_i64_map_clear(raw)
+    case map.storage.kind
+    of fmskInt64Nim, fmskInt64Arena:
+      clearFastMapString(map.storage.nimString)
     else:
       discard
   else:
-    clearFastMapGeneric(map.nimGenericStorage)
+    clearFastMapGeneric(map.storage.nimGenericStorage)
 
 ## Return the value for a key, or the supplied default if missing.
 proc getOrDefault*[V](map: FastMap[V], key: string, default: V): V {.inline.} =
@@ -3933,52 +2147,19 @@ proc mgetOrPut*(map: FastMap[string], key: string): string =
 
 ## Iterate over all entries as `FastStringView` pairs without allocation.
 iterator pairsView*(map: FastMap[string]): (FastStringView, FastStringView) =
-  case map.kind
+  case map.storage.kind
   of fmskStringNim:
-    if not map.nimString.isNil:
+    if not map.storage.nimString.isNil:
       var i = 0
-      while nextFastMapStringOccupiedIdx(map.nimString, i):
-        let entry = swEntryAt(map.nimString, i)
+      while nextFastMapStringOccupiedIdx(map.storage.nimString, i):
+        let entry = swEntryAt(map.storage.nimString, i)
         yield (
           rawStrToView(entry.keyPtr, int32(entry.keyLen)),
           rawStrToView(swEntryValPtr(entry), int32(entry.valLen))
         )
         inc i
   else:
-    let raw = map.rawHandle()
-    if raw != nil:
-      let iter =
-        case map.kind
-        of fmskString:
-          nx_fm_str_map_iter_new(raw)
-        of fmskStringArena:
-          nx_fm_str_arena_map_iter_new(raw)
-        else:
-          nil
-      if iter != nil:
-        defer:
-          case map.kind
-          of fmskString:
-            nx_fm_str_map_iter_free(iter)
-          of fmskStringArena:
-            nx_fm_str_arena_map_iter_free(iter)
-          else:
-            discard
-
-        var keyPtr: cstring
-        var keyLen: csize_t
-        var valuePtr: cstring
-        var valueLen: csize_t
-        while (
-          case map.kind
-          of fmskString:
-            nx_fm_str_map_iter_next(iter, addr keyPtr, addr keyLen, addr valuePtr, addr valueLen)
-          of fmskStringArena:
-            nx_fm_str_arena_map_iter_next(iter, addr keyPtr, addr keyLen, addr valuePtr, addr valueLen)
-          else:
-            false
-        ):
-          yield (initFastStringView(keyPtr, keyLen), initFastStringView(valuePtr, valueLen))
+    discard
 
 ## Collect all entries into a sequence of string pairs.
 proc pairsSeq*(map: FastMap[string]): seq[(string, string)] =
@@ -3993,36 +2174,16 @@ iterator pairs*(map: FastMap[string]): (string, string) =
 
 ## Iterate over all entries as string and int64 pairs.
 iterator pairs*(map: FastMap[int64]): (string, int64) =
-  case map.kind
-  of fmskInt64C:
-    let raw = map.rawHandle()
-    if raw != nil:
-      let iter = nx_fm_str_i64_map_iter_new(raw)
-      if iter != nil:
-        defer: nx_fm_str_i64_map_iter_free(iter)
-        var keyPtr: cstring
-        var keyLen: csize_t
+  case map.storage.kind
+  of fmskInt64Nim, fmskInt64Arena:
+    if not map.storage.nimString.isNil:
+      var i = 0
+      while nextFastMapStringOccupiedIdx(map.storage.nimString, i):
+        let entry = swEntryAt(map.storage.nimString, i)
         var value: int64
-        while nx_fm_str_i64_map_iter_next(iter, addr keyPtr, addr keyLen, addr value):
-          yield ($initFastStringView(keyPtr, keyLen), value)
-  of fmskInt64Nim:
-    if not map.nimInt64.isNil:
-      for i in 0..<map.nimInt64.entries.len:
-        let ctrl = map.nimInt64.ctrl[i]
-        if ctrl != FastMapCtrlEmpty and ctrl != FastMapCtrlDeleted:
-          let entry = map.nimInt64.entries[i]
-          yield (entry.key, entry.value)
-  of fmskInt64Arena:
-    let raw = map.rawHandle()
-    if raw != nil:
-      let iter = nx_fm_str_arena_i64_map_iter_new(raw)
-      if iter != nil:
-        defer: nx_fm_str_arena_i64_map_iter_free(iter)
-        var keyPtr: cstring
-        var keyLen: csize_t
-        var value: int64
-        while nx_fm_str_arena_i64_map_iter_next(iter, addr keyPtr, addr keyLen, addr value):
-          yield ($initFastStringView(keyPtr, keyLen), value)
+        copyMem(addr value, swEntryValPtr(entry), 8)
+        yield (rawStrToString(entry.keyPtr, int32(entry.keyLen)), value)
+        inc i
   else:
     discard
 
@@ -4035,10 +2196,10 @@ proc pairsSeq*(map: FastMap[int64]): seq[(string, int64)] =
 ## Iterate over all entries as string and V pairs for generic values.
 iterator pairs*[V](map: FastMap[V]): (string, V) =
   when not (V is string or V is int64):
-    if not map.nimGenericStorage.isNil:
-      for i in 0..<map.nimGenericStorage.entries.len:
-        if map.nimGenericStorage.ctrl[i] != FastMapCtrlEmpty and map.nimGenericStorage.ctrl[i] != FastMapCtrlDeleted:
-          yield (map.nimGenericStorage.entries[i].key, map.nimGenericStorage.entries[i].value)
+    if not map.storage.nimGenericStorage.isNil:
+      for i in 0..<map.storage.nimGenericStorage.entries.len:
+        if map.storage.nimGenericStorage.ctrl[i] != FastMapCtrlEmpty and map.storage.nimGenericStorage.ctrl[i] != FastMapCtrlDeleted:
+          yield (map.storage.nimGenericStorage.entries[i].key, map.storage.nimGenericStorage.entries[i].value)
 
 ## Iterate over all keys in the map.
 iterator keys*[V](map: FastMap[V]): string =
@@ -4067,40 +2228,16 @@ iterator mvalues*(map: FastMap[string]): var string =
 
 ## Iterate over int64 values as var references for in-place mutation.
 iterator mvalues*(map: FastMap[int64]): var int64 =
-  case map.kind
-  of fmskInt64C:
-    let raw = map.rawHandle()
-    if raw != nil:
+  case map.storage.kind
+  of fmskInt64Nim, fmskInt64Arena:
+    if not map.storage.nimString.isNil:
       let expectedLen = map.len
-      let iter = nx_fm_str_i64_map_iter_new(raw)
-      if iter != nil:
-        defer: nx_fm_str_i64_map_iter_free(iter)
-        var keyPtr: cstring
-        var keyLen: csize_t
-        var valuePtr: ptr int64
-        while nx_fm_str_i64_map_iter_next_ptr(iter, addr keyPtr, addr keyLen, addr valuePtr):
-          yield valuePtr[]
-          assert map.len == expectedLen, "the length of the table changed while iterating over it"
-  of fmskInt64Nim:
-    if not map.nimInt64.isNil:
-      let expectedLen = map.len
-      for i in 0..<map.nimInt64.entries.len:
-        if map.nimInt64.ctrl[i] != FastMapCtrlEmpty and map.nimInt64.ctrl[i] != FastMapCtrlDeleted:
-          yield map.nimInt64.entries[i].value
-          assert map.len == expectedLen, "the length of the table changed while iterating over it"
-  of fmskInt64Arena:
-    let raw = map.rawHandle()
-    if raw != nil:
-      let expectedLen = map.len
-      let iter = nx_fm_str_arena_i64_map_iter_new(raw)
-      if iter != nil:
-        defer: nx_fm_str_arena_i64_map_iter_free(iter)
-        var keyPtr: cstring
-        var keyLen: csize_t
-        var valuePtr: ptr int64
-        while nx_fm_str_arena_i64_map_iter_next_ptr(iter, addr keyPtr, addr keyLen, addr valuePtr):
-          yield valuePtr[]
-          assert map.len == expectedLen, "the length of the table changed while iterating over it"
+      var i = 0
+      while nextFastMapStringOccupiedIdx(map.storage.nimString, i):
+        let entry = swEntryAt(map.storage.nimString, i)
+        yield cast[ptr int64](swEntryValPtr(entry))[]
+        assert map.len == expectedLen, "the length of the table changed while iterating over it"
+        inc i
   else:
     discard
 
@@ -4110,40 +2247,16 @@ iterator mpairs*(map: FastMap[string]): (string, var string) =
 
 ## Iterate over entries as key and mutable int64 value pairs.
 iterator mpairs*(map: FastMap[int64]): (string, var int64) =
-  case map.kind
-  of fmskInt64C:
-    let raw = map.rawHandle()
-    if raw != nil:
+  case map.storage.kind
+  of fmskInt64Nim, fmskInt64Arena:
+    if not map.storage.nimString.isNil:
       let expectedLen = map.len
-      let iter = nx_fm_str_i64_map_iter_new(raw)
-      if iter != nil:
-        defer: nx_fm_str_i64_map_iter_free(iter)
-        var keyPtr: cstring
-        var keyLen: csize_t
-        var valuePtr: ptr int64
-        while nx_fm_str_i64_map_iter_next_ptr(iter, addr keyPtr, addr keyLen, addr valuePtr):
-          yield ($initFastStringView(keyPtr, keyLen), valuePtr[])
-          assert map.len == expectedLen, "the length of the table changed while iterating over it"
-  of fmskInt64Nim:
-    if not map.nimInt64.isNil:
-      let expectedLen = map.len
-      for i in 0..<map.nimInt64.entries.len:
-        if map.nimInt64.ctrl[i] != FastMapCtrlEmpty and map.nimInt64.ctrl[i] != FastMapCtrlDeleted:
-          yield (map.nimInt64.entries[i].key, map.nimInt64.entries[i].value)
-          assert map.len == expectedLen, "the length of the table changed while iterating over it"
-  of fmskInt64Arena:
-    let raw = map.rawHandle()
-    if raw != nil:
-      let expectedLen = map.len
-      let iter = nx_fm_str_arena_i64_map_iter_new(raw)
-      if iter != nil:
-        defer: nx_fm_str_arena_i64_map_iter_free(iter)
-        var keyPtr: cstring
-        var keyLen: csize_t
-        var valuePtr: ptr int64
-        while nx_fm_str_arena_i64_map_iter_next_ptr(iter, addr keyPtr, addr keyLen, addr valuePtr):
-          yield ($initFastStringView(keyPtr, keyLen), valuePtr[])
-          assert map.len == expectedLen, "the length of the table changed while iterating over it"
+      var i = 0
+      while nextFastMapStringOccupiedIdx(map.storage.nimString, i):
+        let entry = swEntryAt(map.storage.nimString, i)
+        yield (rawStrToString(entry.keyPtr, int32(entry.keyLen)), cast[ptr int64](swEntryValPtr(entry))[])
+        assert map.len == expectedLen, "the length of the table changed while iterating over it"
+        inc i
   else:
     discard
 

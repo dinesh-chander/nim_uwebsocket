@@ -16,13 +16,16 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="../../nimdoc.out.css?v=2.2.10">
 
 <!-- JS -->
-<script type="text/javascript" src="../../dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="../../dochack.js?v=2.2.10"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">nim_express/middlewares/panic_recovery</h1>
       <div class="row">
@@ -107,7 +110,7 @@
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
     <div id="ErrorReportHook">
-  <dt><pre><a href="panic_recovery.html#ErrorReportHook"><span class="Identifier">ErrorReportHook</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">err</span><span class="Other">:</span> <span class="Keyword">ref</span> <span class="Identifier">Exception</span><span class="Other">;</span> <span class="Identifier">req</span><span class="Other">:</span> <a href="common.html#Req"><span class="Identifier">Req</span></a><span class="Other">;</span> <span class="Identifier">path</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">closure</span>.}</pre></dt>
+  <dt><pre><a href="#ErrorReportHook"><span class="Identifier">ErrorReportHook</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">err</span><span class="Other">:</span> <span class="Keyword">ref</span> <span class="Identifier">Exception</span><span class="Other">;</span> <span class="Identifier">req</span><span class="Other">:</span> <a href="common.html#Req"><span class="Identifier">Req</span></a><span class="Other">;</span> <span class="Identifier">path</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> {.<span class="Identifier">closure</span>.}</pre></dt>
   <dd>
     
     Invoked when an exception is caught. <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt> is the raw decoded request path (unsanitized) and may contain control characters; sanitize it before writing to structured logging systems.
@@ -115,7 +118,7 @@
   </dd>
 </div>
 <div id="ErrorResponseFormat">
-  <dt><pre><a href="panic_recovery.html#ErrorResponseFormat"><span class="Identifier">ErrorResponseFormat</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
+  <dt><pre><a href="#ErrorResponseFormat"><span class="Identifier">ErrorResponseFormat</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
   <span class="Identifier">erfJson</span><span class="Other">,</span> <span class="Identifier">erfPlainText</span></pre></dt>
   <dd>
     
@@ -124,12 +127,12 @@
   </dd>
 </div>
 <div id="PanicRecoveryOptions">
-  <dt><pre><a href="panic_recovery.html#PanicRecoveryOptions"><span class="Identifier">PanicRecoveryOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
-  <span class="Identifier">responseFormat</span><span class="Operator">*</span><span class="Other">:</span> <a href="panic_recovery.html#ErrorResponseFormat"><span class="Identifier">ErrorResponseFormat</span></a> <span class="Comment">## Log caught errors to stderr.</span>
+  <dt><pre><a href="#PanicRecoveryOptions"><span class="Identifier">PanicRecoveryOptions</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
+  <span class="Identifier">responseFormat</span><span class="Operator">*</span><span class="Other">:</span> <a href="#ErrorResponseFormat"><span class="Identifier">ErrorResponseFormat</span></a> <span class="Comment">## Log caught errors to stderr.</span>
   <span class="Identifier">logErrors</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Comment">## Also log the stack trace for CatchableError. Stack traces for Defect</span>
                    <span class="Comment">## are always logged (when logErrors is true) regardless of this flag.</span>
   <span class="Identifier">includeStackTrace</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>
-  <span class="Identifier">reportHook</span><span class="Operator">*</span><span class="Other">:</span> <a href="panic_recovery.html#ErrorReportHook"><span class="Identifier">ErrorReportHook</span></a></pre></dt>
+  <span class="Identifier">reportHook</span><span class="Operator">*</span><span class="Other">:</span> <a href="#ErrorReportHook"><span class="Identifier">ErrorReportHook</span></a></pre></dt>
   <dd>
     
     
@@ -144,7 +147,7 @@
   <dl class="item">
     <div id="defaultPanicRecoveryOptions-procs-all">
   <div id="defaultPanicRecoveryOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#defaultPanicRecoveryOptions"><span class="Identifier">defaultPanicRecoveryOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="panic_recovery.html#PanicRecoveryOptions"><span class="Identifier">PanicRecoveryOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#defaultPanicRecoveryOptions"><span class="Identifier">defaultPanicRecoveryOptions</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <a href="#PanicRecoveryOptions"><span class="Identifier">PanicRecoveryOptions</span></a> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -156,7 +159,7 @@
 </div>
 <div id="panicRecovery-procs-all">
   <div id="panicRecovery,PanicRecoveryOptions">
-  <dt><pre><span class="Keyword">proc</span> <a href="#panicRecovery%2CPanicRecoveryOptions"><span class="Identifier">panicRecovery</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="panic_recovery.html#PanicRecoveryOptions"><span class="Identifier">PanicRecoveryOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultPanicRecoveryOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
+  <dt><pre><span class="Keyword">proc</span> <a href="#panicRecovery%2CPanicRecoveryOptions"><span class="Identifier">panicRecovery</span></a><span class="Other">(</span><span class="Identifier">options</span><span class="Other">:</span> <a href="#PanicRecoveryOptions"><span class="Identifier">PanicRecoveryOptions</span></a> <span class="Other">=</span> <span class="Identifier">defaultPanicRecoveryOptions</span><span class="Other">(</span><span class="Other">)</span><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -169,7 +172,7 @@
   </dd>
 </div>
 <div id="panicRecovery,ErrorReportHook">
-  <dt><pre><span class="Keyword">proc</span> <a href="#panicRecovery%2CErrorReportHook"><span class="Identifier">panicRecovery</span></a><span class="Other">(</span><span class="Identifier">reportHook</span><span class="Other">:</span> <a href="panic_recovery.html#ErrorReportHook"><span class="Identifier">ErrorReportHook</span></a><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+  <dt><pre><span class="Keyword">proc</span> <a href="#panicRecovery%2CErrorReportHook"><span class="Identifier">panicRecovery</span></a><span class="Other">(</span><span class="Identifier">reportHook</span><span class="Other">:</span> <a href="#ErrorReportHook"><span class="Identifier">ErrorReportHook</span></a><span class="Other">)</span><span class="Other">:</span> <a href="../types.html#AsyncMiddleware"><span class="Identifier">AsyncMiddleware</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
@@ -189,7 +192,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-13 18:35:23 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 19:21:38 UTC</small>
       </div>
     </div>
   </div>
