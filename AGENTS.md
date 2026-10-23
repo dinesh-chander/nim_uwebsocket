@@ -22,7 +22,7 @@ Performance envelope (JSON endpoint with dynamic construction):
 - `nim_express/src/nim_express/middlewares/`: built-in middlewares.
 - `examples/htmx_app.nim`: full demo with HTMX + WebSocket.
 - `examples/showcase_app.nim`: API-feature tour (typed JSON, JsonBuilder, `runOffload`, ETag/gzip, WS broadcast, `/metrics`).
-- `nim_utils/`: shared helpers (`fast_map`, `fast_set`, `async_logger`, `nim_fastjson` incl. simdjson backend).
+- `nim_utils/`: shared helpers (`fast_map`, `fast_set`, `async_logger`, pure-Nim `nim_fastjson`).
 - `nim_fasthttpclient/`: async HTTP/1.1 + HTTP/2 + WebSocket client with connection pooling.
 - `vendor/`: vendored deps (zippy, brotli, nim_zstd, nim_libdeflate_gzip, malebolgia, jsony, checksums) — read-only.
 - `benchmark/`: benchmark binaries/config and Node comparison (see `benchmark/AGENTS.md`).
@@ -142,7 +142,7 @@ proc myMiddleware(): Middleware =
 - Pre-sized Tables and strings (`newStringOfCap`, `initTable(size)`).
 - Fast method parsing without string allocation; single-pass HTTP header parsing.
 - Single socket write (headers + body combined); fast integer-to-string (`fastIntToStr`).
-- Fast xorshift64 RNG (`fastrand.nim`) instead of stdlib random; jsony/simdjson for fast JSON.
+- Fast xorshift64 RNG (`fastrand.nim`) instead of stdlib random; pure-Nim `nim_fastjson` for fast JSON.
 
 ## Runtime/testing checks
 - Run app: `./bin/htmx_app`

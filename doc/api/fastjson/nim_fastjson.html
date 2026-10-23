@@ -62,7 +62,11 @@
     <summary><a class="reference reference-toplevel" href="#7" id="57">Types</a></summary>
     <ul class="simple simple-toc-section">
       <li><a class="reference" href="#FastJson" title="FastJson = ref object
-  options*: FastJsonOptions">FastJson</a></li>
+  options*: FastJsonOptions ## True when every option that `validateDeserializeOptions` rejects is at
+                            ## its default value, so the per-call option checks can be skipped.
+  strictDefaults*: bool ## True when every option that `validateSerializeOptions` rejects is at
+                        ## its default value, so the per-call option checks can be skipped.
+  strictSerializeDefaults*: bool">FastJson</a></li>
 <li><a class="reference" href="#FastJsonDecodePath" title="FastJsonDecodePath = enum
   fjdpDirect, fjdpSimdLeaf, fjdpSimdNested, fjdpSimdBorrowed">FastJsonDecodePath</a></li>
 <li><a class="reference" href="#FastJsonEngine" title="FastJsonEngine = enum
@@ -94,7 +98,6 @@
   preferBorrowedStrings*: bool">FastJsonOptions</a></li>
 <li><a class="reference" href="#FastJsonUnknownFieldPolicy" title="FastJsonUnknownFieldPolicy = enum
   fjufpIgnore, fjufpError">FastJsonUnknownFieldPolicy</a></li>
-<li><a class="reference" href="#JsonStringView" title="JsonStringView = simd_backend.BorrowedStringAlias">JsonStringView</a></li>
 
     </ul>
   </details>
@@ -123,10 +126,6 @@
 <li><a class="reference" href="#isValidJson%2CFastJson%2CStream" title="isValidJson(fj: FastJson; stream: Stream): bool">isValidJson(fj: FastJson; stream: Stream): bool</a></li>
 
 </ul>
-<ul class="simple nested-toc-section">len
-  <li><a class="reference" href="#len%2CBorrowedString" title="len(value: JsonStringView): int">len(value: JsonStringView): int</a></li>
-
-</ul>
 <ul class="simple nested-toc-section">selectedDeserializeEngine
   <li><a class="reference" href="#selectedDeserializeEngine%2Ctypedesc%5BT%5D" title="selectedDeserializeEngine[T](_: typedesc[T]): FastJsonEngine">selectedDeserializeEngine[T](_: typedesc[T]): FastJsonEngine</a></li>
 
@@ -152,10 +151,6 @@
 <li><a class="reference" href="#serializeToStream%2CFastJson%2CStringStream%2CT" title="serializeToStream[T](fj: FastJson; stream: StringStream; value: T)">serializeToStream[T](fj: FastJson; stream: StringStream; value: T)</a></li>
 
 </ul>
-<ul class="simple nested-toc-section">toString
-  <li><a class="reference" href="#toString%2CBorrowedString" title="toString(value: JsonStringView): string">toString(value: JsonStringView): string</a></li>
-
-</ul>
 
     </ul>
   </details>
@@ -171,11 +166,11 @@
     
     <div id="tocRoot"></div>
     
-    <p class="module-desc">Returns the default <tt class="docutils literal"><span class="pre">FastJsonOptions</span></tt> used to build a <tt class="docutils literal"><span class="pre">FastJson</span></tt> instance.Creates a new <tt class="docutils literal"><span class="pre">FastJson</span></tt> instance with the given <tt class="docutils literal"><span class="pre">FastJsonOptions</span></tt>.Converts a borrowed <tt class="docutils literal"><span class="pre">JsonStringView</span></tt> into an owned Nim string.Returns the length in bytes of a borrowed <tt class="docutils literal"><span class="pre">JsonStringView</span></tt>.Returns the <tt class="docutils literal"><span class="pre">FastJsonDecodePath</span></tt> used to decode values of a given type.Returns the <tt class="docutils literal"><span class="pre">FastJsonEngine</span></tt> used to decode values of a given type.Serializes a value into a JSON string after validating <tt class="docutils literal"><span class="pre">FastJson</span></tt> options.Serializes a value directly into an existing string buffer.Serializes a value into a byte sequence.Serializes the value as JSON and writes the encoded string to the stream.Serializes the value as JSON into the in-memory string stream, replacing its buffer when empty.Deserializes JSON text into a value of type T, using the simdjson backend when supported.Deserializes a JSON byte sequence into a value of type T.Reads the stream contents subject to the size limit and deserializes them into a value of type T.Returns true if the JSON text is syntactically valid and within the input size limit.Returns true if the byte sequence is syntactically valid JSON within the input size limit.Returns true if the stream contents form valid JSON within the input size limit.</p>
+    <p class="module-desc">Returns the default <tt class="docutils literal"><span class="pre">FastJsonOptions</span></tt> used to build a <tt class="docutils literal"><span class="pre">FastJson</span></tt> instance.Creates a new <tt class="docutils literal"><span class="pre">FastJson</span></tt> instance with the given <tt class="docutils literal"><span class="pre">FastJsonOptions</span></tt>.Returns the <tt class="docutils literal"><span class="pre">FastJsonDecodePath</span></tt> used to decode values of a given type. Every shape now decodes with the direct engine (borrowed shapes simply receive zero-copy string views). The <tt class="docutils literal"><span class="pre">fjdpSimd*</span></tt> values are retained for API compatibility and are no longer selected.Returns the <tt class="docutils literal"><span class="pre">FastJsonEngine</span></tt> used to decode values of a given type. Always <tt class="docutils literal"><span class="pre">fjeDirect</span></tt>; <tt class="docutils literal"><span class="pre">fjeSimdjson</span></tt> is retained for API compatibility after the simdjson C++ backend was removed.Serializes a value into a JSON string after validating <tt class="docutils literal"><span class="pre">FastJson</span></tt> options.Serializes a value directly into an existing string buffer.Serializes a value into a byte sequence.Serializes the value as JSON and writes the encoded string to the stream.Serializes the value as JSON into the in-memory string stream, replacing its buffer when empty.Deserializes JSON text into a value of type T with the pure-Nim direct engine; borrowed-string shapes receive zero-copy string views.Deserializes a JSON byte sequence into a value of type T.Reads the stream contents subject to the size limit and deserializes them into a value of type T.Returns true if the JSON text is syntactically valid and within the input size limit.Returns true if the byte sequence is syntactically valid JSON within the input size limit.Returns true if the stream contents form valid JSON within the input size limit.</p>
     <div class="section" id="6">
   <h1><a class="toc-backref" href="#6">Imports</a></h1>
   <dl class="item">
-    <a class="reference external" href="direct_engine.html">direct_engine</a>, <a class="reference external" href="simd_backend.html">simd_backend</a>, <a class="reference external" href="simdjson.html">simdjson</a>, <a class="reference external" href="simdjson_ffi.html">simdjson_ffi</a>
+    <a class="reference external" href="direct_engine.html">direct_engine</a>, <a class="reference external" href="simd_backend.html">simd_backend</a>, <a class="reference external" href="borrowed.html">borrowed</a>
   </dl>
 </div>
 <div class="section" id="7">
@@ -183,7 +178,11 @@
   <dl class="item">
     <div id="FastJson">
   <dt><pre><a href="#FastJson"><span class="Identifier">FastJson</span></a> <span class="Other">=</span> <span class="Keyword">ref</span> <span class="Keyword">object</span>
-  <span class="Identifier">options</span><span class="Operator">*</span><span class="Other">:</span> <a href="#FastJsonOptions"><span class="Identifier">FastJsonOptions</span></a></pre></dt>
+  <span class="Identifier">options</span><span class="Operator">*</span><span class="Other">:</span> <a href="#FastJsonOptions"><span class="Identifier">FastJsonOptions</span></a> <span class="Comment">## True when every option that `validateDeserializeOptions` rejects is at</span>
+                            <span class="Comment">## its default value, so the per-call option checks can be skipped.</span>
+  <span class="Identifier">strictDefaults</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Comment">## True when every option that `validateSerializeOptions` rejects is at</span>
+                        <span class="Comment">## its default value, so the per-call option checks can be skipped.</span>
+  <span class="Identifier">strictSerializeDefaults</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span></pre></dt>
   <dd>
     
     
@@ -263,14 +262,6 @@
     
   </dd>
 </div>
-<div id="JsonStringView">
-  <dt><pre><a href="#JsonStringView"><span class="Identifier">JsonStringView</span></a> <span class="Other">=</span> <span class="Identifier">simd_backend</span><span class="Other">.</span><span class="Identifier">BorrowedStringAlias</span></pre></dt>
-  <dd>
-    
-    
-    
-  </dd>
-</div>
 
   </dl>
 </div>
@@ -330,8 +321,8 @@
 </div>
 <div id="isValidJson-procs-all">
   <div id="isValidJson,FastJson,openArray[byte]">
-  <dt><pre><span class="Keyword">proc</span> <a href="#isValidJson%2CFastJson%2CopenArray%5Bbyte%5D"><span class="Identifier">isValidJson</span></a><span class="Other">(</span><span class="Identifier">fj</span><span class="Other">:</span> <a href="#FastJson"><span class="Identifier">FastJson</span></a><span class="Other">;</span> <span class="Identifier">bytes</span><span class="Other">:</span> <span class="Identifier">openArray</span><span class="Other">[</span><span class="Identifier">byte</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
-    <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#isValidJson%2CFastJson%2CopenArray%5Bbyte%5D"><span class="Identifier">isValidJson</span></a><span class="Other">(</span><span class="Identifier">fj</span><span class="Other">:</span> <a href="#FastJson"><span class="Identifier">FastJson</span></a><span class="Other">;</span> <span class="Identifier">bytes</span><span class="Other">:</span> <span class="Identifier">openArray</span><span class="Other">[</span><span class="Identifier">byte</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.
+    <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -339,8 +330,8 @@
   </dd>
 </div>
 <div id="isValidJson,FastJson,string">
-  <dt><pre><span class="Keyword">proc</span> <a href="#isValidJson%2CFastJson%2Cstring"><span class="Identifier">isValidJson</span></a><span class="Other">(</span><span class="Identifier">fj</span><span class="Other">:</span> <a href="#FastJson"><span class="Identifier">FastJson</span></a><span class="Other">;</span> <span class="Identifier">json</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
-    <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dt><pre><span class="Keyword">proc</span> <a href="#isValidJson%2CFastJson%2Cstring"><span class="Identifier">isValidJson</span></a><span class="Other">(</span><span class="Identifier">fj</span><span class="Other">:</span> <a href="#FastJson"><span class="Identifier">FastJson</span></a><span class="Other">;</span> <span class="Identifier">json</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span>
+    <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -349,19 +340,8 @@
 </div>
 <div id="isValidJson,FastJson,Stream">
   <dt><pre><span class="Keyword">proc</span> <a href="#isValidJson%2CFastJson%2CStream"><span class="Identifier">isValidJson</span></a><span class="Other">(</span><span class="Identifier">fj</span><span class="Other">:</span> <a href="#FastJson"><span class="Identifier">FastJson</span></a><span class="Other">;</span> <span class="Identifier">stream</span><span class="Other">:</span> <span class="Identifier">Stream</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.
-    <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">IOError</span><span class="Other">,</span> <span class="Identifier">OSError</span><span class="Other">,</span> <span class="Identifier">IOError</span><span class="Other">,</span> <span class="Identifier">OSError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ReadIOEffect</span><span class="Other">]</span><span class="Other">,</span>
-    <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
-  <dd>
-    
-    
-    
-  </dd>
-</div>
-
-</div>
-<div id="len-procs-all">
-  <div id="len,BorrowedString">
-  <dt><pre><span class="Keyword">proc</span> <a href="#len%2CBorrowedString"><span class="Identifier">len</span></a><span class="Other">(</span><span class="Identifier">value</span><span class="Other">:</span> <a href="#JsonStringView"><span class="Identifier">JsonStringView</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+    <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">IOError</span><span class="Other">,</span> <span class="Identifier">OSError</span><span class="Other">,</span> <span class="Identifier">Exception</span><span class="Other">,</span> <span class="Identifier">Exception</span><span class="Other">,</span> <span class="Identifier">IOError</span><span class="Other">,</span> <span class="Identifier">OSError</span><span class="Other">]</span><span class="Other">,</span>
+    <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">,</span> <span class="Identifier">ReadIOEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
@@ -444,25 +424,13 @@
 </div>
 
 </div>
-<div id="toString-procs-all">
-  <div id="toString,BorrowedString">
-  <dt><pre><span class="Keyword">proc</span> <a href="#toString%2CBorrowedString"><span class="Identifier">toString</span></a><span class="Other">(</span><span class="Identifier">value</span><span class="Other">:</span> <a href="#JsonStringView"><span class="Identifier">JsonStringView</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span>
-    <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
-  <dd>
-    
-    
-    
-  </dd>
-</div>
-
-</div>
 
   </dl>
 </div>
 <div class="section" id="19">
   <h1><a class="toc-backref" href="#19">Exports</a></h1>
   <dl class="item">
-    <a href="direct_engine.html#JsonError"><span class="Identifier">JsonError</span></a>, <a href="direct_engine.html#JsonSafeString"><span class="Identifier">JsonSafeString</span></a>, <a href="direct_engine.html#JsonAsciiSafeString"><span class="Identifier">JsonAsciiSafeString</span></a>, <a href="direct_engine.html#JsonSerializeRootShape"><span class="Identifier">JsonSerializeRootShape</span></a>, <a href="direct_engine.html#jsonSafe.t"><span class="Identifier">jsonSafe</span></a>, <a href="direct_engine.html#selectedSerializeRootShape.m,typedesc"><span class="Identifier">selectedSerializeRootShape</span></a>, <a href="simd_backend.html#directLeafDecodeSupported.m,typedesc"><span class="Identifier">directLeafDecodeSupported</span></a>, <a href="simd_backend.html#directNestedDecodeSupported.m,typedesc"><span class="Identifier">directNestedDecodeSupported</span></a>, <a href="simd_backend.html#borrowedTypedDecodeSupported.m,typedesc"><span class="Identifier">borrowedTypedDecodeSupported</span></a>
+    <a href="direct_engine.html#JsonError"><span class="Identifier">JsonError</span></a>, <a href="borrowed.html#len,BorrowedString"><span class="Identifier">len</span></a>, <a href="borrowed.html#$,BorrowedString"><span class="Identifier">$</span></a>, <a href="borrowed.html#equalsAscii,BorrowedString,string"><span class="Identifier">equalsAscii</span></a>, <a href="borrowed.html#stripAscii,BorrowedString"><span class="Identifier">stripAscii</span></a>, <a href="borrowed.html#isNil,BorrowedString"><span class="Identifier">isNil</span></a>, <a href="borrowed.html#borrowString,string,cstring,int"><span class="Identifier">borrowString</span></a>, <a href="borrowed.html#dataPtr,BorrowedString"><span class="Identifier">dataPtr</span></a>, <a href="borrowed.html#toString,BorrowedString"><span class="Identifier">toString</span></a>, <a href="borrowed.html#parseBoolLikeAscii,BorrowedString,bool"><span class="Identifier">parseBoolLikeAscii</span></a>, <a href="borrowed.html#==,BorrowedString,BorrowedString"><span class="Identifier">==</span></a>, <a href="borrowed.html#setBorrowedDocView.t,BorrowedString,,,"><span class="Identifier">setBorrowedDocView</span></a>, <a href="borrowed.html#BorrowedDocRef"><span class="Identifier">BorrowedDocRef</span></a>, <a href="borrowed.html#equalsIgnoreCaseAscii,BorrowedString,string"><span class="Identifier">equalsIgnoreCaseAscii</span></a>, <a href="borrowed.html#JsonStringView"><span class="Identifier">JsonStringView</span></a>, <a href="borrowed.html#borrowOwned,string"><span class="Identifier">borrowOwned</span></a>, <a href="borrowed.html#newBorrowedDocRef,string"><span class="Identifier">newBorrowedDocRef</span></a>, <a href="borrowed.html#BorrowedString"><span class="Identifier">BorrowedString</span></a>, <a href="direct_engine.html#JsonSafeString"><span class="Identifier">JsonSafeString</span></a>, <a href="direct_engine.html#JsonAsciiSafeString"><span class="Identifier">JsonAsciiSafeString</span></a>, <a href="direct_engine.html#JsonSerializeRootShape"><span class="Identifier">JsonSerializeRootShape</span></a>, <a href="direct_engine.html#jsonSafe.t"><span class="Identifier">jsonSafe</span></a>, <a href="direct_engine.html#selectedSerializeRootShape.m,typedesc"><span class="Identifier">selectedSerializeRootShape</span></a>, <a href="simd_backend.html#directLeafDecodeSupported.m,typedesc"><span class="Identifier">directLeafDecodeSupported</span></a>, <a href="simd_backend.html#directNestedDecodeSupported.m,typedesc"><span class="Identifier">directNestedDecodeSupported</span></a>, <a href="simd_backend.html#borrowedTypedDecodeSupported.m,typedesc"><span class="Identifier">borrowedTypedDecodeSupported</span></a>
   </dl>
 </div>
 
@@ -472,7 +440,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 19:21:40 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-23 14:56:56 UTC</small>
       </div>
     </div>
   </div>

@@ -259,30 +259,43 @@ suite "nim_fastjson core":
     stream.setPosition(0)
     check fj.deserialize(stream, Todo) == todo
 
-  test "borrowed string types route through simd backend":
+  test "borrowed string types decode with zero-copy direct-engine views":
     let payload = """{"todos":[{"id":1,"title":"a","completed":false},{"id":2,"title":"b","completed":true}],"nextCursor":"p2"}"""
-    check selectedDeserializeEngine(BorrowedEnvelope) == fjeSimdjson
-    check selectedDeserializePath(BorrowedEnvelope) == fjdpSimdBorrowed
+    check selectedDeserializeEngine(BorrowedEnvelope) == fjeDirect
+    check selectedDeserializePath(BorrowedEnvelope) == fjdpDirect
     let parsed = fj.deserialize(payload, BorrowedEnvelope)
     check parsed.todos.len == 2
     check parsed.todos[1].title.toString() == "b"
     check parsed.nextCursor.toString() == "p2"
     check fj.serialize(parsed) == payload
 
-  test "leaf direct-decode types use bounded simd fast path":
+  test "borrowed views stay valid after the document is dropped":
+    var parsed: BorrowedEnvelope
+    block:
+      let payload = """{"todos":[{"id":1,"title":"first ésc","completed":false},{"id":2,"title":"second \u00e9sc","completed":true}],"nextCursor":"p2"}"""
+      parsed = fj.deserialize(payload, BorrowedEnvelope)
+    for _ in 0 ..< 4:
+      let filler = newString(4096)
+      discard filler.len
+      GC_fullCollect()
+    check parsed.todos[0].title.toString() == "first \u00e9sc"
+    check parsed.todos[1].title.toString() == "second ésc"
+    check parsed.nextCursor.toString() == "p2"
+
+  test "leaf direct-decode types route to the direct engine":
     let payload = """{"id":11,"title":"x","completed":false}"""
     check directLeafDecodeSupported(Todo)
     check not directNestedDecodeSupported(Todo)
     check not borrowedTypedDecodeSupported(Todo)
-    check selectedDeserializePath(Todo) == fjdpSimdLeaf
-    check selectedDeserializeEngine(Todo) == fjeSimdjson
+    check selectedDeserializePath(Todo) == fjdpDirect
+    check selectedDeserializeEngine(Todo) == fjeDirect
     let parsed = fj.deserialize(payload, Todo)
     check parsed == Todo(id: 11, title: "x", completed: false)
 
   test "nested direct-decode support is exposed without auto-routing":
     check not directLeafDecodeSupported(Envelope)
     check directNestedDecodeSupported(Envelope)
-    check selectedDeserializePath(Envelope) == fjdpSimdNested
+    check selectedDeserializePath(Envelope) == fjdpDirect
     check selectedDeserializeEngine(Envelope) == fjeDirect
 
   test "decode plan groundwork exposes field kinds":

@@ -1,6 +1,6 @@
-import std/[strutils]
+import std/[json, strutils]
 
-import nim_utils/nim_fastjson/simdjson
+import nim_utils/nim_fastjson/direct_engine
 
 type
   FastTodoMutationPayload* = object
@@ -11,7 +11,7 @@ type
 
 ## Returns true if ``body`` is syntactically valid JSON.
 proc validateJsonFast*(body: string): bool {.inline.} =
-  isValidJson(body)
+  isValidJsonDirect(body)
 
 ## Parses ``raw`` as boolean text such as "true", "1", "yes", or "on".
 proc parseBoolTextFast*(raw: string): tuple[ok: bool, value: bool] =
@@ -26,44 +26,26 @@ proc parseBoolTextFast*(raw: string): tuple[ok: bool, value: bool] =
 ## Parses a todo mutation JSON body with optional ``title`` and ``completed`` fields.
 proc parseTodoMutationPayloadFast*(body: string): tuple[ok: bool, payload: FastTodoMutationPayload, error: string] =
   try:
-    let doc = parse(body)
-    let root = doc.root()
-    if root.kind != jkObject:
+    let root = parseJson(body)
+    if root.kind != JObject:
       return (false, FastTodoMutationPayload(), "expected JSON object body")
-    let cursor = root.objectCursor()
 
-    var valueKind: JsonKind
-
-    if cursor.tryKeyKind("title", valueKind):
-      if valueKind != jkString:
+    if root.hasKey("title"):
+      let titleNode = root["title"]
+      if titleNode.kind != JString:
         return (false, FastTodoMutationPayload(), "title must be a string")
       result.payload.hasTitle = true
-      var title: string
-      if not cursor.tryGetStr("title", title):
-        return (false, FastTodoMutationPayload(), "title must be a string")
-      result.payload.title = title.strip()
+      result.payload.title = titleNode.getStr.strip()
 
-    if cursor.tryKeyKind("completed", valueKind):
+    if root.hasKey("completed"):
       result.payload.hasCompleted = true
-      case valueKind
-      of jkBool:
-        if not cursor.tryGetBool("completed", result.payload.completed):
-          return (false, FastTodoMutationPayload(), "completed must be bool-like")
-      of jkInt64:
-        var value: int64
-        if not cursor.tryGetInt64("completed", value):
-          return (false, FastTodoMutationPayload(), "completed must be bool-like")
-        result.payload.completed = value != 0
-      of jkUint64:
-        var value: uint64
-        if not cursor.tryGetUint64("completed", value):
-          return (false, FastTodoMutationPayload(), "completed must be bool-like")
-        result.payload.completed = value != 0'u64
-      of jkString:
-        var raw: string
-        if not cursor.tryGetStr("completed", raw):
-          return (false, FastTodoMutationPayload(), "completed must be bool-like")
-        let parsed = parseBoolTextFast(raw)
+      case root["completed"].kind
+      of JBool:
+        result.payload.completed = root["completed"].getBool
+      of JInt:
+        result.payload.completed = root["completed"].getInt != 0
+      of JString:
+        let parsed = parseBoolTextFast(root["completed"].getStr)
         if not parsed.ok:
           return (false, FastTodoMutationPayload(), "completed must be bool-like")
         result.payload.completed = parsed.value
@@ -71,5 +53,5 @@ proc parseTodoMutationPayloadFast*(body: string): tuple[ok: bool, payload: FastT
         return (false, FastTodoMutationPayload(), "completed must be bool-like")
 
     result.ok = true
-  except SimdjsonError:
+  except CatchableError:
     result.error = "expected JSON object body"

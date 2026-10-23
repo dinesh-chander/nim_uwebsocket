@@ -39,7 +39,6 @@ if [ "${LINUX_SMOKE_IN_PLACE:-0}" != "1" ] && [ -f "/.dockerenv" ]; then
     --exclude='.nimcache' \
     --exclude='nim_usockets/usockets/*.a' \
     --exclude='nim_usockets/usockets/*.o' \
-    --exclude='nim_utils/src/nim_utils/nim_fastjson/simdjson/build' \
     -cf - . | tar -C "$COPY_ROOT" -xf -
   set +e
   LINUX_SMOKE_IN_PLACE=1 \

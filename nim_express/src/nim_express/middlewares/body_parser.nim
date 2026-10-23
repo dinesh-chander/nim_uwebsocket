@@ -6,7 +6,7 @@
 
 import std/[asyncdispatch, strutils]
 import common
-import nim_utils/nim_fastjson/simdjson
+import nim_utils/nim_fastjson/direct_engine
 
 const
   DefaultJsonLimitBytes* = 1024 * 1024
@@ -202,7 +202,7 @@ proc parseJsonBody(req: Req, res: Res, body: string, opts: JsonParserOptions): b
     if lead != '{' and lead != '[':
       res.status(400).send("Bad Request")
       return false
-    if not isValidJson(body):
+    if not isValidJsonDirect(body):
       res.status(400).send("Bad Request")
       return false
   try:

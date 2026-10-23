@@ -2,7 +2,7 @@ import std/[options, parseutils, strutils, tables, unicode]
 import std/private/dragonbox
 import macrocache
 import macros
-import ./simdjson
+import ./borrowed
 
 type
   JsonError* = object of ValueError
@@ -64,6 +64,8 @@ const
   MaxJsonParseDepth = 512
 
 var jsonParseDepth {.threadvar.}: int
+# Shared document holder for BorrowedString views created during the current
+# deserializeDirect call (avoids one document buffer copy per view).
 # Zero means the default `MaxJsonParseDepth` (threadvars cannot be initialized).
 var jsonParseDepthLimit {.threadvar.}: int
 var jsonMaxArrayItems {.threadvar.}: int
@@ -82,6 +84,27 @@ proc currentJsonArrayItemLimit(): int {.inline.} =
 proc setJsonParseDepthLimit*(limit: int): int {.inline.} =
   result = jsonParseDepthLimit
   jsonParseDepthLimit = if limit > 0: limit else: MaxJsonParseDepth
+
+## Conditionally sets the per-thread seq parse item limit when it differs from
+## the requested value and reports whether a store happened via `changed`.
+## Returns the previous raw value. Avoids redundant threadvar writes when a
+## caller repeatedly installs the same limit.
+proc setJsonArrayItemLimitIfChanged*(limit: int, changed: var bool): int {.inline.} =
+  result = jsonMaxArrayItems
+  changed = result != limit
+  if changed:
+    jsonMaxArrayItems = limit
+
+## Conditionally sets the per-thread parse depth limit when the effective
+## value differs from the requested one and reports whether a store happened
+## via `changed`. Returns the previous raw value.
+proc setJsonParseDepthLimitIfChanged*(limit: int, changed: var bool): int {.inline.} =
+  result = jsonParseDepthLimit
+  let curEff = if result > 0: result else: MaxJsonParseDepth
+  let newEff = if limit > 0: limit else: MaxJsonParseDepth
+  changed = curEff != newEff
+  if changed:
+    jsonParseDepthLimit = newEff
 
 template effectiveParseDepthLimit(): int =
   if jsonParseDepthLimit > 0: jsonParseDepthLimit else: MaxJsonParseDepth
@@ -194,43 +217,234 @@ proc parseUnicodeEscape(s: string, i: var int): int =
       jsonError("high surrogate not followed by low surrogate", i)
     result = 0x10000 + (((result - 0xd800) shl 10) or (nextRune - 0xdc00))
 
-proc scanStringEnd(s: string, start: int): int {.inline.} =
+proc scanSafeJsonBytes(value: string, start: int): int {.inline.}
+
+## Like `scanSafeJsonBytes`, but also reports via `sawHigh` whether any
+## scanned byte is 0x80 or higher. Lets the deserializer skip the separate
+## high-byte pass that gates UTF-8 validation: the SIMD/SWAR scan already
+## touches every byte, so the non-ASCII test costs one extra compare per
+## chunk instead of a whole second scan over the string.
+proc scanStringEndWithHigh(value: string, start: int, sawHigh: var bool): int {.inline.} =
+  let vlen = value.len
+  sawHigh = false
+  if vlen == 0: return 0
   var idx = start
-  while idx + 8 <= s.len:
-    var chunk: uint64
-    copyMem(addr chunk, unsafeAddr s[idx], 8)
-    let hasControl = ((chunk - ControlFloor) and (not chunk) and ByteHighBits) != 0'u64
-    if hasZeroByte(chunk xor QuoteMask) or hasZeroByte(chunk xor SlashMask) or hasControl:
-      break
-    idx += 8
-  while idx < s.len:
-    let c = s[idx]
-    if c == '"' or c == '\\':
-      return idx
-    if c < ' ':
+  when defined(arm64) and not defined(noSimd):
+    let srcPtr = cast[pointer](unsafeAddr value[0])
+    var cSawHigh = 0
+    {.emit: """
+    {
+      int _sh = 0;
+      NI _i = `idx`;
+      const NI _len = `vlen`;
+      const uint8_t* _s = (const uint8_t*)`srcPtr`;
+      uint8x16_t _qv = vdupq_n_u8(0x22);
+      uint8x16_t _sv = vdupq_n_u8(0x5C);
+      uint8x16_t _cv = vdupq_n_u8(0x20);
+      while (_i + 16 <= _len) {
+        uint8x16_t _d = vld1q_u8(_s + _i);
+        uint8x16_t _u = vorrq_u8(vorrq_u8(vceqq_u8(_d, _qv), vceqq_u8(_d, _sv)), vcltq_u8(_d, _cv));
+        if (vmaxvq_u8(vshrq_n_u8(_d, 7)) != 0) _sh = 1;
+        if (vmaxvq_u8(_u) != 0) {
+          for (int _j = 0; _j < 16; _j++) {
+            uint8_t _c = _s[_i + _j];
+            if (_c >= 0x80) _sh = 1;
+            if (_c == 0x22 || _c == 0x5C || _c < 0x20) { _i += _j; goto _simd_done; }
+          }
+        }
+        _i += 16;
+      }
+      _simd_done:
+      `idx` = _i;
+      `cSawHigh` = _sh;
+    }
+    """.}
+    if cSawHigh != 0: sawHigh = true
+  elif defined(amd64) and not defined(noSimd):
+    let srcPtr = cast[pointer](unsafeAddr value[0])
+    var cSawHigh = 0
+    {.emit: """
+    {
+      int _sh = 0;
+      NI _i = `idx`;
+      const NI _len = `vlen`;
+      const unsigned char* _s = (const unsigned char*)`srcPtr`;
+      __m128i _qv = _mm_set1_epi8(0x22);
+      __m128i _sv = _mm_set1_epi8(0x5C);
+      __m128i _cv = _mm_set1_epi8(0x1F);
+      while (_i + 16 <= _len) {
+        __m128i _d = _mm_loadu_si128((const __m128i*)(_s + _i));
+        __m128i _u = _mm_or_si128(_mm_or_si128(_mm_cmpeq_epi8(_d, _qv), _mm_cmpeq_epi8(_d, _sv)),
+                                   _mm_cmpeq_epi8(_mm_min_epu8(_d, _cv), _d));
+        if (_mm_movemask_epi8(_d) != 0) _sh = 1;
+        int _m = _mm_movemask_epi8(_u);
+        if (_m != 0) { _i += __builtin_ctz(_m); goto _simd_done; }
+        _i += 16;
+      }
+      _simd_done:
+      `idx` = _i;
+      `cSawHigh` = _sh;
+    }
+    """.}
+    if cSawHigh != 0: sawHigh = true
+  else:
+    # SWAR fallback: 8 bytes at a time
+    while idx + 8 <= vlen:
+      var chunk: uint64
+      copyMem(addr chunk, unsafeAddr value[idx], 8)
+      if ((chunk shr 7) and 0x0101010101010101'u64) != 0'u64:
+        sawHigh = true
+      if (chunk and ByteHighBits) != 0'u64 or
+         hasZeroByte(chunk xor QuoteMask) or
+         hasZeroByte(chunk xor SlashMask) or
+         ((chunk - ControlFloor) and (not chunk) and ByteHighBits) != 0'u64:
+        break
+      idx += 8
+  # Scalar tail (shared by all paths)
+  while idx < vlen:
+    let c = value[idx]
+    if ord(c) >= 0x80:
+      sawHigh = true
+    if c == '"' or c == '\\' or ord(c) < 0x20:
       return idx
     inc idx
-  s.len
+  vlen
+
+proc scanStringEnd(s: string, start: int): int {.inline.} =
+  ## Scan for the first byte that ends a JSON string literal: a quote,
+  ## a backslash, or a control byte. Delegates to `scanSafeJsonBytes`,
+  ## which uses the identical predicate with the SIMD/SWAR scan kernels.
+  scanSafeJsonBytes(s, start)
 
 proc ensureValidJsonUtf8(value: string, offset: int) {.inline.} =
   let invalidAt = validateUtf8(value)
   if invalidAt >= 0:
     jsonError("invalid UTF-8 in string", offset + invalidAt)
 
+proc containsHighByte(s: string, start: int = 0, finish: int = -1): bool {.inline.} =
+  ## True if any byte in s[start..finish) is 0x80 or higher (non-ASCII).
+  ## `finish` defaults to the end of the string. Scans 8 bytes per iteration
+  ## with one shift-and-test, so a pure-ASCII span costs roughly one op per
+  ## 8 bytes and lets callers skip the full UTF-8 validation pass (ASCII is
+  ## valid UTF-8 by definition).
+  var i = start
+  let n = if finish < 0: s.len else: min(finish, s.len)
+  while i + 8 <= n:
+    let w = (cast[ptr uint64](unsafeAddr s[i]))[]
+    if ((w shr 7) and 0x0101010101010101'u64) != 0:
+      return true
+    i += 8
+  while i < n:
+    if ord(s[i]) >= 0x80:
+      return true
+    i.inc
+  false
+
 proc ensureValidJsonUtf8Span(s: string, startIdx, endIdx: int) {.inline.} =
   if endIdx <= startIdx:
     return
-  var hasHighBit = false
-  for idx in startIdx ..< endIdx:
-    if ord(s[idx]) >= 0x80:
-      hasHighBit = true
-      break
-  if not hasHighBit:
+  if not containsHighByte(s, startIdx, endIdx):
     return
   let span = s[startIdx ..< endIdx]
   let invalidAt = validateUtf8(span)
   if invalidAt >= 0:
     jsonError("invalid UTF-8 in string", startIdx + invalidAt)
+
+proc appendRuneBytes(dst: var string, outPos: int, r: int): int {.inline.} =
+  ## Encodes rune ``r`` as UTF-8 into ``dst`` at ``outPos`` (capacity must
+  ## already allow 4 bytes); returns the number of bytes written. Matches the
+  ## std/unicode ``add(Rune)`` byte-for-byte, including lone surrogates.
+  if r < 0x80:
+    dst[outPos] = chr(r)
+    1
+  elif r < 0x800:
+    dst[outPos] = chr(0xC0 or (r shr 6))
+    dst[outPos + 1] = chr(0x80 or (r and 0x3F))
+    2
+  elif r < 0x10000:
+    dst[outPos] = chr(0xE0 or (r shr 12))
+    dst[outPos + 1] = chr(0x80 or ((r shr 6) and 0x3F))
+    dst[outPos + 2] = chr(0x80 or (r and 0x3F))
+    3
+  else:
+    dst[outPos] = chr(0xF0 or (r shr 18))
+    dst[outPos + 1] = chr(0x80 or ((r shr 12) and 0x3F))
+    dst[outPos + 2] = chr(0x80 or ((r shr 6) and 0x3F))
+    dst[outPos + 3] = chr(0x80 or (r and 0x3F))
+    4
+
+proc parseJsonStringEscaped(s: string, i: var int, firstHit: int, value: var string) {.inline.} =
+  ## Decodes a JSON string body known to contain escapes or control bytes.
+  ## The opening quote is already consumed; firstHit is the scan position of
+  ## the first escape/control byte. Leaves i past the closing quote.
+  ##
+  ## GEN-060: the closing quote is located first so the decoded buffer is a
+  ## single newStringUninit allocation (raw length is an upper bound — every
+  ## escape shrinks); spans and decoded bytes are written straight into it and
+  ## it is truncated once at the end, replacing per-span setLen growth and
+  ## per-escape add() calls.
+  var strEnd = scanStringEnd(s, firstHit)
+  while strEnd < s.len and s[strEnd] == '\\':
+    # Skip the escaped character and keep locating the closing quote.
+    strEnd = scanStringEnd(s, strEnd + 2)
+  if strEnd >= s.len:
+    jsonError("unterminated string", s.len)
+  let rawLen = strEnd - i
+  value = newStringUninit(rawLen)
+  var outPos = 0
+  var copyStart = i
+
+  while true:
+    # Resume the SIMD/SWAR scan after every escape so long safe spans between
+    # escapes are copied in bulk instead of walked byte by byte.
+    let endPos = scanStringEnd(s, copyStart)
+    let c = s[endPos]
+    if c == '"':
+      let spanLen = endPos - copyStart
+      if spanLen > 0:
+        copyMem(addr value[outPos], unsafeAddr s[copyStart], spanLen)
+        outPos += spanLen
+      i = endPos + 1
+      value.setLen(outPos)
+      if containsHighByte(value):
+        ensureValidJsonUtf8(value, strEnd - outPos)
+      return
+    # Span up to the escape/control byte, then decode it.
+    let spanLen = endPos - copyStart
+    if spanLen > 0:
+      copyMem(addr value[outPos], unsafeAddr s[copyStart], spanLen)
+      outPos += spanLen
+    if c != '\\':
+      # The scan predicate guarantees c < ' ' here.
+      jsonError("control byte in string", endPos)
+    var j = endPos + 1
+    if j >= s.len:
+      jsonError("expected escaped character", j)
+    case s[j]
+    of '"', '\\', '/':
+      value[outPos] = s[j]
+      inc outPos
+    of 'b':
+      value[outPos] = '\b'
+      inc outPos
+    of 'f':
+      value[outPos] = '\f'
+      inc outPos
+    of 'n':
+      value[outPos] = '\n'
+      inc outPos
+    of 'r':
+      value[outPos] = '\r'
+      inc outPos
+    of 't':
+      value[outPos] = '\t'
+      inc outPos
+    of 'u':
+      let r = parseUnicodeEscape(s, j)
+      outPos += appendRuneBytes(value, outPos, r)
+    else:
+      jsonError("invalid escape character", j)
+    copyStart = j + 1
 
 proc parseJsonString(s: string, i: var int, value: var string) =
   eatSpace(s, i)
@@ -239,8 +453,10 @@ proc parseJsonString(s: string, i: var int, value: var string) =
 
   expectChar(s, i, '"')
 
-  # Fast path: SWAR-scan for end of string or first escape
-  let endPos = scanStringEnd(s, i)
+  # Fast path: SIMD/SWAR-scan for end of string or first escape, tracking
+  # non-ASCII bytes in the same pass so no second scan is needed.
+  var sawHigh = false
+  let endPos = scanStringEndWithHigh(s, i, sawHigh)
   if endPos < s.len and s[endPos] == '"':
     # No escapes — single allocation + copyMem
     let slen = endPos - i
@@ -249,65 +465,15 @@ proc parseJsonString(s: string, i: var int, value: var string) =
     else:
       value = newStringUninit(slen)
       copyMem(addr value[0], unsafeAddr s[i], slen)
-      ensureValidJsonUtf8(value, i)
+      # ASCII strings are valid UTF-8 by definition — only pay for the full
+      # validation pass when the string actually contains high bytes.
+      if sawHigh:
+        ensureValidJsonUtf8(value, i)
     i = endPos + 1
     return
 
   # Slow path: string has escapes or control chars
-  let rawLen = endPos - i  # at least this many bytes before first escape
-  value.setLen(0)
-  if rawLen > 0:
-    value.setLen(rawLen)
-    copyMem(addr value[0], unsafeAddr s[i], rawLen)
-    i += rawLen
-
-  template copySafeSpan(copyStart: var int) =
-    if i > copyStart:
-      let spanLen = i - copyStart
-      let valueLen = value.len
-      value.setLen(checkedJsonAdd(valueLen, spanLen, "JSON string too large to parse"))
-      copyMem(addr value[valueLen], unsafeAddr s[copyStart], spanLen)
-      copyStart = i
-
-  var copyStart = i
-  while i < s.len:
-    let c = s[i]
-    case c
-    of '"':
-      copySafeSpan(copyStart)
-      inc i
-      ensureValidJsonUtf8(value, i - value.len - 1)
-      return
-    of '\\':
-      copySafeSpan(copyStart)
-      inc i
-      if i >= s.len:
-        jsonError("expected escaped character", i)
-      case s[i]
-      of '"', '\\', '/':
-        value.add(s[i])
-      of 'b':
-        value.add('\b')
-      of 'f':
-        value.add('\f')
-      of 'n':
-        value.add('\n')
-      of 'r':
-        value.add('\r')
-      of 't':
-        value.add('\t')
-      of 'u':
-        value.add(Rune(parseUnicodeEscape(s, i)))
-      else:
-        jsonError("invalid escape character", i)
-      inc i
-      copyStart = i
-    else:
-      if c < ' ':
-        jsonError("control byte in string", i)
-      inc i
-
-  jsonError("unterminated string", i)
+  parseJsonStringEscaped(s, i, endPos, value)
 
 proc parseObjectKeySpan(s: string, i: var int, keyStart, keyLen: var int): bool =
   eatSpace(s, i)
@@ -319,11 +485,22 @@ proc parseObjectKeySpan(s: string, i: var int, keyStart, keyLen: var int): bool 
   keyStart = i + 1
   let endPos = scanStringEnd(s, keyStart)
   if endPos < s.len and s[endPos] == '"':
-    ensureValidJsonUtf8Span(s, keyStart, endPos)
+    # UTF-8 validation is deferred to the unknown-key branch: a span that
+    # equals a known ASCII field literal is valid UTF-8 by construction, so
+    # known fields skip the high-byte scan entirely.
     keyLen = endPos - keyStart
     i = endPos + 1
     return true
   return false  # has escape or control char — fall back to slow path
+
+proc skipJsonValue*(s: string, i: var int)
+
+proc skipUnknownJsonKey(s: string, keyStart, keyLen: int, i: var int) {.inline.} =
+  ## Validates the (unmatched) object key span as UTF-8, then skips its value.
+  ## Known-field spans never reach here: matching an ASCII literal already
+  ## proves the span is valid UTF-8.
+  ensureValidJsonUtf8Span(s, keyStart, keyStart + keyLen)
+  skipJsonValue(s, i)
 
 func loadU32(s: static string, off: static int): uint32 =
   ## Load up to 4 bytes from a static string into a uint32 at compile time.
@@ -450,9 +627,6 @@ proc skipJsonString(s: string, i: var int) =
     if ord(s[i]) < 0x20:
       jsonError("unescaped control character in string", i)
     inc i
-
-## Advances the parse index past one JSON value of any kind.
-proc skipJsonValue*(s: string, i: var int)
 
 proc skipJsonArray(s: string, i: var int) =
   expectChar(s, i, '[')
@@ -626,7 +800,14 @@ proc parseValue*(s: string, i: var int, value: var SomeUnsignedInt) =
       jsonError("leading zeros not allowed in JSON numbers", i)
     value = type(value)(0)
     return
-  while i < s.len and s[i] in {'0'..'9'}:
+  # Two digits per iteration halves the loop work for multi-digit numbers.
+  while i + 1 < s.len and s[i] in {'0'..'9'} and s[i + 1] in {'0'..'9'}:
+    let pair = uint64((ord(s[i]) - ord('0')) * 10 + (ord(s[i + 1]) - ord('0')))
+    if raw > (high(uint64) - pair) div 100:
+      jsonError("unsigned integer overflow", i)
+    raw = raw * 100'u64 + pair
+    i += 2
+  if i < s.len and s[i] in {'0'..'9'}:
     let digit = uint64(ord(s[i]) - ord('0'))
     if raw > (high(uint64) - digit) div 10:
       jsonError("unsigned integer overflow", i)
@@ -690,7 +871,15 @@ proc parseValue*(s: string, i: var int, value: var SomeFloat) =
     if j < s.len and s[j] in {'0'..'9'}:
       jsonError("leading zeros not allowed in JSON numbers", j)
   else:
-    while j < s.len and s[j] in {'0'..'9'}:
+    while j + 1 < s.len and s[j] in {'0'..'9'} and s[j + 1] in {'0'..'9'}:
+      let pair = uint64((ord(s[j]) - ord('0')) * 10 + (ord(s[j + 1]) - ord('0')))
+      if intPart > (high(uint64) - pair) div 100'u64:
+        fallbackToParseFloat = true
+      elif not fallbackToParseFloat:
+        intPart = intPart * 100'u64 + pair
+      j += 2
+      intDigits += 2
+    if j < s.len and s[j] in {'0'..'9'}:
       let digit = uint64(ord(s[j]) - ord('0'))
       if intPart > (high(uint64) - digit) div 10'u64:
         fallbackToParseFloat = true
@@ -706,7 +895,16 @@ proc parseValue*(s: string, i: var int, value: var SomeFloat) =
     inc j
     if j >= s.len or s[j] notin {'0'..'9'}:
       jsonError("fraction part must have at least one digit", j)
-    while j < s.len and s[j] in {'0'..'9'}:
+    while j + 1 < s.len and s[j] in {'0'..'9'} and s[j + 1] in {'0'..'9'}:
+      let pair = uint64((ord(s[j]) - ord('0')) * 10 + (ord(s[j + 1]) - ord('0')))
+      if fracDigits + 2 > 15 or fracPart > (high(uint64) - pair) div 100'u64:
+        fallbackToParseFloat = true
+      elif not fallbackToParseFloat:
+        fracPart = fracPart * 100'u64 + pair
+        fracScale *= 100.0
+      j += 2
+      fracDigits += 2
+    if j < s.len and s[j] in {'0'..'9'}:
       let digit = uint64(ord(s[j]) - ord('0'))
       if fracDigits >= 15 or fracPart > (high(uint64) - digit) div 10'u64:
         fallbackToParseFloat = true
@@ -759,6 +957,47 @@ proc parseValue*(s: string, i: var int, value: var SomeFloat) =
 ## Parses a JSON string literal into value.
 proc parseValue*(s: string, i: var int, value: var string) =
   parseJsonString(s, i, value)
+
+# One shared document owner per thread. Every escape-free view of the most
+# recently parsed document shares this single reference; the identity check
+# creates a new owner only when a different buffer comes in. The template
+# form keeps the (rare) creation code out of the hot path's register plan.
+var tjBorrowDoc {.threadvar.}: BorrowedDocRef
+
+template borrowedDocHolderFor(s: string): BorrowedDocRef =
+  var holder = tjBorrowDoc
+  if holder.isNil or s.len == 0 or s.cstring != holder.doc.cstring:
+    holder = newBorrowedDocRef(s)
+    tjBorrowDoc = holder
+  holder
+
+proc parseValue*(s: string, i: var int, value: var BorrowedString) {.inline.} =
+  eatSpace(s, i)
+  if i + 3 < s.len and s[i] == 'n' and s[i + 1] == 'u' and s[i + 2] == 'l' and s[i + 3] == 'l':
+    # JSON null decodes to a nil view.
+    value = BorrowedString()
+    i += 4
+    return
+
+  expectChar(s, i, '"')
+
+  # Fast path: no escapes — the view points straight into the document.
+  var sawHigh = false
+  let endPos = scanStringEndWithHigh(s, i, sawHigh)
+  if endPos < s.len and s[endPos] == '"':
+    if sawHigh:
+      ensureValidJsonUtf8Span(s, i, endPos)
+    setBorrowedDocView(value, borrowedDocHolderFor(s),
+                       cast[cstring](unsafeAddr s[i]), endPos - i)
+    i = endPos + 1
+    return
+
+  # Slow path: escapes present — decode into a fresh buffer that the view
+  # owns outright.
+  var decoded = ""
+  parseJsonStringEscaped(s, i, endPos, decoded)
+  # The view owns its decoded buffer outright.
+  value = borrowOwned(decoded)
 
 proc parseEnumJsonString[T: enum](s: string, i: var int, value: var T) {.inline.} =
   let start = i
@@ -1274,9 +1513,9 @@ macro parseObjectFieldDispatchSpan(value: typed, s: typed, keyStart: typed, keyL
               firstBody = nnkIfStmt.newTree(nnkElifBranch.newTree(cond, parseCall))
             else:
               firstBody.add(nnkElifBranch.newTree(cond, parseCall))
-          firstBody.add(nnkElse.newTree(newCall(bindSym"skipJsonValue", s, i)))
+          firstBody.add(nnkElse.newTree(newCall(bindSym"skipUnknownJsonKey", s, keyStart, keyLen, i)))
           branchBody.add(nnkOfBranch.newTree(newLit(firstChar), firstBody))
-        branchBody.add(nnkElse.newTree(newCall(bindSym"skipJsonValue", s, i)))
+        branchBody.add(nnkElse.newTree(newCall(bindSym"skipUnknownJsonKey", s, keyStart, keyLen, i)))
       else:
         for entry in entries:
           let cond = newCall(bindSym"spanEquals", s, keyStart, keyLen, newLit(entry[0]))
@@ -1285,7 +1524,7 @@ macro parseObjectFieldDispatchSpan(value: typed, s: typed, keyStart: typed, keyL
             branchBody = nnkIfStmt.newTree(nnkElifBranch.newTree(cond, parseCall))
           else:
             branchBody.add(nnkElifBranch.newTree(cond, parseCall))
-        branchBody.add(nnkElse.newTree(newCall(bindSym"skipJsonValue", s, i)))
+        branchBody.add(nnkElse.newTree(newCall(bindSym"skipUnknownJsonKey", s, keyStart, keyLen, i)))
     else:
       for entry in entries:
         let cond = newCall(bindSym"spanEquals", s, keyStart, keyLen, newLit(entry[0]))
@@ -1294,9 +1533,9 @@ macro parseObjectFieldDispatchSpan(value: typed, s: typed, keyStart: typed, keyL
           branchBody = nnkIfStmt.newTree(nnkElifBranch.newTree(cond, parseCall))
         else:
           branchBody.add(nnkElifBranch.newTree(cond, parseCall))
-      branchBody.add(nnkElse.newTree(newCall(bindSym"skipJsonValue", s, i)))
+      branchBody.add(nnkElse.newTree(newCall(bindSym"skipUnknownJsonKey", s, keyStart, keyLen, i)))
     result.add(nnkOfBranch.newTree(newLit(fieldLen), branchBody))
-  result.add(nnkElse.newTree(newCall(bindSym"skipJsonValue", s, i)))
+  result.add(nnkElse.newTree(newCall(bindSym"skipUnknownJsonKey", s, keyStart, keyLen, i)))
 
 ## Parses a JSON object into a value object T.
 proc parseValue*[T: object](s: string, i: var int, value: var T) =
@@ -1344,16 +1583,6 @@ proc appendSpan(buf: var string, src: string, startIdx, spanLen: int) {.inline, 
   buf.setLen(checkedJsonAdd(outLen, spanLen))
   copyMem(addr buf[outLen], unsafeAddr src[startIdx], spanLen)
 
-when defined(nativeEscapeScan):
-  when defined(release):
-    {.pop.}
-  {.compile: "escaped_scan.c".}
-  proc jsonNextUnsafeC(s: cstring, len: csize_t, start: csize_t): csize_t
-    {.importc: "json_next_unsafe", cdecl.}
-  proc jsonScanCopyQuotedC(src: cstring, len: csize_t, dst: cstring): csize_t
-    {.importc: "json_scan_copy_quoted", cdecl.}
-  proc jsonWriteStringC(src: cstring, len: csize_t, dst: cstring): csize_t
-    {.importc: "json_write_string", cdecl.}
   when defined(release):
     {.push checks: off, inline.}
 
@@ -1541,19 +1770,9 @@ proc copySafeJsonBytesFused(value: string, start: int, buf: var string, pos: var
     inc result
   pos = outPos
 
-# Legacy alias used by serializer staging paths. The C helper is only present
-# when nativeEscapeScan compiles escaped_scan.c; useSimdJson alone links the
-# simdjson parser backend and must keep the Nim scanner.
-when defined(nativeEscapeScan):
-  proc nextUnsafeJsonByte(value: string, start: int): int {.inline.} =
-    if value.len == 0:
-      result = 0
-    else:
-      result = int(jsonNextUnsafeC(cast[cstring](unsafeAddr value[0]),
-                          csize_t(value.len), csize_t(start)))
-else:
-  proc nextUnsafeJsonByte(value: string, start: int): int {.inline.} =
-    scanSafeJsonBytes(value, start)
+# Legacy alias used by serializer staging paths; always uses the Nim scanner.
+proc nextUnsafeJsonByte(value: string, start: int): int {.inline.} =
+  scanSafeJsonBytes(value, start)
 
 proc appendFloatDirect(buf: var string, value: float64) {.inline.} =
   if value != value:
@@ -1565,6 +1784,8 @@ proc appendFloatDirect(buf: var string, value: float64) {.inline.} =
   let oldLen = buf.len
   buf.setLen(checkedJsonAdd(oldLen, n))
   copyMem(addr buf[oldLen], addr fbuf[0], n)
+
+const DigitTriples = ["000","001","002","003","004","005","006","007","008","009","010","011","012","013","014","015","016","017","018","019","020","021","022","023","024","025","026","027","028","029","030","031","032","033","034","035","036","037","038","039","040","041","042","043","044","045","046","047","048","049","050","051","052","053","054","055","056","057","058","059","060","061","062","063","064","065","066","067","068","069","070","071","072","073","074","075","076","077","078","079","080","081","082","083","084","085","086","087","088","089","090","091","092","093","094","095","096","097","098","099","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126","127","128","129","130","131","132","133","134","135","136","137","138","139","140","141","142","143","144","145","146","147","148","149","150","151","152","153","154","155","156","157","158","159","160","161","162","163","164","165","166","167","168","169","170","171","172","173","174","175","176","177","178","179","180","181","182","183","184","185","186","187","188","189","190","191","192","193","194","195","196","197","198","199","200","201","202","203","204","205","206","207","208","209","210","211","212","213","214","215","216","217","218","219","220","221","222","223","224","225","226","227","228","229","230","231","232","233","234","235","236","237","238","239","240","241","242","243","244","245","246","247","248","249","250","251","252","253","254","255","256","257","258","259","260","261","262","263","264","265","266","267","268","269","270","271","272","273","274","275","276","277","278","279","280","281","282","283","284","285","286","287","288","289","290","291","292","293","294","295","296","297","298","299","300","301","302","303","304","305","306","307","308","309","310","311","312","313","314","315","316","317","318","319","320","321","322","323","324","325","326","327","328","329","330","331","332","333","334","335","336","337","338","339","340","341","342","343","344","345","346","347","348","349","350","351","352","353","354","355","356","357","358","359","360","361","362","363","364","365","366","367","368","369","370","371","372","373","374","375","376","377","378","379","380","381","382","383","384","385","386","387","388","389","390","391","392","393","394","395","396","397","398","399","400","401","402","403","404","405","406","407","408","409","410","411","412","413","414","415","416","417","418","419","420","421","422","423","424","425","426","427","428","429","430","431","432","433","434","435","436","437","438","439","440","441","442","443","444","445","446","447","448","449","450","451","452","453","454","455","456","457","458","459","460","461","462","463","464","465","466","467","468","469","470","471","472","473","474","475","476","477","478","479","480","481","482","483","484","485","486","487","488","489","490","491","492","493","494","495","496","497","498","499","500","501","502","503","504","505","506","507","508","509","510","511","512","513","514","515","516","517","518","519","520","521","522","523","524","525","526","527","528","529","530","531","532","533","534","535","536","537","538","539","540","541","542","543","544","545","546","547","548","549","550","551","552","553","554","555","556","557","558","559","560","561","562","563","564","565","566","567","568","569","570","571","572","573","574","575","576","577","578","579","580","581","582","583","584","585","586","587","588","589","590","591","592","593","594","595","596","597","598","599","600","601","602","603","604","605","606","607","608","609","610","611","612","613","614","615","616","617","618","619","620","621","622","623","624","625","626","627","628","629","630","631","632","633","634","635","636","637","638","639","640","641","644","645","646","647","648","649","650","651","652","653","654","655","656","657","658","659","660","661","662","663","664","665","666","667","668","669","670","671","672","673","674","675","676","677","678","679","680","681","682","683","684","685","686","687","688","689","690","691","692","693","694","695","696","697","698","699","700","701","702","703","704","705","706","707","708","709","710","711","712","713","714","715","716","717","718","719","720","721","722","723","724","725","726","727","728","729","730","731","732","733","734","735","736","737","738","739","740","741","742","743","744","745","746","747","748","749","750","751","752","753","754","755","756","757","758","759","760","761","762","763","764","765","766","767","768","769","770","771","772","773","774","775","776","777","778","779","780","781","782","783","784","785","786","787","788","789","790","791","792","793","794","795","796","797","798","799","800","801","802","803","804","805","806","807","808","809","810","811","812","813","814","815","816","817","818","819","820","821","822","823","824","825","826","827","828","829","830","831","832","833","834","835","836","837","838","839","840","841","842","843","844","845","846","847","848","849","850","851","852","853","854","855","856","857","858","859","860","861","862","863","864","865","866","867","868","869","870","871","872","873","874","875","876","877","878","879","880","881","882","883","884","885","886","887","888","889","890","891","892","893","894","895","896","897","898","899","900","901","902","903","904","905","906","907","908","909","910","911","912","913","914","915","916","917","918","919","920","921","922","923","924","925","926","927","928","929","930","931","932","933","934","935","936","937","938","939","940","941","942","943","944","945","946","947","948","949","950","951","952","953","954","955","956","957","958","959","960","961","962","963","964","965","966","967","968","969","970","971","972","973","974","975","976","977","978","979","980","981","982","983","984","985","986","987","988","989","990","991","992","993","994","995","996","997","998","999"]
 
 proc appendIntFast[T: SomeInteger](buf: var string, value: T) {.inline.} =
   when T is SomeSignedInt:
@@ -1579,19 +1800,27 @@ proc appendIntFast[T: SomeInteger](buf: var string, value: T) {.inline.} =
     dec pos
     digits[pos] = '0'
   else:
-    while current >= 100:
-      let pair = int(current mod 100)
-      current = current div 100
-      pos -= 2
-      digits[pos] = DigitPairs[pair][0]
-      digits[pos + 1] = DigitPairs[pair][1]
+    # Three-digit chunks: one div/mod pair per 3 digits instead of per 2,
+    # which cuts the expensive integer division count for typical values.
+    while current >= 1000:
+      let chunk = int(current mod 1000)
+      current = current div 1000
+      pos -= 3
+      digits[pos] = DigitTriples[chunk][0]
+      digits[pos + 1] = DigitTriples[chunk][1]
+      digits[pos + 2] = DigitTriples[chunk][2]
     if current < 10:
       dec pos
       digits[pos] = char(ord('0') + int(current))
-    else:
+    elif current < 100:
       pos -= 2
-      digits[pos] = DigitPairs[int(current)][0]
-      digits[pos + 1] = DigitPairs[int(current)][1]
+      digits[pos] = char(ord('0') + int(current div 10))
+      digits[pos + 1] = char(ord('0') + int(current mod 10))
+    else:
+      pos -= 3
+      digits[pos] = char(ord('0') + int(current div 100))
+      digits[pos + 1] = char(ord('0') + int((current div 10) mod 10))
+      digits[pos + 2] = char(ord('0') + int(current mod 10))
   let outLen = buf.len
   let copyLen = digits.len - pos
   buf.setLen(checkedJsonAdd(outLen, copyLen))
@@ -1906,16 +2135,6 @@ proc cPutJsonBodySlow(buf: var string, pos: var int, value: string, vlen: int) =
   ## Slow path: SIMD scan + copy loop for strings that need escaping or are long.
   ## Separated from cPutJsonBody to keep the fast path small and inlineable.
   ensureRoom(buf, pos, worstJsonStringBytes(vlen, 1))
-  when defined(nativeEscapeScan):
-    when defined(release):
-      if vlen >= 96:
-        let written = int(jsonWriteStringC(
-          cast[cstring](unsafeAddr value[0]),
-          csize_t(vlen),
-          cast[cstring](addr buf[pos - 1])
-        ))
-        pos += written - 1
-        return
   when (defined(arm64) or defined(amd64)) and not defined(noSimd):
     let srcPtr = cast[pointer](unsafeAddr value[0])
     let dstPtr = cast[pointer](addr buf[0])
@@ -4042,6 +4261,17 @@ proc deserializeDirect*[T](json: string, _: typedesc[T]): T =
   eatSpace(json, index)
   if index != json.len:
     jsonError("trailing data", index)
+
+## Returns true if ``json`` is syntactically valid JSON; walks every token with the direct engine.
+proc isValidJsonDirect*(json: string): bool =
+  try:
+    var index = 0
+    eatSpace(json, index)
+    skipJsonValue(json, index)
+    eatSpace(json, index)
+    index == json.len
+  except CatchableError:
+    false
 
 when defined(release):
   {.pop.}

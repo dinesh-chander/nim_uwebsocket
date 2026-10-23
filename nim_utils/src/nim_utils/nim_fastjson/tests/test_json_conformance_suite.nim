@@ -1,4 +1,4 @@
-## JSON syntax conformance harness for nim_fastjson's internal simdjson parser.
+## JSON syntax conformance harness for nim_fastjson's direct parser.
 ## Uses the external JSONTestSuite corpus when available.
 ##
 ## Expected layout:
@@ -8,7 +8,7 @@
 
 import std/[os, unittest]
 
-import ../simdjson
+import ../direct_engine
 
 proc hasJsonFiles(path: string): bool =
   for _ in walkFiles(path / "*.json"):
@@ -36,11 +36,7 @@ proc resolveSuiteDir(): string =
   ""
 
 proc acceptsJson(payload: string): bool =
-  try:
-    discard parse(payload)
-    true
-  except SimdjsonError:
-    false
+  isValidJsonDirect(payload)
 
 let suiteDir = resolveSuiteDir()
 
@@ -61,7 +57,7 @@ suite "JSONTestSuite syntax conformance":
 
       let payload = readFile(path)
       let accepted = acceptsJson(payload)
-      let valid = isValidJson(payload)
+      let valid = isValidJsonDirect(payload)
 
       checkpoint("case=" & name)
       check accepted == valid

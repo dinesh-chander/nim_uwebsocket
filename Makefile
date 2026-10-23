@@ -145,43 +145,21 @@ ifneq ($(PGO_PROFILE_COUNT),0)
   L_OPT_FLAGS += -fprofile-use=$(abspath $(PGO_DIR)) -fprofile-correction
 endif
 
-# Native simdjson shim.
-SIMDJSON_DIR := nim_utils/src/nim_utils/nim_fastjson/simdjson
-SIMDJSON_BUILD_ROOT ?= /tmp/nim_fastjson_simdjson
-ifeq ($(UNAME_S),Linux)
-  SIMDJSON_TARGET_OS := linux
-else ifeq ($(UNAME_S),Darwin)
-  SIMDJSON_TARGET_OS := macosx
-else
-  SIMDJSON_TARGET_OS := $(shell echo "$(UNAME_S)" | tr A-Z a-z)
-endif
-UNAME_M := $(shell uname -m)
-ifeq ($(filter $(UNAME_M),x86_64 amd64),$(UNAME_M))
-  SIMDJSON_TARGET_CPU := amd64
-else ifeq ($(filter $(UNAME_M),arm64 aarch64),$(UNAME_M))
-  SIMDJSON_TARGET_CPU := arm64
-else
-  SIMDJSON_TARGET_CPU := $(UNAME_M)
-endif
-SIMDJSON_BUILD_DIR := $(SIMDJSON_BUILD_ROOT)/$(SIMDJSON_TARGET_OS)-$(SIMDJSON_TARGET_CPU)-release-genericcpu
-SIMDJSON_LIB := $(SIMDJSON_BUILD_DIR)/libnimsimdjson.a
-SIMDJSON_FLAGS := $(CXX)|$(C_OPT_FLAGS)
-
 # WebSocket load tester (nim_websocketcli; pairs with benchmark/ws_echo_bench)
 WEBSOCKETLOAD_BIN ?= nim_websocketcli/websocketload
 WS_RANDOM_OBJECT_BENCH_BIN ?= benchmark/ws_random_object_bench
 
 # Build targets
-.PHONY: all build build-all deps check-iouring-deps usockets validate-usockets-backend usockets-gcd usockets-kqueue usockets-epoll usockets-iouring simdjson bench benchmarks bench-gcd bench-kqueue bench-epoll bench-iouring bench-smoke linux-compat-check macos-smoke production-check websocketload ws-echo-bench ws-random-object-bench ws-scale-setup examples build-examples test coverage verify clean clean-examples clean-bench clean-all
+.PHONY: all build build-all deps check-iouring-deps usockets validate-usockets-backend usockets-gcd usockets-kqueue usockets-epoll usockets-iouring bench benchmarks bench-gcd bench-kqueue bench-epoll bench-iouring bench-smoke linux-compat-check macos-smoke production-check websocketload ws-echo-bench ws-random-object-bench ws-scale-setup examples build-examples test coverage verify clean clean-examples clean-bench clean-all
 
 NIM_PARALLEL ?= --parallelBuild:8
 
 all: build-all
 
-# Build uSockets and simdjson.
+# Build uSockets.
 build: build-all
 
-build-all: deps usockets simdjson
+build-all: deps usockets
 
 deps:
 	./scripts/ensure_deps.sh
@@ -217,22 +195,6 @@ validate-usockets-backend:
 		echo "rebuild with make usockets USOCKETS_BACKEND=$(USOCKETS_BACKEND)" >&2; \
 		exit 1; \
 	}
-
-simdjson:
-	@mkdir -p $(SIMDJSON_BUILD_DIR) 2>/dev/null || true
-	@flags_file="$(SIMDJSON_BUILD_DIR)/.build-flags"; \
-	needs_rebuild=0; \
-	if [ ! -f "$(SIMDJSON_LIB)" ]; then needs_rebuild=1; fi; \
-	if [ "$(SIMDJSON_DIR)/vendor/simdjson.cpp" -nt "$(SIMDJSON_LIB)" ]; then needs_rebuild=1; fi; \
-	if [ "$(SIMDJSON_DIR)/simdjson_shim.cpp" -nt "$(SIMDJSON_LIB)" ]; then needs_rebuild=1; fi; \
-	if [ ! -f "$$flags_file" ] || [ "$$(cat "$$flags_file" 2>/dev/null || true)" != "$(SIMDJSON_FLAGS)" ]; then needs_rebuild=1; fi; \
-	if [ "$$needs_rebuild" = "1" ]; then \
-		echo "Building $(SIMDJSON_LIB)"; \
-		$(CXX) -O3 $(C_OPT_FLAGS) -c $(SIMDJSON_DIR)/vendor/simdjson.cpp -o $(SIMDJSON_BUILD_DIR)/simdjson.o && \
-		$(CXX) -O3 $(C_OPT_FLAGS) -c $(SIMDJSON_DIR)/simdjson_shim.cpp -o $(SIMDJSON_BUILD_DIR)/simdjson_shim.o && \
-		$(AR) rcs $(SIMDJSON_LIB) $(SIMDJSON_BUILD_DIR)/simdjson.o $(SIMDJSON_BUILD_DIR)/simdjson_shim.o && \
-		printf '%s\n' '$(SIMDJSON_FLAGS)' >"$$flags_file"; \
-	fi
 
 usockets-gcd:
 	$(MAKE) usockets USOCKETS_BACKEND=gcd
@@ -361,7 +323,7 @@ test: deps usockets
 coverage:
 	bash scripts/coverage.sh
 
-verify: deps usockets simdjson
+verify: deps usockets
 	NIM_EXTRA_FLAGS="$(NIM_EXTRA_FLAGS)" ./scripts/verify.sh
 
 production-check: verify bench-smoke

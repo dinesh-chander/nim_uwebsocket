@@ -1,4 +1,4 @@
-## Real-world JSON benchmark using simdjson standard datasets + SF citylots (181MB).
+## Real-world JSON benchmark using standard datasets + SF citylots (181MB).
 ## Datasets: twitter.json (617K), citm_catalog.json (1.6M), canada.json (2.1M),
 ##           citylots.json (181MB)
 

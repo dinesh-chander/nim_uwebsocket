@@ -239,8 +239,6 @@ Optional native C acceleration for escape scanning:
 
 | Flag | Effect |
 |------|--------|
-| `-d:nativeEscapeScan` | Links `escaped_scan.c` for C-level scan/copy/write |
-| `-d:useSimdJson` | Delegates unsafe-byte scanning to C `jsonNextUnsafeC` via simdjson |
 
 #### RFC 8259 Compliance
 
@@ -310,8 +308,6 @@ nim c -d:release --cpu:arm64 --cc:aarch64-linux-gnu-gcc --path:nim_utils/src you
 | `--opt:speed` | Compiler optimization for speed (`-O3`) |
 | `--gc:orc` | ORC garbage collector (default in Nim 2.x) — cycle-collecting, deterministic |
 | `-d:noSimd` | Disables NEON/SSE2 SIMD paths, forces scalar SWAR fallback |
-| `-d:nativeEscapeScan` | Uses compiled C helpers for string escape scanning |
-| `-d:useSimdJson` | Routes unsafe-byte detection through simdjson C++ bindings |
 
 ### Running Tests
 

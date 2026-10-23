@@ -1,7 +1,5 @@
-## Fast JSON utilities for nim_express using direct_engine (cursor-based,
-## SIMD-accelerated serializer) from nim_fastjson.
-##
-## For low-level DOM/cursor parsing use nim_fastjson/simdjson directly.
+## Fast JSON utilities for nim_express using the pure-Nim direct engine
+## (SIMD-accelerated serializer) from nim_fastjson.
 
 import nim_utils/nim_fastjson/direct_engine
 import std/options
