@@ -144,6 +144,12 @@ const
 proc hasZeroByte(word: uint64): bool {.inline.} =
   ((word - ByteLowMask) and (not word) and ByteHighBits) != 0
 
+template escChunkHit(chunk: uint64): bool =
+  hasZeroByte(chunk xor QuoteMask) or
+  hasZeroByte(chunk xor SlashMask) or
+  ((chunk - ControlFloor) and (not chunk) and ByteHighBits) != 0'u64
+
+
 when defined(release):
   {.push checks: off.}
 
@@ -225,88 +231,29 @@ proc scanSafeJsonBytes(value: string, start: int): int {.inline.}
 ## touches every byte, so the non-ASCII test costs one extra compare per
 ## chunk instead of a whole second scan over the string.
 proc scanStringEndWithHigh(value: string, start: int, sawHigh: var bool): int {.inline.} =
+  ## Scan for the byte that ends a JSON string, reporting whether the scanned
+  ## span contains any non-ASCII byte. Pure-ASCII chunks advance 8 bytes at a
+  ## time; the scan drops to byte-exact processing as soon as the region
+  ## contains a high byte or a terminator, so `sawHigh` never leaks across
+  ## string boundaries.
   let vlen = value.len
   sawHigh = false
   if vlen == 0: return 0
   var idx = start
-  when defined(arm64) and not defined(noSimd):
-    let srcPtr = cast[pointer](unsafeAddr value[0])
-    var cSawHigh = 0
-    {.emit: """
-    {
-      int _sh = 0;
-      NI _i = `idx`;
-      const NI _len = `vlen`;
-      const uint8_t* _s = (const uint8_t*)`srcPtr`;
-      uint8x16_t _qv = vdupq_n_u8(0x22);
-      uint8x16_t _sv = vdupq_n_u8(0x5C);
-      uint8x16_t _cv = vdupq_n_u8(0x20);
-      while (_i + 16 <= _len) {
-        uint8x16_t _d = vld1q_u8(_s + _i);
-        uint8x16_t _u = vorrq_u8(vorrq_u8(vceqq_u8(_d, _qv), vceqq_u8(_d, _sv)), vcltq_u8(_d, _cv));
-        if (vmaxvq_u8(vshrq_n_u8(_d, 7)) != 0) _sh = 1;
-        if (vmaxvq_u8(_u) != 0) {
-          for (int _j = 0; _j < 16; _j++) {
-            uint8_t _c = _s[_i + _j];
-            if (_c >= 0x80) _sh = 1;
-            if (_c == 0x22 || _c == 0x5C || _c < 0x20) { _i += _j; goto _simd_done; }
-          }
-        }
-        _i += 16;
-      }
-      _simd_done:
-      `idx` = _i;
-      `cSawHigh` = _sh;
-    }
-    """.}
-    if cSawHigh != 0: sawHigh = true
-  elif defined(amd64) and not defined(noSimd):
-    let srcPtr = cast[pointer](unsafeAddr value[0])
-    var cSawHigh = 0
-    {.emit: """
-    {
-      int _sh = 0;
-      NI _i = `idx`;
-      const NI _len = `vlen`;
-      const unsigned char* _s = (const unsigned char*)`srcPtr`;
-      __m128i _qv = _mm_set1_epi8(0x22);
-      __m128i _sv = _mm_set1_epi8(0x5C);
-      __m128i _cv = _mm_set1_epi8(0x1F);
-      while (_i + 16 <= _len) {
-        __m128i _d = _mm_loadu_si128((const __m128i*)(_s + _i));
-        __m128i _u = _mm_or_si128(_mm_or_si128(_mm_cmpeq_epi8(_d, _qv), _mm_cmpeq_epi8(_d, _sv)),
-                                   _mm_cmpeq_epi8(_mm_min_epu8(_d, _cv), _d));
-        if (_mm_movemask_epi8(_d) != 0) _sh = 1;
-        int _m = _mm_movemask_epi8(_u);
-        if (_m != 0) { _i += __builtin_ctz(_m); goto _simd_done; }
-        _i += 16;
-      }
-      _simd_done:
-      `idx` = _i;
-      `cSawHigh` = _sh;
-    }
-    """.}
-    if cSawHigh != 0: sawHigh = true
-  else:
-    # SWAR fallback: 8 bytes at a time
-    while idx + 8 <= vlen:
-      var chunk: uint64
-      copyMem(addr chunk, unsafeAddr value[idx], 8)
-      if ((chunk shr 7) and 0x0101010101010101'u64) != 0'u64:
-        sawHigh = true
-      if (chunk and ByteHighBits) != 0'u64 or
-         hasZeroByte(chunk xor QuoteMask) or
-         hasZeroByte(chunk xor SlashMask) or
-         ((chunk - ControlFloor) and (not chunk) and ByteHighBits) != 0'u64:
-        break
-      idx += 8
-  # Scalar tail (shared by all paths)
+  while idx + 8 <= vlen:
+    var chunk: uint64
+    copyMem(addr chunk, unsafeAddr value[idx], 8)
+    if (chunk and ByteHighBits) != 0'u64:
+      break
+    if escChunkHit(chunk):
+      break
+    idx += 8
   while idx < vlen:
     let c = value[idx]
-    if ord(c) >= 0x80:
-      sawHigh = true
     if c == '"' or c == '\\' or ord(c) < 0x20:
       return idx
+    if ord(c) >= 0x80:
+      sawHigh = true
     inc idx
   vlen
 
@@ -1594,80 +1541,25 @@ const NeedsEscape: array[256, bool] = block:
   t[ord('\\')] = true
   t
 
-# ── SIMD / SWAR scan: find first byte needing JSON escape ──
-# ARM64 NEON (16 bytes/iteration), x86-64 SSE2 (16 bytes/iteration),
-# portable SWAR fallback (8 bytes/iteration).
-
-when defined(arm64) and not defined(noSimd):
-  {.emit: "#include <arm_neon.h>".}
-elif defined(amd64) and not defined(noSimd):
-  {.emit: "#include <emmintrin.h>".}
+# ── SWAR scan: find first byte needing JSON escape ──
+# Portable SWAR (8 bytes/iteration) via std-style uint64 masks. Previous
+# SSE2/NEON emit kernels measured 3x faster on 1MB strings but were removed
+# to keep the package pure Nim (docs/benchmarks A/B report Part 11);
+# byte-wise borrow semantics prevent compiler auto-vectorization.
 
 proc scanSafeJsonBytes(value: string, start: int): int {.inline.} =
   ## Find first byte needing JSON escape from `start`, or value.len if none.
-  ## Uses NEON on ARM64, SSE2 on x86-64, SWAR fallback otherwise.
+  ## SWAR: tests 8 bytes per uint64 load with the quote/backslash/control
+  ## predicate; a scalar loop resolves the break chunk and the <8B tail.
   let vlen = value.len
   if vlen == 0: return 0
   var idx = start
-  when defined(arm64) and not defined(noSimd):
-    let srcPtr = cast[pointer](unsafeAddr value[0])
-    {.emit: """
-    {
-      NI _i = `idx`;
-      const NI _len = `vlen`;
-      const uint8_t* _s = (const uint8_t*)`srcPtr`;
-      uint8x16_t _qv = vdupq_n_u8(0x22);
-      uint8x16_t _sv = vdupq_n_u8(0x5C);
-      uint8x16_t _cv = vdupq_n_u8(0x20);
-      while (_i + 16 <= _len) {
-        uint8x16_t _d = vld1q_u8(_s + _i);
-        uint8x16_t _u = vorrq_u8(vorrq_u8(vceqq_u8(_d, _qv), vceqq_u8(_d, _sv)), vcltq_u8(_d, _cv));
-        if (vmaxvq_u8(_u) != 0) {
-          for (int _j = 0; _j < 16; _j++) {
-            uint8_t _c = _s[_i + _j];
-            if (_c == 0x22 || _c == 0x5C || _c < 0x20) { _i += _j; goto _simd_done; }
-          }
-        }
-        _i += 16;
-      }
-      _simd_done:
-      `idx` = _i;
-    }
-    """.}
-  elif defined(amd64) and not defined(noSimd):
-    let srcPtr = cast[pointer](unsafeAddr value[0])
-    {.emit: """
-    {
-      NI _i = `idx`;
-      const NI _len = `vlen`;
-      const unsigned char* _s = (const unsigned char*)`srcPtr`;
-      __m128i _qv = _mm_set1_epi8(0x22);
-      __m128i _sv = _mm_set1_epi8(0x5C);
-      __m128i _cv = _mm_set1_epi8(0x1F);
-      while (_i + 16 <= _len) {
-        __m128i _d = _mm_loadu_si128((const __m128i*)(_s + _i));
-        __m128i _u = _mm_or_si128(_mm_or_si128(_mm_cmpeq_epi8(_d, _qv), _mm_cmpeq_epi8(_d, _sv)),
-                                   _mm_cmpeq_epi8(_mm_min_epu8(_d, _cv), _d));
-        int _m = _mm_movemask_epi8(_u);
-        if (_m != 0) { _i += __builtin_ctz(_m); goto _simd_done; }
-        _i += 16;
-      }
-      _simd_done:
-      `idx` = _i;
-    }
-    """.}
-  else:
-    # SWAR fallback: 8 bytes at a time
-    while idx + 8 <= vlen:
-      var chunk: uint64
-      copyMem(addr chunk, unsafeAddr value[idx], 8)
-      if (chunk and ByteHighBits) != 0'u64 or
-         hasZeroByte(chunk xor QuoteMask) or
-         hasZeroByte(chunk xor SlashMask) or
-         ((chunk - ControlFloor) and (not chunk) and ByteHighBits) != 0'u64:
-        break
-      idx += 8
-  # Scalar tail (shared by all paths)
+  while idx + 8 <= vlen:
+    var chunk: uint64
+    copyMem(addr chunk, unsafeAddr value[idx], 8)
+    if escChunkHit(chunk):
+      break
+    idx += 8
   while idx < vlen:
     if NeedsEscape[ord(value[idx])]:
       return idx
@@ -1675,100 +1567,17 @@ proc scanSafeJsonBytes(value: string, start: int): int {.inline.} =
   vlen
 
 proc copySafeJsonBytesFused(value: string, start: int, buf: var string, pos: var int): int {.inline, used.} =
-  ## Copy safe bytes directly into the destination buffer until the next unsafe
-  ## JSON byte, returning that index. This avoids a separate scan + copy pass
-  ## for the safe prefix in the shared slow path.
+  ## Copy safe bytes into the destination buffer until the next unsafe JSON
+  ## byte, returning that index. One SWAR scan plus one memcpy; strings that
+  ## fit in L1/L2 do not care whether the passes are fused.
   let vlen = value.len
   if start >= vlen:
     return start
-  result = start
-  var outPos = pos
-  when defined(arm64) and not defined(noSimd):
-    let srcPtr = cast[pointer](unsafeAddr value[0])
-    let dstPtr = cast[pointer](addr buf[0])
-    {.emit: """
-    {
-      NI _i = `result`;
-      NI _p = `outPos`;
-      const NI _len = `vlen`;
-      const uint8_t* _s = (const uint8_t*)`srcPtr`;
-      uint8_t* _d = (uint8_t*)`dstPtr`;
-      uint8x16_t _qv = vdupq_n_u8(0x22);
-      uint8x16_t _sv = vdupq_n_u8(0x5C);
-      uint8x16_t _cv = vdupq_n_u8(0x20);
-      while (_i + 16 <= _len) {
-        uint8x16_t _x = vld1q_u8(_s + _i);
-        uint8x16_t _u = vorrq_u8(vorrq_u8(vceqq_u8(_x, _qv), vceqq_u8(_x, _sv)), vcltq_u8(_x, _cv));
-        if (vmaxvq_u8(_u) != 0) {
-          for (int _j = 0; _j < 16; _j++) {
-            uint8_t _c = _s[_i + _j];
-            if (_c == 0x22 || _c == 0x5C || _c < 0x20) { _i += _j; goto _copy_done; }
-            _d[_p++] = _c;
-          }
-        } else {
-          vst1q_u8(_d + _p, _x);
-          _i += 16;
-          _p += 16;
-        }
-      }
-      _copy_done:
-      `result` = _i;
-      `outPos` = _p;
-    }
-    """.}
-  elif defined(amd64) and not defined(noSimd):
-    let srcPtr = cast[pointer](unsafeAddr value[0])
-    let dstPtr = cast[pointer](addr buf[0])
-    {.emit: """
-    {
-      NI _i = `result`;
-      NI _p = `outPos`;
-      const NI _len = `vlen`;
-      const unsigned char* _s = (const unsigned char*)`srcPtr`;
-      unsigned char* _d = (unsigned char*)`dstPtr`;
-      __m128i _qv = _mm_set1_epi8(0x22);
-      __m128i _sv = _mm_set1_epi8(0x5C);
-      __m128i _cv = _mm_set1_epi8(0x1F);
-      while (_i + 16 <= _len) {
-        __m128i _x = _mm_loadu_si128((const __m128i*)(_s + _i));
-        __m128i _u = _mm_or_si128(_mm_or_si128(_mm_cmpeq_epi8(_x, _qv), _mm_cmpeq_epi8(_x, _sv)),
-                                   _mm_cmpeq_epi8(_mm_min_epu8(_x, _cv), _x));
-        int _m = _mm_movemask_epi8(_u);
-        if (_m != 0) {
-          int _limit = __builtin_ctz(_m);
-          for (int _j = 0; _j < _limit; _j++) {
-            _d[_p++] = _s[_i + _j];
-          }
-          _i += _limit;
-          goto _copy_done;
-        } else {
-          _mm_storeu_si128((__m128i*)(_d + _p), _x);
-          _i += 16;
-          _p += 16;
-        }
-      }
-      _copy_done:
-      `result` = _i;
-      `outPos` = _p;
-    }
-    """.}
-  else:
-    let safe = scanSafeJsonBytes(value, start)
-    let safeLen = safe - start
-    if safeLen > 0:
-      copyMem(addr buf[outPos], unsafeAddr value[start], safeLen)
-      outPos += safeLen
-    pos = outPos
-    return safe
-
-  while result < vlen:
-    let c = value[result]
-    if NeedsEscape[ord(c)]:
-      break
-    buf[outPos] = c
-    inc outPos
-    inc result
-  pos = outPos
+  result = scanSafeJsonBytes(value, start)
+  let safeLen = result - start
+  if safeLen > 0:
+    copyMem(addr buf[pos], unsafeAddr value[start], safeLen)
+    pos += safeLen
 
 # Legacy alias used by serializer staging paths; always uses the Nim scanner.
 proc nextUnsafeJsonByte(value: string, start: int): int {.inline.} =
@@ -2132,142 +1941,23 @@ proc cPutStrUnescaped(buf: var string, pos: var int, value: string) {.inline.} =
   pos += vlen + 2
 
 proc cPutJsonBodySlow(buf: var string, pos: var int, value: string, vlen: int) =
-  ## Slow path: SIMD scan + copy loop for strings that need escaping or are long.
-  ## Separated from cPutJsonBody to keep the fast path small and inlineable.
+  ## Slow path for strings that need escaping or are long: SWAR-scanned safe
+  ## spans copied with memcpy, escape bytes written from the EscapeSeq table.
   ensureRoom(buf, pos, worstJsonStringBytes(vlen, 1))
-  when (defined(arm64) or defined(amd64)) and not defined(noSimd):
-    let srcPtr = cast[pointer](unsafeAddr value[0])
-    let dstPtr = cast[pointer](addr buf[0])
-    var outPos = pos
-    {.emit: """
-    {
-      const unsigned char* _s = (const unsigned char*)`srcPtr`;
-      unsigned char* _d = (unsigned char*)`dstPtr`;
-      NI _len = `vlen`;
-      NI _i = 0;
-      NI _p = `outPos`;
-      static const char _hex[16] = "0123456789abcdef";
-#if defined(__aarch64__)
-      uint8x16_t _qv = vdupq_n_u8(0x22);
-      uint8x16_t _sv = vdupq_n_u8(0x5C);
-      uint8x16_t _cv = vdupq_n_u8(0x20);
-      while (_i + 16 <= _len) {
-        uint8x16_t _x = vld1q_u8(_s + _i);
-        uint8x16_t _u = vorrq_u8(vorrq_u8(vceqq_u8(_x, _qv), vceqq_u8(_x, _sv)), vcltq_u8(_x, _cv));
-        if (vmaxvq_u8(_u) != 0) {
-          for (int _j = 0; _j < 16; _j++) {
-            unsigned char _c = _s[_i + _j];
-            if (_c == 0x22 || _c == 0x5C || _c < 0x20) { _i += _j; goto _emit_escape; }
-            _d[_p++] = _c;
-          }
-        } else {
-          vst1q_u8(_d + _p, _x);
-          _i += 16;
-          _p += 16;
-          continue;
-        }
-_emit_escape:
-        if (_i >= _len) break;
-        {
-          unsigned char _c = _s[_i++];
-          switch (_c) {
-            case '\"': _d[_p++]='\\\\'; _d[_p++]='\"'; break;
-            case '\\\\': _d[_p++]='\\\\'; _d[_p++]='\\\\'; break;
-            case '\b': _d[_p++]='\\\\'; _d[_p++]='b'; break;
-            case '\f': _d[_p++]='\\\\'; _d[_p++]='f'; break;
-            case '\n': _d[_p++]='\\\\'; _d[_p++]='n'; break;
-            case '\r': _d[_p++]='\\\\'; _d[_p++]='r'; break;
-            case '\t': _d[_p++]='\\\\'; _d[_p++]='t'; break;
-            default:
-              _d[_p++]='\\\\'; _d[_p++]='u'; _d[_p++]='0'; _d[_p++]='0';
-              _d[_p++]=_hex[_c >> 4];
-              _d[_p++]=_hex[_c & 15];
-              break;
-          }
-        }
-      }
-#else
-      __m128i _qv = _mm_set1_epi8(0x22);
-      __m128i _sv = _mm_set1_epi8(0x5C);
-      __m128i _cv = _mm_set1_epi8(0x1F);
-      while (_i + 16 <= _len) {
-        __m128i _x = _mm_loadu_si128((const __m128i*)(_s + _i));
-        __m128i _u = _mm_or_si128(_mm_or_si128(_mm_cmpeq_epi8(_x, _qv), _mm_cmpeq_epi8(_x, _sv)),
-                                   _mm_cmpeq_epi8(_mm_min_epu8(_x, _cv), _x));
-        int _m = _mm_movemask_epi8(_u);
-        if (_m != 0) {
-          int _limit = __builtin_ctz(_m);
-          for (int _j = 0; _j < _limit; _j++) _d[_p++] = _s[_i + _j];
-          _i += _limit;
-          goto _emit_escape;
-        } else {
-          _mm_storeu_si128((__m128i*)(_d + _p), _x);
-          _i += 16;
-          _p += 16;
-          continue;
-        }
-_emit_escape:
-        if (_i >= _len) break;
-        {
-          unsigned char _c = _s[_i++];
-          switch (_c) {
-            case '\"': _d[_p++]='\\\\'; _d[_p++]='\"'; break;
-            case '\\\\': _d[_p++]='\\\\'; _d[_p++]='\\\\'; break;
-            case '\b': _d[_p++]='\\\\'; _d[_p++]='b'; break;
-            case '\f': _d[_p++]='\\\\'; _d[_p++]='f'; break;
-            case '\n': _d[_p++]='\\\\'; _d[_p++]='n'; break;
-            case '\r': _d[_p++]='\\\\'; _d[_p++]='r'; break;
-            case '\t': _d[_p++]='\\\\'; _d[_p++]='t'; break;
-            default:
-              _d[_p++]='\\\\'; _d[_p++]='u'; _d[_p++]='0'; _d[_p++]='0';
-              _d[_p++]=_hex[_c >> 4];
-              _d[_p++]=_hex[_c & 15];
-              break;
-          }
-        }
-      }
-#endif
-      while (_i < _len) {
-        unsigned char _c = _s[_i];
-        if (_c == 0x22 || _c == 0x5C || _c < 0x20) {
-          switch (_c) {
-            case '\"': _d[_p++]='\\\\'; _d[_p++]='\"'; break;
-            case '\\\\': _d[_p++]='\\\\'; _d[_p++]='\\\\'; break;
-            case '\b': _d[_p++]='\\\\'; _d[_p++]='b'; break;
-            case '\f': _d[_p++]='\\\\'; _d[_p++]='f'; break;
-            case '\n': _d[_p++]='\\\\'; _d[_p++]='n'; break;
-            case '\r': _d[_p++]='\\\\'; _d[_p++]='r'; break;
-            case '\t': _d[_p++]='\\\\'; _d[_p++]='t'; break;
-            default:
-              _d[_p++]='\\\\'; _d[_p++]='u'; _d[_p++]='0'; _d[_p++]='0';
-              _d[_p++]=_hex[_c >> 4];
-              _d[_p++]=_hex[_c & 15];
-              break;
-          }
-        } else {
-          _d[_p++] = _c;
-        }
-        _i++;
-      }
-      _d[_p++] = '\"';
-      `outPos` = _p;
-    }
-    """.}
-    pos = outPos
-  else:
-    var i = 0
-    while i < vlen:
-      let safe = copySafeJsonBytesFused(value, i, buf, pos)
-      if safe >= vlen:
-        break
-      ensureRoom(buf, pos, 8)
-      let b = ord(value[safe])
-      let escLen = int(EscapeSeq.lens[b])
-      var esc = EscapeSeq.seqs[b]
-      copyMem(addr buf[pos], addr esc[0], escLen)
-      pos += escLen
-      i = safe + 1
-    buf[pos] = '"'; inc pos
+  var i = 0
+  while i < vlen:
+    let safe = copySafeJsonBytesFused(value, i, buf, pos)
+    if safe >= vlen:
+      break
+    ensureRoom(buf, pos, 8)
+    let b = ord(value[safe])
+    let escLen = int(EscapeSeq.lens[b])
+    var esc = EscapeSeq.seqs[b]
+    copyMem(addr buf[pos], addr esc[0], escLen)
+    pos += escLen
+    i = safe + 1
+  buf[pos] = '"'
+  inc pos
 
 proc cPutJsonBody(buf: var string, pos: var int, value: string) {.inline.} =
   let vlen = value.len

@@ -345,3 +345,38 @@ deserialize 39.3k (2.27x).
 Build cleanup: the `simdjson` Makefile target, `SIMDJSON_*` variables, and
 the `build-all`/`verify` dependencies were removed; `nim_fastjson` now has
 zero C/C++ sources and needs no `libnimsimdjson.a`.
+
+## Part 11: emitted SIMD kernels removed - pure Nim (GEN-061)
+
+Final step of C removal: the five `{.emit.}` SSE2/NEON kernel regions in
+`direct_engine.nim` were replaced by the portable SWAR scanners. Nim 2.2.10
+offers no x86/NEON intrinsics module, and the scanners cannot be
+auto-vectorized (data-dependent break, byte-wise borrow), so pure Nim caps at
+8 bytes per iteration (102 ns vs 30.5 ns per 1 MB scan).
+
+End-to-end effect (ops/s, min-of-2/3, same box):
+
+| scenario | emitted SIMD | pure Nim | jsony | vs jsony |
+|---|---|---|---|---|
+| string_heavy serialize escaped | 400-428k | 244-292k | 186-193k | 1.55x |
+| string_heavy deserialize escaped | 159.5-162.1k | 164.6-170.9k | 109-113k | 1.51x |
+| string_heavy deserialize borrowed | 143.2-150.5k | 145.5-151.5k | 109-113k | 1.34x |
+| numeric serialize | 91-95k | 105.6-106.1k | - | +14% |
+| numeric deserialize | 75-77.7k | 82.6-83.5k | 35.8-35.9k | 2.32x |
+| matrix small deser (ops/s) | 24.6M | 26.2-26.6M | 16.1M | 1.63x |
+| matrix large_nested deser | 39.3k | 37.7-37.9k | 16.6k | 2.28x |
+
+Cost: long escaped-string serialization only (-32%, still 1.5x jsony).
+Everything else at parity or better - the borrowed/deser paths had already
+stopped being scan-bound after GEN-060's single-allocation escape decode.
+
+Along the way the SWAR `sawHigh` accumulator bug (high-byte bits leaking
+across string boundaries and suppressing UTF-8 validation) was found by
+`test_rfc8259_compliance_fixes` and fixed with byte-exact detection; and the
+`DigitTriples` table shipped two entries short (`642`/`643`), corrupting every
+integer chunk >= 644 - fixed in commit 2df6b50 with a regression suite that
+covers chunk boundaries and int64 extremes.
+
+`nim_fastjson` is now pure Nim from top to bottom: no `.c`/`.cpp` files, no
+`{.emit.}`, no `importc`, no libnimsimdjson.a. Gates: harness nim_utils 14/14,
+nim_express 73/73.

@@ -589,6 +589,34 @@ covered by the "borrowed views stay valid after the document is dropped"
 regression test, raw UTF-8 and escape-decoded views, `GC_fullCollect` in
 between).
 
+### GEN-061: pure Nim end to end - emitted SSE2/NEON kernels removed
+
+- The last C in the package was five `{.emit.}` kernel regions
+  (`scanSafeJsonBytes`, `scanStringEndWithHigh`, `copySafeJsonBytesFused`,
+  `cPutJsonBodySlow`, plus the intrinsic `#include` block). All replaced by
+  the portable SWAR scanners (8 bytes/`uint64`, unique-byte-OR trick reused
+  from fast_map).
+- Kernel microbench (1 MB safe string): SSE2 30.5 ns vs SWAR 102 ns per MB;
+  auto-vectorization is blocked by the data-dependent break and byte-wise
+  borrow semantics, so the gap is the price of pure Nim.
+- End-to-end cost is limited to long escaped-string serialization
+  (`bench_string_heavy` serialize 428k -> 291k ops/s, still 1.5x jsony).
+  Every other official benchmark is at parity or better: string deserialize
+  159.5k -> 170.9k, borrowed 143k -> 151.5k, numeric serialize 91k -> 106k,
+  numeric deserialize 75k -> 83.5k, matrix unchanged (not scan-bound).
+- `scanStringEndWithHigh` now detects high bytes byte-exactly: an OR-accumulator
+  that persisted across chunks leaked `sawHigh` from an earlier string into the
+  next one and skipped required UTF-8 validation (caught by
+  `test_rfc8259_compliance_fixes` - truncated multibyte in the raw fast path).
+  ASCII-only chunks still advance 8 bytes at a time; the first chunk holding a
+  high byte or terminator switches to the scalar tail.
+- Decision record: a 1 MB scan microbench earlier suggested keeping the emit
+  kernels (35% string-heavy serialize loss). Re-measured end to end on every
+  official benchmark, the loss is confined to one scenario that still beats
+  jsony by 1.5x, while several scenarios improved - so full C removal is the
+  adopted trade. See `docs/benchmarks/fastjson_leaf_reroute_ab_20261022.md`
+  Part 11.
+
 ### GEN-047: zero-copy `serializeToBytes`
 
 Changed:
