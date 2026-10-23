@@ -414,3 +414,22 @@ suite "escaped string regression (nested seq-of-object fields)":
     let doc = """{"cursor":"","statuses":[{"id":9,"text":"emoji """ & '\\' & """uD83D""" & '\\' & """uDD12 end","mentions":[]}]}"""
     let e = fj.deserialize(doc, Envelope)
     check e.statuses[0].text == "emoji " & $Rune(0x1F512) & " end"
+
+suite "integer digit-chunk regression (GEN-054 table)":
+  type
+    IntWrap = object
+      v: int64
+  test "serialize hits every three-digit chunk including >=642":
+    let fj = initFastJson()
+    let values = [0'i64, 999, 1000, 1001, 1642, 1643, 1644, 999999, 1000000,
+                  1_000_642, 643_642_643, 9_876_543_210, 999_999_999_999_999_999,
+                  -1642, -9_876_543_210, high(int64), low(int64), 4_294_967_296]
+    for v in values:
+      let doc = fj.serialize(IntWrap(v: v))
+      check doc == "{\"v\":" & $v & "}"
+
+  test "round-trip int64 values across chunk boundaries":
+    let fj = initFastJson()
+    for v in [642'i64, 643, 644, 664_200, 664_300, 999_999, 1_642_643, 8_888_642_000]:
+      let doc = fj.serialize(IntWrap(v: v))
+      check fj.deserialize(doc, IntWrap).v == v
