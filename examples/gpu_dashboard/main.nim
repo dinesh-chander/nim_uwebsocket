@@ -5,6 +5,8 @@
 ## - Blocking CLI collectors (amd-smi / nvidia-smi) offloaded via `runOffload`
 ## - Server-initiated WebSocket push (htmx ws extension on the client)
 ## - Optional llama.cpp engine metrics ONLY when ENGINE_BASE is configured
+##   (polled with nim_fasthttpclient on the app's own event loop — shared
+##   loop, pooled keep-alive connections, no offload thread occupied)
 ## - HTMX frontend (dashboard.html) living in this folder — no frontend polling
 ##
 ## Every `GPU_INTERVAL_MS` the backend collects a snapshot and broadcasts it
@@ -20,8 +22,11 @@
 ##   FAKE_SMI_DIR=/tmp/fakesmi ./examples/bin/gpu_dashboard_app
 ##     # reads amd.metric.out / amd.static.out / nvidia.out instead of the CLIs
 
-import std/[json, os, strutils, times]
+import std/[json, os, strutils, times, asyncdispatch]
 import ../../nim_express/src/nim_express
+import ../../nim_express/src/nim_express/app as expressApp
+import ../../nim_fasthttpclient/src/nim_fasthttpclient/types as fasttypes
+import ../../nim_fasthttpclient/src/nim_fasthttpclient/client as fastclient
 import ../shared/example_support
 import ./collectors
 
@@ -33,6 +38,11 @@ const
   # binary at compile time (nim_express `staticEmbedView`) and also served
   # from disk when present, so local edits to dashboard.html show up on
   # reload without a rebuild.
+  # Asset sources are resolved against this file's own directory, so the
+  # embed works both when `main.nim` is compiled directly and when it is
+  # built through the thin `examples/gpu_dashboard_app.nim` entrypoint
+  # (whose project path is `examples/`, not `examples/gpu_dashboard/`).
+  AssetsDir = currentSourcePath().parentDir
   ViewDashboard = "dashboard"
   ViewHtmx = "vendor/htmx.min.js"
   ViewWs = "vendor/ws.js"
@@ -42,6 +52,7 @@ var
   gEngineBase: string
   gFakeSmiDir: string
   gTimeoutExe: string
+  gEngClient: fasttypes.HttpClient
 
 proc envIntOr(name: string, def: int): int =
   let raw = getEnv(name, "")
@@ -122,6 +133,25 @@ proc applyRate(ws: WebSocket; message: string) =
   except JsonParsingError:
     discard
 
+proc engineGet(url: string): Future[string] =
+  ## Async GET on the app's own event loop via `nim_fasthttpclient` (shared
+  ## loop, pooled keep-alive connections) — no offload thread is occupied.
+  ## Fails like the old blocking path did: transport error or non-2xx.
+  var fut = newFuture[string]("engineGet")
+  if not gEngClient.initialized:
+    fut.fail(newException(IOError, "engine client not initialized"))
+    return fut
+  fastclient.get(gEngClient, url,
+    proc(resp: fasttypes.HttpResponse, err: string) {.gcsafe.} =
+      {.cast(gcsafe).}:
+        if err.len > 0:
+          fut.fail(newException(IOError, "engine GET " & url & ": " & err))
+        elif resp.statusCode div 100 != 2:
+          fut.fail(newException(IOError, "engine GET " & url & " HTTP " & $resp.statusCode))
+        else:
+          fut.complete(resp.body))
+  result = fut
+
 proc collectTick() {.async.} =
   # One collection round: fire independent blocking calls, gather results
   # with allSettled semantics, broadcast the snapshot.
@@ -134,11 +164,11 @@ proc collectTick() {.async.} =
   var fStatic: Future[string] = nil
   if needStatic: fStatic = runOffload(runSmiBlocking("amd.static", gFakeSmiDir, gTimeoutExe))
   var fEng: Future[string] = nil
-  if engineWanted: fEng = runOffload(httpGetBlocking(gEngineBase & "/metrics"))
+  if engineWanted: fEng = engineGet(gEngineBase & "/metrics")
   var fProps: Future[string] = nil
-  if propsWanted: fProps = runOffload(httpGetBlocking(gEngineBase & "/props"))
+  if propsWanted: fProps = engineGet(gEngineBase & "/props")
   var fSlots: Future[string] = nil
-  if engineWanted: fSlots = runOffload(httpGetBlocking(gEngineBase & "/slots"))
+  if engineWanted: fSlots = engineGet(gEngineBase & "/slots")
 
   var futs = @[fAmd, fNv]
   if fStatic != nil: futs.add fStatic
@@ -241,9 +271,9 @@ proc createApp(): ExpressApp {.gcsafe.} =
   # fully self-contained (no CDN, no asset files needed at runtime).
   # Relative to this file's directory (the compile-time project path), so the
   # embed works from any build cwd.
-  staticEmbedView(app, ViewDashboard, "dashboard.html")
-  staticEmbedView(app, ViewHtmx, "vendor/htmx.min.js")
-  staticEmbedView(app, ViewWs, "vendor/ws.js")
+  staticEmbedView(app, ViewDashboard, AssetsDir / "dashboard.html")
+  staticEmbedView(app, ViewHtmx, AssetsDir / "vendor/htmx.min.js")
+  staticEmbedView(app, ViewWs, AssetsDir / "vendor/ws.js")
 
   app.get("/") do (req: Request, res: Response):
     serveDashboard(res)
@@ -307,6 +337,11 @@ proc main*() =
   echo "  open:       http://localhost:", port
   app.listen(port) do (success: bool):
     if success:
+      if gEngineBase.len > 0:
+        # Share the express event loop: the client's sockets are pumped by
+        # the same loop as the server (no second loop, no extra thread).
+        gEngClient = fastclient.newHttpClient(defaultTimeoutMs = HttpTimeoutMs)
+        fastclient.initClientWithLoop(gEngClient, expressApp.getEventLoop(app))
       echo "GPU dashboard running at http://localhost:", port
     else:
       echo "Failed to bind port ", port

@@ -380,3 +380,75 @@ covers chunk boundaries and int64 extremes.
 `nim_fastjson` is now pure Nim from top to bottom: no `.c`/`.cpp` files, no
 `{.emit.}`, no `importc`, no libnimsimdjson.a. Gates: harness nim_utils 14/14,
 nim_express 73/73.
+
+## Part 12: 10-round loop (2026-10-23) - dispatch, exponent, skip-path
+
+| id | change | scenario | before | after |
+|----|--------|----------|--------|-------|
+| GEN-062 | perfect-hash key dispatch (span macro, >=4 same-length fields) | 8-field obj deser | 112.1 ns | 72.4 ns |
+|      |          | 18-field obj deser | 344.0 ns | 198.1 ns |
+| GEN-063 | exact float-exponent fast path (uint64 scaling / exact double divide) | 4-float exponent doc deser | 66.7 ns | 62.6 ns (jsony 79) |
+| GEN-064 | fused high-byte scan in skipJsonString/skipJsonObjectKey | 40-unknown-field doc deser | 522 ns | 501 ns |
+
+Rejected in the same loop: seq decode capacity reuse (bench_big identical),
+triplets int parse (3.65 vs 3.61 ns/int), naive pow10 float fast path
+(6158/30000 ULP mismatches vs strtod - replaced by the exact variant).
+isValidJsonDirect measured 2.27 us vs std parseJson 23.3 us on a 3 KB doc
+(10.3x, inherits GEN-064). Official benchmarks after all three adoptions
+(min-of-7, taskset -c 4): matrix small deser 26.4M, medium 815k, nested
+324k, large 39.2k; numeric deser 82.3k; string_heavy deser escaped 172.4k,
+borrowed 155.8k - all at parity or record. Harnesses: nim_utils 14/14,
+nim_express 73/73.
+
+## Part 13 - round-two rejection log (2026-10-24)
+
+Ten more candidate rounds (R11-R20 directive from the user). Adopted: none.
+All six implemented candidates measured net-negative or neutral and were
+reverted; the tree is byte-identical to the Part 12 state (GEN-062/063/064).
+
+| round | candidate | verdict |
+|---|---|---|
+| R11 | pretty-printed deserialize tuning | no-op: already 1.77x jsony |
+| R12 | byte-loop copy-until-unsafe (ser, short escaped segs) | noise, rejected |
+| R13 | seq[T] decode capacity pre-estimation (4 variants) | +5.6% flat, -8..-17% nested, rejected |
+| R14 | negative-int serialize via unsigned chunks | 14.55 vs 14.3 ns/int, rejected |
+| R15 | raw-UTF-8 string deserialize audit | gap = jsony skips UTF-8 validation (non-conformant); documented floor |
+| R16 | custom SWAR UTF-8 validator | CJK 0.38 vs std 0.30 ns/B; mixed +2%; rejected (strict-exact vs reference, fuzz 0 fails) |
+| R17 | serializer literal-prefix batching audit | already fused via `cPutLit`; no-op |
+| R18 | full regression (harnesses + official benches) | green, records hold |
+
+Regression after revert (min-of-7, taskset -c 4, restored engine): matrix
+nested deser 322.7k, large deser 38.96k (2.24x jsony), escaped ser 309.4k
+(1.60x), escaped deser 173.3k (1.53x), borrowed 155.5k, numeric deser 82.0k
+(2.26x). Harnesses nim_utils 14/14, nim_express 73/73.
+
+Lesson for future rounds: Nim `$`/`validateUtf8`/`formatFloat` C kernels are
+at or below what SWAR re-implementations achieve on short inputs; the
+remaining measurable gaps (raw multibyte validation, Dragon4 float format,
+Lemire big-exponent parse) are deliberate conformance/correctness costs or
+large separate projects, not kernel misses.
+
+## Part 14 - flamegraph-guided round: last-key memo rejected (2026-10-24)
+
+Flamegraph on the medium workload (gprof `-pg`, 35 s, ~1.5M decodes of a
+6.2 KB / 100-item doc; folded SVG in `/tmp/fj_base/gprof_med*`): parseJsonString
+21% self (200 calls/decode, alloc-bound), parseObjectKeySpan 19% (400 calls,
+1.7 ns each), seq-array frame 8%, string-alloc cluster (rawAlloc +
+newStringUninit + rawDealloc + eqsink) 13%, `_init` 12% is the `-pg` gmon
+constructor artifact. No unexplained hotspots; remaining costs match the
+documented floors.
+
+One candidate derived from the profile and measured (R21): a last-key memo in
+the span dispatch - threadvar `gLastJsonKey` (index+1, 0 = none) tried before
+the length/first-char switch, revalidated by `spanEquals`, so stale indices
+are cheap misses. Result: no gain on repeated-key-order docs (medium100
+4436 ns vs 4384 baseline - the branch predictor already nails the fixed
+switch chain) and a clear regression on unique-key docs (bench_disp O8
+72.4 -> 85.2 ns, O18 198 -> 226 ns: every miss pays an extra switch +
+spanEquals + flag). REJECTED, reverted; harness nim_utils 14/14 after revert.
+
+Bug found and fixed during the experiment (useful lessons): a macro-generated
+gate flag initialized `true` was tested with `not`, silently skipping the main
+dispatch (caught by a single-field deserialize probe, not by inspection);
+`newIdentNode` for a module-scope threadvar from a cross-module macro expands
+to the CALLER scope and must use `bindSym`; threadvars cannot have initializers.

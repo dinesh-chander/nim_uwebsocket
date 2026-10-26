@@ -6,7 +6,6 @@
 ## across samples. All procs here are blocking — call them via `runOffload`.
 
 import std/[json, os, osproc, sequtils, streams, strutils, tables, times, math]
-import std/httpclient except Response
 
 export json, os, strutils, tables, times
 
@@ -53,10 +52,7 @@ proc runSmiBlocking*(kind: string, fakeDir: string, timeoutExe: string): string 
     raise newException(IOError, exe & " produced no output")
   result = outp
 
-proc httpGetBlocking*(url: string): string =
-  ## Blocking GET used for the optional engine endpoints. Offload-pool only.
-  let client = newHttpClient(timeout = HttpTimeoutMs)
-  result = client.getContent(url)
+
 
 # ---------- JSON walk helpers (port of JS num()/dig()) ----------
 

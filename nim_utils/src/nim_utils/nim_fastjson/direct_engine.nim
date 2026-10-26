@@ -1,4 +1,4 @@
-import std/[options, parseutils, strutils, tables, unicode]
+import std/[options, parseutils, sets, strutils, tables, unicode]
 import std/private/dragonbox
 import macrocache
 import macros
@@ -549,9 +549,10 @@ proc skipJsonString(s: string, i: var int) =
     return
   expectChar(s, i, '"')
   while true:
-    let spanStart = i
-    let endPos = scanStringEnd(s, i)
-    ensureValidJsonUtf8Span(s, spanStart, endPos)
+    var sawHigh = false
+    let endPos = scanStringEndWithHigh(s, i, sawHigh)
+    if sawHigh:
+      ensureValidJsonUtf8Span(s, i, endPos)
     i = endPos
     if i >= s.len:
       jsonError("unterminated string", i)
@@ -601,9 +602,10 @@ proc skipJsonObjectKey(s: string, i: var int) =
     jsonError("object key must be a string", i)
   inc i
   while true:
-    let spanStart = i
-    let endPos = scanStringEnd(s, i)
-    ensureValidJsonUtf8Span(s, spanStart, endPos)
+    var sawHigh = false
+    let endPos = scanStringEndWithHigh(s, i, sawHigh)
+    if sawHigh:
+      ensureValidJsonUtf8Span(s, i, endPos)
     i = endPos
     if i >= s.len:
       jsonError("unterminated string", i)
@@ -794,6 +796,11 @@ proc parseValue*(s: string, i: var int, value: var SomeSignedInt) =
       jsonError("signed integer out of range", i)
     value = type(value)(raw)
 
+const U64Pow10Table = [1'u64, 10'u64, 100'u64, 1000'u64, 10000'u64, 100000'u64, 1000000'u64, 10000000'u64, 100000000'u64, 1000000000'u64, 10000000000'u64, 100000000000'u64, 1000000000000'u64, 10000000000000'u64, 100000000000000'u64, 1000000000000000'u64, 10000000000000000'u64, 100000000000000000'u64, 1000000000000000000'u64, 10000000000000000000'u64]
+const U64Pow10Limit = [18446744073709551615u64, 1844674407370955161u64, 184467440737095516u64, 18446744073709551u64, 1844674407370955u64, 184467440737095u64, 18446744073709u64, 1844674407370u64, 184467440737u64, 18446744073u64, 1844674407u64, 184467440u64, 18446744u64, 1844674u64, 184467u64, 18446u64, 1844u64, 184u64, 18u64, 1u64]
+
+const Pow10Table = [1e-22, 1e-21, 1e-20, 1e-19, 1e-18, 1e-17, 1e-16, 1e-15, 1e-14, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22]
+
 ## Parses a JSON number into a float value.
 proc parseValue*(s: string, i: var int, value: var SomeFloat) =
   eatSpace(s, i)
@@ -863,22 +870,56 @@ proc parseValue*(s: string, i: var int, value: var SomeFloat) =
 
   if j < s.len and (s[j] == 'e' or s[j] == 'E'):
     inc j
+    let expIsNeg = j < s.len and s[j] == '-'
     if j < s.len and (s[j] == '+' or s[j] == '-'):
       inc j
     let expStart = j
     if j >= s.len or s[j] notin {'0'..'9'}:
       jsonError("exponent part must have at least one digit", j)
+    var expNeg = false
+    var expVal = 0
     while j < s.len and s[j] in {'0'..'9'}:
+      expVal = expVal * 10 + (ord(s[j]) - ord('0'))
+      if expVal > 100000:
+        expVal = 100000
       inc j
     if j - expStart > 10:
       jsonError("exponent too large", expStart)
     var parsed: float
-    let consumed = parseFloat(s, parsed, start)
-    if consumed == 0:
-      jsonError("float expected", i)
+    var done = false
+    if not fallbackToParseFloat and intDigits + fracDigits <= 15:
+      # Exact path: fold the decimal point into an integer mantissa M
+      # (M <= 10^15 - 1), then either scale M by 10^e as an exact uint64
+      # (positive exponents) or divide two exactly representable doubles
+      # (|e| <= 15 keeps 10^e below 2^53). Both round exactly once, matching
+      # a correctly rounded strtod, so no ULP drift is possible.
+      var m = intPart
+      for _ in 0 ..< fracDigits:
+        m *= 10'u64
+      m += fracPart
+      let eNet = (if expIsNeg: -expVal else: expVal) - fracDigits
+      if eNet == 0:
+        parsed = float64(m)
+        done = true
+      elif eNet < 0:
+        let shift = -eNet
+        if shift <= 15:
+          parsed = float64(m) / Pow10Table[shift + 22]
+          done = true
+      elif eNet <= 19 and m <= U64Pow10Limit[eNet]:
+        parsed = float64(m * U64Pow10Table[eNet])
+        done = true
+      if done:
+        if negative:
+          parsed = -parsed
+        i = j
+    if not done:
+      let consumed = parseFloat(s, parsed, start)
+      if consumed == 0:
+        jsonError("float expected", i)
+      i = start + consumed
     if parsed != parsed or parsed == Inf or parsed == NegInf:
       jsonError("NaN/Infinity not allowed in JSON", i)
-    i = start + consumed
     value = type(value)(parsed)
     return
 
@@ -1436,6 +1477,40 @@ macro parseObjectFieldDispatch(value: typed, key: typed, s: typed, i: typed): un
     result.add(nnkOfBranch.newTree(newLit(keyLen), branchBody))
   result.add(nnkElse.newTree(newCall(bindSym"skipJsonValue", s, i)))
 
+type PerfectSig = tuple[p1, p2: int]
+
+proc fieldSigAt(name: string, p: PerfectSig): int {.inline.} =
+  ## Compile-time twin of the runtime signature expression (byte pair as a
+  ## 16-bit word).
+  let b1 = if p.p1 < name.len: ord(name[p.p1]) else: 0
+  let b2 = if p.p2 < name.len: ord(name[p.p2]) else: 0
+  b1 shl 8 or b2
+
+proc findPerfectSig(names: seq[string], keyLen: int): PerfectSig =
+  ## Search a byte-pair signature unique across all same-length names, so the
+  ## generated dispatch can be a switch instead of a linear compare chain.
+  if keyLen < 2:
+    return (-1, -1)
+  for p1 in 0 ..< keyLen:
+    for p2 in 0 ..< keyLen:
+      if p1 == p2: continue
+      var seen: HashSet[int]
+      var ok = true
+      for nm in names:
+        let sig = fieldSigAt(nm, (p1, p2))
+        if sig in seen:
+          ok = false
+          break
+        seen.incl(sig)
+      if ok:
+        return (p1, p2)
+  (-1, -1)
+
+proc perfectSigExpr(s: NimNode, keyStart: NimNode, p: PerfectSig): NimNode =
+  let p1 = newLit(p.p1)
+  let p2 = newLit(p.p2)
+  quote do: (ord(`s`[`keyStart` + `p1`]) shl 8) or ord(`s`[`keyStart` + `p2`])
+
 macro parseObjectFieldDispatchSpan(value: typed, s: typed, keyStart: typed, keyLen: typed, i: typed): untyped =
   var groups = initOrderedTable[int, seq[(string, NimNode)]]()
   for (fieldName, access) in objectFieldEntries(value):
@@ -1448,7 +1523,21 @@ macro parseObjectFieldDispatchSpan(value: typed, s: typed, keyStart: typed, keyL
       var firstGroups = initOrderedTable[char, seq[(string, NimNode)]]()
       for entry in entries:
         firstGroups.mgetOrPut(entry[0][0], @[]).add(entry)
-      if firstGroups.len > 1:
+      var names: seq[string] = @[]
+      for entry in entries:
+        names.add(entry[0])
+      let ps = findPerfectSig(names, fieldLen)
+      if entries.len >= 4 and ps.p1 >= 0:
+        branchBody = nnkCaseStmt.newTree(perfectSigExpr(s, keyStart, ps))
+        for entry in entries:
+          let sig = fieldSigAt(entry[0], ps)
+          let cond = newCall(bindSym"spanEquals", s, keyStart, keyLen, newLit(entry[0]))
+          let parseCall = newCall(bindSym"parseValue", s, i, entry[1])
+          var body = nnkIfStmt.newTree(nnkElifBranch.newTree(cond, parseCall),
+              nnkElse.newTree(newCall(bindSym"skipUnknownJsonKey", s, keyStart, keyLen, i)))
+          branchBody.add(nnkOfBranch.newTree(newLit(sig), body))
+        branchBody.add(nnkElse.newTree(newCall(bindSym"skipUnknownJsonKey", s, keyStart, keyLen, i)))
+      elif firstGroups.len > 1:
         let firstCharExpr = nnkBracketExpr.newTree(s, keyStart)
         branchBody = nnkCaseStmt.newTree(firstCharExpr)
         for firstChar, firstEntries in firstGroups.pairs:

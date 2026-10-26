@@ -125,7 +125,7 @@
     
     <div id="tocRoot"></div>
     
-    <p class="module-desc">Thread-pool offload helpers for blocking/CPU-heavy tasks. Uses <tt class="docutils literal"><span class="pre"><span class="Identifier">malebolgia</span></span></tt> instead of the deprecated std/threadpool module.Records the server whose event loop runs queued offload completions.Runs <tt class="docutils literal"><span class="pre">expr</span></tt> on the offload pool and returns an <tt class="docutils literal"><span class="pre">OffloadOutcome</span></tt> using <tt class="docutils literal"><span class="pre">DefaultOffloadTimeoutMs</span></tt>.Returns the short string class name for an <tt class="docutils literal"><span class="pre">OffloadOutcome</span></tt> kind.Renders an <tt class="docutils literal"><span class="pre">OffloadOutcome</span></tt> as a compact JSON event string with class, operation, and correlation fields.</p>
+    <p class="module-desc">Thread-pool offload helpers for blocking/CPU-heavy tasks. Uses <tt class="docutils literal"><span class="pre"><span class="Identifier">malebolgia</span></span></tt> instead of the deprecated std/threadpool module.Records the server whose event loop runs queued offload completions.One malebolgia master per thread, created on first use and kept for the lifetime of the process. A worker thread still touches the master's lock (<tt class="docutils literal"><span class="pre"><span class="Identifier">taskCompleted</span></span></tt>) after the task body has run, so freeing the master as soon as the task result is published destroys a mutex that is still in use and aborts inside glibc (<tt class="docutils literal"><span class="pre"><span class="Identifier">pthread_mutex_lock</span> <span class="Operator">...</span> <span class="Identifier">__owner</span> <span class="Operator">==</span> <span class="DecNumber">0</span></span></tt>, or the robust <tt class="docutils literal"><span class="pre"><span class="Identifier">e</span> <span class="Operator">!=</span> <span class="Identifier">ESRCH</span> <span class="Operator">||</span> <span class="Operator">!</span><span class="Identifier">robust</span></span></tt> variant).Runs <tt class="docutils literal"><span class="pre">expr</span></tt> on the offload pool and returns an <tt class="docutils literal"><span class="pre">OffloadOutcome</span></tt> using <tt class="docutils literal"><span class="pre">DefaultOffloadTimeoutMs</span></tt>.Returns the short string class name for an <tt class="docutils literal"><span class="pre">OffloadOutcome</span></tt> kind.Renders an <tt class="docutils literal"><span class="pre">OffloadOutcome</span></tt> as a compact JSON event string with class, operation, and correlation fields.</p>
     <div class="section" id="6">
   <h1><a class="toc-backref" href="#6">Imports</a></h1>
   <dl class="item">
@@ -203,7 +203,7 @@
   <dd>
     
     <p>Run a blocking call on malebolgia's worker pool and return a Future. Example: let rows = await runOffload(loadRowsBlocking())</p>
-<p>Note: this expects a call expression, e.g. <tt class="docutils literal"><span class="pre"><span class="Identifier">foo</span><span class="Punctuation">(</span><span class="Identifier">a</span><span class="Punctuation">,</span> <span class="Identifier">b</span><span class="Punctuation">)</span></span></tt>.</p>
+<p>Note: this expects a call expression, e.g. <tt class="docutils literal"><span class="pre"><span class="Identifier">foo</span><span class="Punctuation">(</span><span class="Identifier">a</span><span class="Punctuation">,</span> <span class="Identifier">b</span><span class="Punctuation">)</span></span></tt>. The pool master is created once per thread and reused by every offload on that thread.</p>
 
     
   </dd>
@@ -254,7 +254,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-21 19:21:37 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-26 18:22:17 UTC</small>
       </div>
     </div>
   </div>

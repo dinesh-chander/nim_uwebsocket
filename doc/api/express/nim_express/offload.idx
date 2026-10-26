@@ -2,8 +2,8 @@ nimTitle	offload	nim_express/offload.html	module nim_express/offload		0
 nim	DefaultOffloadTimeoutMs	nim_express/offload.html#DefaultOffloadTimeoutMs	const DefaultOffloadTimeoutMs		9
 nim	NimExpressOffloadQueueLimit	nim_express/offload.html#NimExpressOffloadQueueLimit	const NimExpressOffloadQueueLimit		10
 nim	setOffloadDispatchServer	nim_express/offload.html#setOffloadDispatchServer,HttpServer	proc setOffloadDispatchServer(server: HttpServer)		61
-nim	runOffload	nim_express/offload.html#runOffload.m,typed	macro runOffload(expr: typed): untyped		275
-nim	runOffloadOutcome	nim_express/offload.html#runOffloadOutcome.m,static[string],typed,typed,typed	macro runOffloadOutcome(operation: static[string]; correlationId: typed;\n                  timeoutMs: typed; expr: typed): untyped		410
-nim	runOffloadOutcome	nim_express/offload.html#runOffloadOutcome.t,static[string],typed,typed	template runOffloadOutcome(operation: static[string]; correlationId: typed; expr: typed): untyped		461
-nim	offloadOutcomeClass	nim_express/offload.html#offloadOutcomeClass,OffloadOutcome[T]	proc offloadOutcomeClass[T](outcome: OffloadOutcome[T]): string		469
-nim	formatOffloadOutcomeEvent	nim_express/offload.html#formatOffloadOutcomeEvent,OffloadOutcome[T]	proc formatOffloadOutcomeEvent[T](outcome: OffloadOutcome[T]): string		498
+nim	runOffload	nim_express/offload.html#runOffload.m,typed	macro runOffload(expr: typed): untyped		287
+nim	runOffloadOutcome	nim_express/offload.html#runOffloadOutcome.m,static[string],typed,typed,typed	macro runOffloadOutcome(operation: static[string]; correlationId: typed;\n                  timeoutMs: typed; expr: typed): untyped		422
+nim	runOffloadOutcome	nim_express/offload.html#runOffloadOutcome.t,static[string],typed,typed	template runOffloadOutcome(operation: static[string]; correlationId: typed; expr: typed): untyped		473
+nim	offloadOutcomeClass	nim_express/offload.html#offloadOutcomeClass,OffloadOutcome[T]	proc offloadOutcomeClass[T](outcome: OffloadOutcome[T]): string		481
+nim	formatOffloadOutcomeEvent	nim_express/offload.html#formatOffloadOutcomeEvent,OffloadOutcome[T]	proc formatOffloadOutcomeEvent[T](outcome: OffloadOutcome[T]): string		510

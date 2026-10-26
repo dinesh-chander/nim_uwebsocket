@@ -172,9 +172,17 @@ check-iouring-deps:
 		fi; \
 	fi
 
+# GCC 14+ emits slim LTO objects (pruned .symtab, only __gnu_lto_slim). A plain
+# `ar` cannot index them, so uSockets.a exposes no symbols and every us_*
+# reference fails with "undefined reference". Archive with the GCC wrapper so
+# the LTO plugin indexes real symbols (only needed where GNU LTO is enabled).
+ifeq ($(UNAME_S),Linux)
+USOCKETS_AR := AR=gcc-ar
+endif
+
 usockets: check-iouring-deps
 	$(MAKE) -C $(USOCKETS_DIR) clean
-	$(MAKE) -C $(USOCKETS_DIR) $(USOCKETS_BUILD_ENV) CFLAGS="$(C_OPT_FLAGS)"
+	$(MAKE) -C $(USOCKETS_DIR) $(USOCKETS_BUILD_ENV) $(USOCKETS_AR) CFLAGS="$(C_OPT_FLAGS)"
 	@printf '%s\n' \
 		'backend=$(USOCKETS_BACKEND)' \
 		'env=$(USOCKETS_BUILD_ENV)' \

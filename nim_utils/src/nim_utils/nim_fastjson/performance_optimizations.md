@@ -617,6 +617,53 @@ between).
   adopted trade. See `docs/benchmarks/fastjson_leaf_reroute_ab_20261022.md`
   Part 11.
 
+### GEN-062: perfect-hash object key dispatch
+
+- Same-length field groups with four or more entries now dispatch through a
+  compile-time perfect hash (unique byte pair `(s[keyStart+p1], s[keyStart+p2])`
+  searched in `findPerfectSig`, dispatched as a `case` switch) instead of the
+  first-character chain plus linear `spanEquals` walk.
+- Each hash branch still verifies the full name with `spanEquals` before
+  parsing, so an unknown key whose bytes collide with a signature is skipped
+  via `skipUnknownJsonKey` (UTF-8 validation included), never mis-parsed.
+- Measured (wide-object bench, 8/18 same-length fields): deserialize
+  112.1 -> 72.4 ns (-35%) and 344.0 -> 198.1 ns (-42%). Objects with three or
+  fewer fields per length group keep the old chain; all official benchmarks
+  unchanged (they never hit four same-length keys).
+
+### GEN-063: exact fast path for JSON float exponents
+
+- `parseValue[SomeFloat]` previously bounced every `1.5e10`-style token to
+  `parseFloat`. It now folds the decimal point into an integer mantissa
+  (`intPart * 10^fracDigits + fracPart`, capped at 15 digits) and computes
+  the net decimal exponent `eNet = exp - fracDigits`:
+  - `eNet == 0`: `float64(m)` directly;
+  - `0 < eNet <= 19` and `m <= U64Pow10Limit[eNet]`: `float64(m *
+    U64Pow10Table[eNet])` - the product is an exact uint64, so the single
+    int-to-float conversion is correctly rounded;
+  - `-15 <= eNet < 0`: `float64(m) / 10^-eNet` - both operands are exactly
+    representable (`10^15 < 2^53`), so the IEEE division is correctly rounded.
+  Everything else falls back to `parseFloat` as before.
+- A naive `value * pow10` fast path was measured first and REJECTED: 6158 of
+  30000 random exponent documents differed from strtod by one ULP. The exact
+  integer variants above cannot drift: a 30000-case randomized sweep against
+  `parseutils.parseFloat` shows zero mismatches.
+- Exponent-heavy four-float document deserialize 66.7 -> 62.6 ns/op (jsony
+  79-81 ns); no-exponent and official numeric paths untouched.
+
+### GEN-064: fused UTF-8 high-byte detection in the skip path
+
+- `skipJsonString` and `skipJsonObjectKey` (used for unknown fields, array
+  elements of skipped objects, and `isValidJsonDirect`) scanned each string
+  segment twice: once for the quote/backslash terminator, once inside
+  `ensureValidJsonUtf8Span` for the high-byte pre-check. Both now use
+  `scanStringEndWithHigh` and validate only when the fused scan saw a high
+  byte - the GEN-057 trick applied to the skip path.
+- Unknown-field-heavy document (40 skipped string fields) deserialize
+  522 -> 501 ns (-3.4%). Invalid UTF-8 inside skipped keys and skipped values
+  is still rejected (verified with raw `0xFF` probes); `isValidJsonDirect`
+  stays 10x faster than std `parseJson` (2.27 us on a 3 KB nested doc).
+
 ### GEN-047: zero-copy `serializeToBytes`
 
 Changed:
@@ -646,6 +693,36 @@ Observed effect:
 
 - validation methods now compare very strongly against `jsony`, often in the
   `8x` to `18x` range depending on dataset and entrypoint
+
+### GEN-065: round-two measured-and-rejected candidates (documented floors)
+
+Six further candidates were implemented, measured, and rejected on this box
+(Intel Core Ultra 7 265K, min-of-7, `taskset -c 4`); none changed the tree:
+
+- pretty-printed deserialize: already 1.77x jsony - nothing to change.
+- byte-loop copy until unsafe byte in `copySafeJsonBytesFused` for short
+  escaped segments: within noise of the SWAR + `copyMem` form.
+- seq[T] decode capacity pre-estimation (four variants: remaining-bytes
+  floor, static-overhead floor, first-item width probe, min-cap gate): the
+  probe variant won -5.6% on flat 100k-item docs but lost 8-17% on nested
+  trees (`buildNested(64,8,6)`) because remaining bytes include all
+  descendants; every variant net-negative overall.
+- negative-int serialize via the unsigned chunk path: 14.55 vs 14.3 ns/int;
+  Nim `$` on int64 is already fast C, the temp string is not the bottleneck.
+- custom UTF-8 validator (SWAR 8B word skip + scalar rune walk, validated
+  byte-exact strict-UTF-8 against a reference decoder with exhaustive
+  1-4 byte sequences plus 300k random inputs): 0.38 ns/B on CJK-dense text
+  vs std 0.30 (std `validateUtf8` already runs near one cycle per rune) and
+  only +2% on mixed script. Rejected; std kernel retained.
+- object-serializer literal batching: the cursor path already fuses the
+  field prefix and opening quote into one 8-byte store (`cPutLit`,
+  `writeObjectFieldsC`); nothing left to merge.
+
+Residual documented here: raw-multibyte string deserialize measures 237 vs
+jsony 158 ns on a 900-byte CJK payload because fastjson validates UTF-8
+(RFC 8259 requirement) and jsony does not. That gap is a conformance
+feature, not a kernel gap; `\u`-escaped unicode input (the shape jsony
+handles at parity) runs 1.8x faster in fastjson.
 
 ## 5. Important low-level lessons
 
