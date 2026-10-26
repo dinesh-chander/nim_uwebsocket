@@ -1,4 +1,5 @@
 # nim_fastjson Design: Generic, High-Performance JSON for Nim
+> **Status note (2026-10-23):** the simdjson C++ backend and the `escaped_scan.c` helper were removed; `nim_fastjson` is now pure Nim (see `docs/benchmarks/fastjson_leaf_reroute_ab_20261022.md`, Part 10). References to simdjson below are historical.
 
 Date: 2026-03-13
 

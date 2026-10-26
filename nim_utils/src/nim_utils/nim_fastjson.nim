@@ -2,10 +2,10 @@ import std/streams
 
 import ./nim_fastjson/direct_engine
 import ./nim_fastjson/simd_backend
-import ./nim_fastjson/simdjson as simdjson_backend
-import ./nim_fastjson/simdjson/simdjson_ffi
+import ./nim_fastjson/borrowed
 
 export direct_engine.JsonError
+export borrowed
 export direct_engine.JsonSafeString
 export direct_engine.JsonAsciiSafeString
 export direct_engine.JsonSerializeRootShape
@@ -16,10 +16,15 @@ export simd_backend.directNestedDecodeSupported
 export simd_backend.borrowedTypedDecodeSupported
 
 type
+  ## Decode engine. Only ``fjeDirect`` is selected; ``fjeSimdjson`` is retained
+  ## for API compatibility after the simdjson C++ backend was removed.
   FastJsonEngine* = enum
     fjeDirect
     fjeSimdjson
 
+  ## Decode path. Only ``fjdpDirect`` is selected; the ``fjdpSimd*`` values
+  ## are retained for API compatibility after the simdjson C++ backend was
+  ## removed.
   FastJsonDecodePath* = enum
     fjdpDirect
     fjdpSimdLeaf
@@ -63,8 +68,12 @@ type
 
   FastJson* = ref object
     options*: FastJsonOptions
-
-  JsonStringView* = simd_backend.BorrowedStringAlias
+    ## True when every option that `validateDeserializeOptions` rejects is at
+    ## its default value, so the per-call option checks can be skipped.
+    strictDefaults*: bool
+    ## True when every option that `validateSerializeOptions` rejects is at
+    ## its default value, so the per-call option checks can be skipped.
+    strictSerializeDefaults*: bool
 
 ## Returns the default ``FastJsonOptions`` used to build a ``FastJson`` instance.
 proc defaultFastJsonOptions*(): FastJsonOptions =
@@ -95,32 +104,52 @@ proc defaultFastJsonOptions*(): FastJsonOptions =
 proc initFastJson*(options = defaultFastJsonOptions()): FastJson =
   new(result)
   result.options = options
+  result.strictDefaults =
+    options.unknownFieldPolicy == fjufpIgnore and
+    not options.caseInsensitiveFields and
+    not options.allowTrailingCommas and
+    not options.allowComments and
+    not options.allowSingleQuotes and
+    not options.allowUnquotedFieldNames and
+    not options.allowNumbersFromStrings and
+    not options.allowSpecialFloats and
+    not options.preferBorrowedStrings
+  result.strictSerializeDefaults =
+    not options.indentOutput and
+    options.indentStep == 2 and
+    not options.escapeNonAscii and
+    not options.omitNullFields and
+    not options.omitDefaultFields and
+    options.fieldNamingPolicy == fjfnpPreserve and
+    options.enumStyle == fjesString
 
 proc unsupportedOption(name: string) {.noinline.} =
   raise newException(direct_engine.JsonError,
     "FastJson option '" & name & "' is not implemented by this backend")
 
-proc validateSerializeOptions(fj: FastJson) =
+proc validateSerializeOptions(fj: FastJson) {.inline.} =
   let opts = fj.options
-  if opts.indentOutput: unsupportedOption("indentOutput")
-  if opts.indentStep != 2: unsupportedOption("indentStep")
-  if opts.escapeNonAscii: unsupportedOption("escapeNonAscii")
-  if opts.omitNullFields: unsupportedOption("omitNullFields")
-  if opts.omitDefaultFields: unsupportedOption("omitDefaultFields")
-  if opts.fieldNamingPolicy != fjfnpPreserve: unsupportedOption("fieldNamingPolicy")
-  if opts.enumStyle != fjesString: unsupportedOption("enumStyle")
+  if not fj.strictSerializeDefaults:
+    if opts.indentOutput: unsupportedOption("indentOutput")
+    if opts.indentStep != 2: unsupportedOption("indentStep")
+    if opts.escapeNonAscii: unsupportedOption("escapeNonAscii")
+    if opts.omitNullFields: unsupportedOption("omitNullFields")
+    if opts.omitDefaultFields: unsupportedOption("omitDefaultFields")
+    if opts.fieldNamingPolicy != fjfnpPreserve: unsupportedOption("fieldNamingPolicy")
+    if opts.enumStyle != fjesString: unsupportedOption("enumStyle")
 
-proc validateDeserializeOptions(fj: FastJson; json: string) =
+proc validateDeserializeOptions(fj: FastJson; json: string) {.inline.} =
   let opts = fj.options
-  if opts.unknownFieldPolicy != fjufpIgnore: unsupportedOption("unknownFieldPolicy")
-  if opts.caseInsensitiveFields: unsupportedOption("caseInsensitiveFields")
-  if opts.allowTrailingCommas: unsupportedOption("allowTrailingCommas")
-  if opts.allowComments: unsupportedOption("allowComments")
-  if opts.allowSingleQuotes: unsupportedOption("allowSingleQuotes")
-  if opts.allowUnquotedFieldNames: unsupportedOption("allowUnquotedFieldNames")
-  if opts.allowNumbersFromStrings: unsupportedOption("allowNumbersFromStrings")
-  if opts.allowSpecialFloats: unsupportedOption("allowSpecialFloats")
-  if opts.preferBorrowedStrings: unsupportedOption("preferBorrowedStrings")
+  if not fj.strictDefaults:
+    if opts.unknownFieldPolicy != fjufpIgnore: unsupportedOption("unknownFieldPolicy")
+    if opts.caseInsensitiveFields: unsupportedOption("caseInsensitiveFields")
+    if opts.allowTrailingCommas: unsupportedOption("allowTrailingCommas")
+    if opts.allowComments: unsupportedOption("allowComments")
+    if opts.allowSingleQuotes: unsupportedOption("allowSingleQuotes")
+    if opts.allowUnquotedFieldNames: unsupportedOption("allowUnquotedFieldNames")
+    if opts.allowNumbersFromStrings: unsupportedOption("allowNumbersFromStrings")
+    if opts.allowSpecialFloats: unsupportedOption("allowSpecialFloats")
+    if opts.preferBorrowedStrings: unsupportedOption("preferBorrowedStrings")
   if opts.maxInputBytes > 0 and json.len > opts.maxInputBytes:
     raise newException(direct_engine.JsonError,
       "JSON input exceeds maxInputBytes " & $opts.maxInputBytes)
@@ -145,31 +174,18 @@ proc readStreamLimited(stream: Stream; maxInputBytes: int): string =
       break
     result.add(chunk)
 
-## Converts a borrowed ``JsonStringView`` into an owned Nim string.
-proc toString*(value: JsonStringView): string {.inline.} =
-  simd_backend.toString(value)
-
-## Returns the length in bytes of a borrowed ``JsonStringView``.
-proc len*(value: JsonStringView): int {.inline.} =
-  simd_backend.len(value)
-
 ## Returns the ``FastJsonDecodePath`` used to decode values of a given type.
+## Every shape now decodes with the direct engine (borrowed shapes simply
+## receive zero-copy string views). The ``fjdpSimd*`` values are retained for
+## API compatibility and are no longer selected.
 proc selectedDeserializePath*[T](_: typedesc[T]): FastJsonDecodePath {.inline.} =
-  when simd_backend.borrowedTypedDecodeSupported(T):
-    fjdpSimdBorrowed
-  elif simd_backend.directLeafDecodeSupported(T):
-    fjdpSimdLeaf
-  elif simd_backend.directNestedDecodeSupported(T):
-    fjdpSimdNested
-  else:
-    fjdpDirect
+  fjdpDirect
 
 ## Returns the ``FastJsonEngine`` used to decode values of a given type.
+## Always ``fjeDirect``; ``fjeSimdjson`` is retained for API compatibility
+## after the simdjson C++ backend was removed.
 proc selectedDeserializeEngine*[T](_: typedesc[T]): FastJsonEngine {.inline.} =
-  when simd_backend.borrowedTypedDecodeSupported(T) or simd_backend.directLeafDecodeSupported(T):
-    fjeSimdjson
-  else:
-    fjeDirect
+  fjeDirect
 
 proc stringToBytesMove(encoded: sink string): seq[byte] {.inline.} =
   result = cast[seq[byte]](encoded)
@@ -205,41 +221,21 @@ proc serializeToStream*[T](fj: FastJson; stream: StringStream; value: T) =
   else:
     Stream(stream).write(fj.serialize(value))
 
-## Deserializes JSON text into a value of type T, using the simdjson backend when supported.
+## Deserializes JSON text into a value of type T with the pure-Nim direct
+## engine; borrowed-string shapes receive zero-copy string views.
 proc deserialize*[T](fj: FastJson; json: string; _: typedesc[T]): T =
   fj.validateDeserializeOptions(json)
-  let previousArrayLimit = direct_engine.setJsonArrayItemLimit(fj.options.maxArrayItems)
-  let previousDepthLimit = direct_engine.setJsonParseDepthLimit(fj.options.maxDepth)
-  discard simdjson_ffi.simdjsonSetOndemandMaxDepth(fj.options.maxDepth.csize_t)
-  discard simdjson_ffi.simdjsonSetOndemandMaxArrayItems(fj.options.maxArrayItems.csize_t)
+  var arrayChanged, depthChanged = false
+  let previousArrayLimit =
+    direct_engine.setJsonArrayItemLimitIfChanged(fj.options.maxArrayItems, arrayChanged)
+  let previousDepthLimit =
+    direct_engine.setJsonParseDepthLimitIfChanged(fj.options.maxDepth, depthChanged)
   defer:
-    discard direct_engine.setJsonArrayItemLimit(previousArrayLimit)
-    discard direct_engine.setJsonParseDepthLimit(previousDepthLimit)
-  when simd_backend.borrowedTypedDecodeSupported(T) or simd_backend.directLeafDecodeSupported(T):
-    try:
-      if fj.options.useSimdWhenAvailable:
-        when simd_backend.nativePlanDecodeSupported(T):
-          # The native plan walks every token of the document in one pass,
-          # so no separate validation pre-pass is needed.
-          return simd_backend.deserializeViaSimd(json, T)
-        else:
-          # Projection (macro) paths skip unknown values without fully
-          # validating every token, so keep the one-pass token-walk pre-pass
-          # to guarantee full-document validity + depth enforcement.
-          let vcode = simdjson_ffi.simdjsonOndemandValidate(json.cstring, json.len.csize_t)
-          if vcode != simdjson_ffi.simdjsonSuccessCode():
-            raise newException(direct_engine.JsonError,
-              $simdjson_ffi.simdjsonErrorMessage(vcode))
-          return simd_backend.deserializeViaSimd(json, T)
-      else:
-        when simd_backend.borrowedTypedDecodeSupported(T):
-          unsupportedOption("useSimdWhenAvailable")
-        else:
-          return direct_engine.deserializeDirect(json, T)
-    except CatchableError as exc:
-      raise newException(direct_engine.JsonError, exc.msg)
-  else:
-    direct_engine.deserializeDirect(json, T)
+    if arrayChanged:
+      discard direct_engine.setJsonArrayItemLimit(previousArrayLimit)
+    if depthChanged:
+      discard direct_engine.setJsonParseDepthLimit(previousDepthLimit)
+  direct_engine.deserializeDirect(json, T)
 
 ## Deserializes a JSON byte sequence into a value of type T.
 proc deserialize*[T](fj: FastJson; bytes: openArray[byte]; _: typedesc[T]): T =
@@ -262,7 +258,7 @@ proc deserialize*[T](fj: FastJson; stream: Stream; _: typedesc[T]): T =
 proc isValidJson*(fj: FastJson; json: string): bool {.inline.} =
   if fj.options.maxInputBytes > 0 and json.len > fj.options.maxInputBytes:
     return false
-  simdjson_backend.isValidJson(json)
+  direct_engine.isValidJsonDirect(json)
 
 ## Returns true if the byte sequence is syntactically valid JSON within the input size limit.
 proc isValidJson*(fj: FastJson; bytes: openArray[byte]): bool =
@@ -270,7 +266,9 @@ proc isValidJson*(fj: FastJson; bytes: openArray[byte]): bool =
     return false
   if fj.options.maxInputBytes > 0 and bytes.len > fj.options.maxInputBytes:
     return false
-  simdjsonIsValid(cast[cstring](unsafeAddr bytes[0]), bytes.len.csize_t)
+  var json = newString(bytes.len)
+  copyMem(addr json[0], unsafeAddr bytes[0], bytes.len)
+  direct_engine.isValidJsonDirect(json)
 
 ## Returns true if the stream contents form valid JSON within the input size limit.
 proc isValidJson*(fj: FastJson; stream: Stream): bool =

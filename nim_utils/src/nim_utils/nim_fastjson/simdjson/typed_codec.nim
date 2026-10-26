@@ -1,3 +1,0 @@
-import ../simdjson
-
-export simdjson

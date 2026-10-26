@@ -342,7 +342,327 @@ Observed effect:
 - deserialize stayed strong on the supported typed cases without reopening the
   failed nested-routing experiments
 
+### GEN-050: leaf/nested shapes re-routed to the direct engine (supersedes the simd leaf route)
+
+Changed:
+
+- `deserialize` sends only borrowed-string shapes to the simd backend; leaf
+  and nested shapes all go to `direct_engine.deserializeDirect`
+- the simdjson ondemand max-depth/max-array-items FFI calls moved inside the
+  simd branch so direct-path calls no longer pay them
+- `selectedDeserializePath`/`selectedDeserializeEngine` now report what is
+  actually used (`fjdpDirect`/`fjeDirect` for leaf and nested shapes); the
+  `fjdpSimdLeaf`/`fjdpSimdNested` enum values are kept for API compatibility
+
+Why it helped:
+
+- on AVX2+AVX512 Linux hardware the simd leaf route cost a full ondemand
+  token-walk validation pre-pass plus a second decode walk, while the direct
+  engine does one pure-Nim pass with precomputed field plans
+- measured 3.7x to 12.9x loss of the simd leaf route on small shapes
+  (A/B report: docs/benchmarks/fastjson_leaf_reroute_ab_20261022.md)
+- small-object deserialize flipped from 2.8x slower than jsony to 1.6x faster
+
+Observed effect:
+
+- SmallTodo 40B: 181ns to 39.2ns (jsony 64ns); wide 107B: 400.6ns to 124.6ns
+  (jsony 231.7ns); scalar int root 63.7ns to 8.5ns
+- borrowed-string shapes unchanged (still simd, zero-copy)
+- both harness gates green (nim_utils 14/14, nim_express 73/73)
+
+### GEN-051: `scanStringEnd` reuses the SIMD `scanSafeJsonBytes` kernel
+
+Changed:
+
+- the deserializer's per-string `scanStringEnd` used a scalar SWAR 8-byte
+  loop that duplicated the exact predicate of `scanSafeJsonBytes` (quote /
+  backslash / control byte)
+- it now delegates to `scanSafeJsonBytes`, which scans 16 bytes per
+  iteration with SSE2 on x86-64 and NEON on ARM64
+
+Why it helped:
+
+- half the iterations and vector comparison instead of scalar byte tests
+  for every deserialized string value
+
+Observed effect:
+
+- small 40B document: 39.2ns to 36.5ns; medium100: 5534ns to 4804ns (-13%);
+  nested50: 8110ns to 6931ns (-15%)
+
+### GEN-052: ASCII fast path skips UTF-8 validation
+
+Changed:
+
+- added `containsHighByte`, an 8-byte-per-iteration shift-and-test scan that
+  reports whether a span contains any byte 0x80 or higher
+- `parseJsonString` (both the no-escape fast path and the escaped slow path)
+  and `ensureValidJsonUtf8Span` now run the full `validateUtf8` pass only
+  when high bytes are actually present; pure-ASCII strings are valid UTF-8 by
+  definition and skip validation entirely
+
+Why it helped:
+
+- `validateUtf8` measured 0.126ns per byte (a full re-read of every string),
+  which dominated deserialized string cost (0.168ns per byte marginal before)
+- the high-byte pre-check costs roughly one op per 8 bytes, so ASCII strings
+  now pay about 0.006ns per byte instead of 0.126ns
+
+Observed effect:
+
+- single-string deserialize marginal cost at 4KB: 0.168ns/B to 0.081ns/B
+  (687ns to 333ns total for a 4096-byte string)
+- small 40B document: 36.5ns to 35.3ns; medium100: 4804ns to 4748ns;
+  nested50: 6931ns to 6894ns
+- first cut forgot the end boundary in the key-span pre-check and scanned to
+  the end of the document per key (6.5x slower on medium shapes); fixed by
+  passing the span end into `containsHighByte`
+
+### GEN-053: AVX2 32-byte scan kernels — measured, rejected
+
+Tried runtime cpuid AVX2 detection plus `target("avx2")` 32-byte scan and
+fused scan+copy kernels for `scanSafeJsonBytes` and
+`copySafeJsonBytesFused`. Result: no gain on serialize (0.031ns/B unchanged)
+and slightly worse deserialize (extra call plus branch overhead per scan).
+The scan is uop-bound, not iteration-bound: 32 bytes per iteration doubles
+the compare/movemask uops, so the per-byte cost stays the same. Reverted.
+
+### GEN-054: 3-digit chunk integer formatting (DigitTriples)
+
+Changed `appendIntFast` from 2-digit (div/mod 100) to 3-digit (div/mod 1000)
+chunking with a 1000-entry `DigitTriples` table, cutting the number of
+64-bit integer divisions per value.
+
+Measured (standalone microbench, 5-digit values, min-of-7):
+
+- pairs div-100 kernel: 5.14 ns/int
+- triples div-1000 kernel: 4.80 ns/int
+
+A 4-digit (div 10000, 2048-entry) variant measured worse (7.3 ns/int), and
+an unchecked per-char literal append for field keys was slower than the
+standard `buf.add(static)` path (3.74 vs 1.22 ns/field), so both were
+rejected.
+
+Full-bench note: the int-heavy serialize scenario in
+`bench_varied_types.nim` still reads 0.82-0.90x vs jsony in the full
+benchmark binary, but an isolated replica of the same shape (same harness,
+only the int-heavy block) shows fastjson winning 1.18x (1.31us vs 1.55us).
+The jsony number is identical in both binaries (1.6us); only fastjson
+degrades when the other benchmark code is compiled in, which points to
+instruction-cache pressure from the larger binary rather than an
+algorithmic loss.
+
+### GEN-055: cached strict-defaults option validation
+
+`FastJson` now computes `strictDefaults` and `strictSerializeDefaults`
+once in `initFastJson`. When every option that
+`validateDeserializeOptions` / `validateSerializeOptions` would reject is
+at its default value, the per-call option checks are skipped (the
+maxInputBytes length check stays on every path).
+
+Measured (min-of-7):
+
+- int root deserialize: 8.5 → 6.3 ns/op (jsony 3.2)
+- small 40B object deserialize: 35.3 → 34.2 ns/op (jsony 64)
+- medium/nested unchanged within noise
+
 ## 4. Public API wins
+
+
+
+
+
+### GEN-056: deferred object-key UTF-8 validation
+
+`parseObjectKeySpan` used to run `ensureValidJsonUtf8Span` on every
+object key before field dispatch. A span that equals a known ASCII field
+literal is valid UTF-8 by construction, so that scan was pure overhead on
+every matched field. Validation is now deferred to the unknown-key branch:
+the span dispatch macro routes unmatched keys through `skipUnknownJsonKey`,
+which validates the span and then skips the value. Invalid UTF-8 keys can
+never equal an ASCII literal, so they always reach the validating branch
+and are rejected with the same message and offset as before (covered by a
+manual conformance check: `{\xff...}` and `{\xc3\x28...}` keys still raise
+`invalid UTF-8 in string`).
+
+Measured (min-of-7):
+
+- small 40B object deserialize: 34.2 → 33.1 ns/op
+- medium100 deserialize: 4784 → 4384 ns/op (-8.4%, jsony 9609)
+- nested50 deserialize: 6969 → 6602 ns/op (-5.3%, jsony 12238)
+
+### GEN-057: fused high-byte tracking in the string end scan
+
+After GEN-052, `parseJsonString`'s fast path ran two passes over every
+escape-free string: `scanStringEnd` (quote/backslash/control predicate) and
+`containsHighByte` (high-byte predicate). `scanStringEndWithHigh` merges
+them into one pass: the same SIMD/SWAR/scalar kernels as `scanSafeJsonBytes`
+plus a "saw a high byte" flag — the SSE2/NEON kernels take the movemask
+once per chunk and OR its non-zero-ness into the flag, the SWAR kernel reuses
+its existing shift-and-test word, and the scalar tail checks each byte.
+The fast path then calls `ensureValidJsonUtf8` only when the flag is set,
+and the result is byte-identical to the two-pass version (ASCII strings
+skip validation exactly as before; high-byte strings validate exactly as
+before).
+
+Measured (min-of-7):
+
+- small 40B object deserialize: 33.1 → 32.6 ns/op
+- medium100 deserialize: 4384 → 4223 ns/op (-3.7%, jsony 9582)
+- nested50 deserialize: 6602 → 6340 ns/op (-4.0%, jsony 12401)
+- 4KB string value deserialize: 333 → 197 ns/op (marginal 0.081 → 0.048 ns/B)
+- official matrix deserialize vs jsony: nested 1.29x → 1.39x, large_nested 2.10x → 2.21x
+
+### GEN-058: SIMD scan resume in the escaped-string slow path
+
+The `parseJsonString` slow path (strings containing escapes) copied the
+safe prefix with the SIMD scan but then walked the remainder byte by byte
+in a scalar loop. It now resumes `scanStringEnd` after every decoded
+escape, so long safe spans between escapes are scanned and copied in bulk.
+Error messages and offsets are unchanged (control-byte, invalid-escape,
+expected-escaped-character, unterminated-string all verified).
+
+Measured (min-of-7, 4KB string with one `\n` escape):
+
+- escape at byte 0: 1185 → 302 ns/op (3.9x)
+- escape-free 4KB: 389 ns unchanged
+- official escaped-string deserialize: 126.5k → 136k ops/s (1.10x → 1.20x vs jsony)
+- non-escaped workloads unchanged (small 32.0 ns, medium100 4266 ns, nested50 6260 ns)
+
+### GEN-059: two-digits-per-iteration number parsing
+
+The unsigned-int kernel and the float fast path (integer part and fraction
+part accumulators) walked numbers one digit per loop iteration. They now
+consume two digits per iteration (`raw * 100 + pair` with a matching
+div-by-100 overflow check) plus a one-digit tail, so a 5-digit number takes
+3 iterations instead of 5. Overflow, leading-zero, and range behavior are
+unchanged (conformance/numeric suites green).
+
+Measured (min-of-7):
+
+- seq[int] 5-digit values: 6.38 → 5.61 ns/int (12%)
+- official numeric deserialize: 68.1k → 75.0k ops/s (1.89x → 2.15x vs jsony)
+- gprof flat profile of a 6-field numeric object after this change: 60% object
+  dispatch body, 20% key-span scan, number parsing a small share — the
+  remaining time is structural dispatch work
+- gprof on a 2×512B string object: 100% `newStringUninit` (GC allocation)
+  — owned string copies are allocation-bound, a structural floor
+
+### GEN-060: pure-Nim borrowed lane + single-allocation escape decode
+
+Two related changes shipped together when the simdjson C++ backend was
+removed (see A/B report Part 10):
+
+1. **Pure-Nim borrowed decoding.** `BorrowedString` / `JsonStringView` fields
+   now decode on the direct engine. Escape-free strings borrow the document
+   bytes through one shared `BorrowedDocRef` per document (a threadvar holder
+   keyed on the buffer address; views copy only the small ref). Strings with
+   escapes decode once into a buffer the view owns outright
+   (`borrowOwned`). Pitfall discovered: an `owner: string` field makes Nim's
+   sink analysis move the document string into every view write and duplicate
+   the whole buffer at the call site (measured 2.5-3.6x on borrowed seq
+   shapes; `eqdup` of the full doc per view in generated C). A `ref`-typed
+   shared owner removes the string from the per-view write entirely.
+2. **Single-allocation escape decode (also owned strings).**
+   `parseJsonStringEscaped` first locates the closing quote, allocates the
+   raw length once (`newStringUninit` — every escape shrinks, so raw length
+   is an upper bound), writes safe spans and decoded bytes straight into the
+   buffer, and truncates once at the end. This replaced per-span `setLen`
+   growth plus per-escape `add()` calls, which gprof showed as 26% of
+   escaped-deserialize time (`prepareAdd` + `setLengthStrV2`).
+
+Measured (min-of-7, official string-heavy bench, before = C++ simdjson lane):
+
+- owned escaped deserialize: 150.7k → 156–160k ops/s (1.39x → 1.42x vs jsony)
+- borrowed escaped deserialize: 144.9–147.1k (C++) → 143.2k (pure Nim, parity within noise)
+- synthetic escape-free borrowed seq shapes still cost ~2.5x the owned path:
+  a GC-managed view record (ref + string owners) pays per-element copy hooks
+  through `seq.add`; a POD view would remove them but cannot keep the
+  document alive after the caller drops it (the old C++ lane never decoded
+  this shape either, so there is no regression against the baseline)
+
+Contract preserved: invalid UTF-8 rejected, lone surrogates encode
+byte-identically to `std/unicode` `add(Rune)`, control bytes / bad escapes /
+unterminated strings report the same offsets, views stay valid after the
+caller drops the document string (holder / owned buffer keep the bytes —
+covered by the "borrowed views stay valid after the document is dropped"
+regression test, raw UTF-8 and escape-decoded views, `GC_fullCollect` in
+between).
+
+### GEN-061: pure Nim end to end - emitted SSE2/NEON kernels removed
+
+- The last C in the package was five `{.emit.}` kernel regions
+  (`scanSafeJsonBytes`, `scanStringEndWithHigh`, `copySafeJsonBytesFused`,
+  `cPutJsonBodySlow`, plus the intrinsic `#include` block). All replaced by
+  the portable SWAR scanners (8 bytes/`uint64`, unique-byte-OR trick reused
+  from fast_map).
+- Kernel microbench (1 MB safe string): SSE2 30.5 ns vs SWAR 102 ns per MB;
+  auto-vectorization is blocked by the data-dependent break and byte-wise
+  borrow semantics, so the gap is the price of pure Nim.
+- End-to-end cost is limited to long escaped-string serialization
+  (`bench_string_heavy` serialize 428k -> 291k ops/s, still 1.5x jsony).
+  Every other official benchmark is at parity or better: string deserialize
+  159.5k -> 170.9k, borrowed 143k -> 151.5k, numeric serialize 91k -> 106k,
+  numeric deserialize 75k -> 83.5k, matrix unchanged (not scan-bound).
+- `scanStringEndWithHigh` now detects high bytes byte-exactly: an OR-accumulator
+  that persisted across chunks leaked `sawHigh` from an earlier string into the
+  next one and skipped required UTF-8 validation (caught by
+  `test_rfc8259_compliance_fixes` - truncated multibyte in the raw fast path).
+  ASCII-only chunks still advance 8 bytes at a time; the first chunk holding a
+  high byte or terminator switches to the scalar tail.
+- Decision record: a 1 MB scan microbench earlier suggested keeping the emit
+  kernels (35% string-heavy serialize loss). Re-measured end to end on every
+  official benchmark, the loss is confined to one scenario that still beats
+  jsony by 1.5x, while several scenarios improved - so full C removal is the
+  adopted trade. See `docs/benchmarks/fastjson_leaf_reroute_ab_20261022.md`
+  Part 11.
+
+### GEN-062: perfect-hash object key dispatch
+
+- Same-length field groups with four or more entries now dispatch through a
+  compile-time perfect hash (unique byte pair `(s[keyStart+p1], s[keyStart+p2])`
+  searched in `findPerfectSig`, dispatched as a `case` switch) instead of the
+  first-character chain plus linear `spanEquals` walk.
+- Each hash branch still verifies the full name with `spanEquals` before
+  parsing, so an unknown key whose bytes collide with a signature is skipped
+  via `skipUnknownJsonKey` (UTF-8 validation included), never mis-parsed.
+- Measured (wide-object bench, 8/18 same-length fields): deserialize
+  112.1 -> 72.4 ns (-35%) and 344.0 -> 198.1 ns (-42%). Objects with three or
+  fewer fields per length group keep the old chain; all official benchmarks
+  unchanged (they never hit four same-length keys).
+
+### GEN-063: exact fast path for JSON float exponents
+
+- `parseValue[SomeFloat]` previously bounced every `1.5e10`-style token to
+  `parseFloat`. It now folds the decimal point into an integer mantissa
+  (`intPart * 10^fracDigits + fracPart`, capped at 15 digits) and computes
+  the net decimal exponent `eNet = exp - fracDigits`:
+  - `eNet == 0`: `float64(m)` directly;
+  - `0 < eNet <= 19` and `m <= U64Pow10Limit[eNet]`: `float64(m *
+    U64Pow10Table[eNet])` - the product is an exact uint64, so the single
+    int-to-float conversion is correctly rounded;
+  - `-15 <= eNet < 0`: `float64(m) / 10^-eNet` - both operands are exactly
+    representable (`10^15 < 2^53`), so the IEEE division is correctly rounded.
+  Everything else falls back to `parseFloat` as before.
+- A naive `value * pow10` fast path was measured first and REJECTED: 6158 of
+  30000 random exponent documents differed from strtod by one ULP. The exact
+  integer variants above cannot drift: a 30000-case randomized sweep against
+  `parseutils.parseFloat` shows zero mismatches.
+- Exponent-heavy four-float document deserialize 66.7 -> 62.6 ns/op (jsony
+  79-81 ns); no-exponent and official numeric paths untouched.
+
+### GEN-064: fused UTF-8 high-byte detection in the skip path
+
+- `skipJsonString` and `skipJsonObjectKey` (used for unknown fields, array
+  elements of skipped objects, and `isValidJsonDirect`) scanned each string
+  segment twice: once for the quote/backslash terminator, once inside
+  `ensureValidJsonUtf8Span` for the high-byte pre-check. Both now use
+  `scanStringEndWithHigh` and validate only when the fused scan saw a high
+  byte - the GEN-057 trick applied to the skip path.
+- Unknown-field-heavy document (40 skipped string fields) deserialize
+  522 -> 501 ns (-3.4%). Invalid UTF-8 inside skipped keys and skipped values
+  is still rejected (verified with raw `0xFF` probes); `isValidJsonDirect`
+  stays 10x faster than std `parseJson` (2.27 us on a 3 KB nested doc).
 
 ### GEN-047: zero-copy `serializeToBytes`
 
@@ -373,6 +693,36 @@ Observed effect:
 
 - validation methods now compare very strongly against `jsony`, often in the
   `8x` to `18x` range depending on dataset and entrypoint
+
+### GEN-065: round-two measured-and-rejected candidates (documented floors)
+
+Six further candidates were implemented, measured, and rejected on this box
+(Intel Core Ultra 7 265K, min-of-7, `taskset -c 4`); none changed the tree:
+
+- pretty-printed deserialize: already 1.77x jsony - nothing to change.
+- byte-loop copy until unsafe byte in `copySafeJsonBytesFused` for short
+  escaped segments: within noise of the SWAR + `copyMem` form.
+- seq[T] decode capacity pre-estimation (four variants: remaining-bytes
+  floor, static-overhead floor, first-item width probe, min-cap gate): the
+  probe variant won -5.6% on flat 100k-item docs but lost 8-17% on nested
+  trees (`buildNested(64,8,6)`) because remaining bytes include all
+  descendants; every variant net-negative overall.
+- negative-int serialize via the unsigned chunk path: 14.55 vs 14.3 ns/int;
+  Nim `$` on int64 is already fast C, the temp string is not the bottleneck.
+- custom UTF-8 validator (SWAR 8B word skip + scalar rune walk, validated
+  byte-exact strict-UTF-8 against a reference decoder with exhaustive
+  1-4 byte sequences plus 300k random inputs): 0.38 ns/B on CJK-dense text
+  vs std 0.30 (std `validateUtf8` already runs near one cycle per rune) and
+  only +2% on mixed script. Rejected; std kernel retained.
+- object-serializer literal batching: the cursor path already fuses the
+  field prefix and opening quote into one 8-byte store (`cPutLit`,
+  `writeObjectFieldsC`); nothing left to merge.
+
+Residual documented here: raw-multibyte string deserialize measures 237 vs
+jsony 158 ns on a 900-byte CJK payload because fastjson validates UTF-8
+(RFC 8259 requirement) and jsony does not. That gap is a conformance
+feature, not a kernel gap; `\u`-escaped unicode input (the shape jsony
+handles at parity) runs 1.8x faster in fastjson.
 
 ## 5. Important low-level lessons
 

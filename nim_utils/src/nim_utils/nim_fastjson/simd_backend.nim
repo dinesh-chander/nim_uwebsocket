@@ -1,17 +1,17 @@
+## Decode-routing predicates for the pure-Nim direct engine.
+##
+## Historically this module also routed borrowed-string shapes through a
+## simdjson C++ backend; that backend was removed. All decoding now runs on
+## the pure-Nim direct engine, and borrowed shapes simply get zero-copy
+## string views from it.
+
 import macros
 
-import ./simdjson
+import ./borrowed
 
 type
-  BorrowedStringAlias* = simdjson.BorrowedString
-
-## Convert a BorrowedStringAlias to an owned string.
-proc toString*(value: BorrowedStringAlias): string {.inline.} =
-  simdjson.toString(value)
-
-## Return the length of a BorrowedStringAlias in bytes.
-proc len*(value: BorrowedStringAlias): int {.inline.} =
-  simdjson.len(value)
+  ## Alias for the pure-Nim ``BorrowedString`` view type.
+  BorrowedStringAlias* = borrowed.BorrowedString
 
 proc supportedObjectRecList(typeNode: NimNode): NimNode =
   var concrete = typeNode
@@ -130,22 +130,19 @@ proc directNestedDecodeTypeNode(typeNode: NimNode): bool =
   typeInst.kind == nnkBracketExpr and typeInst.len == 2 and eqIdent(typeInst[0], "seq") and
     directLeafDecodeTypeNode(typeInst[1])
 
+## True when T contains a borrowed string field and thus decodes with zero-copy string views.
 macro borrowedTypedDecodeSupported*(T: typedesc): untyped =
   newLit(containsBorrowedStringTypeNode(T))
 
+macro containsBorrowedString*(T: typedesc): untyped =
+  ## Compile-time predicate: does ``T`` (at any nesting depth) declare a
+  ## ``BorrowedString`` / ``JsonStringView`` field?
+  newLit(containsBorrowedStringTypeNode(T))
+
+## True when T is a flat object of directly decodable leaf fields.
 macro directLeafDecodeSupported*(T: typedesc): untyped =
   newLit(directLeafDecodeTypeNode(T) and directDecodeSupportedTypeNode(T))
 
+## True when T is a nested (non-leaf) shape the direct engine can decode.
 macro directNestedDecodeSupported*(T: typedesc): untyped =
   newLit(directNestedDecodeTypeNode(T))
-
-macro isSimdBackendPreferred*(T: typedesc): untyped =
-  newLit(containsBorrowedStringTypeNode(T) or (directLeafDecodeTypeNode(T) and directDecodeSupportedTypeNode(T)))
-
-## Deserialize a JSON string into T via the simdjson backend.
-proc deserializeViaSimd*[T](json: string, _: typedesc[T]): T =
-  simdjson.deserialize(json, T)
-
-## True when T routes to the simdjson full-schema single-pass native plan.
-macro nativePlanDecodeSupported*(typeNode: typedesc): untyped =
-  newLit(simdjson.nativePlanSupportedRootTypeNode(typeNode))

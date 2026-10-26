@@ -458,7 +458,7 @@ suite "jsonSafe pragma":
     let v = MixedObj(safe: "clean", unsafe: "has\"quote")
     check roundtrip(v)
 
-suite "borrowed strings (simd backend)":
+suite "borrowed strings (zero-copy views)":
   type
     BorrowedTodo = object
       id: int
@@ -469,8 +469,9 @@ suite "borrowed strings (simd backend)":
       todos: seq[BorrowedTodo]
       nextCursor: JsonStringView
 
-  test "borrowed types use simd engine":
-    check selectedDeserializeEngine(BorrowedEnvelope) == fjeSimdjson
+  test "borrowed types use the direct engine with zero-copy views":
+    check selectedDeserializeEngine(BorrowedEnvelope) == fjeDirect
+    check selectedDeserializePath(BorrowedEnvelope) == fjdpDirect
 
   test "borrowed string deserialize":
     let json = """{"todos":[{"id":1,"title":"a","completed":false}],"nextCursor":"p1"}"""

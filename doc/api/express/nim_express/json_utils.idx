@@ -1,22 +1,22 @@
 nimTitle	json_utils	nim_express/json_utils.html	module nim_express/json_utils		0
-nim	serializeReusable	nim_express/json_utils.html#serializeReusable,T	proc serializeReusable[T](obj: T): lent string		15
-nim	toJson	nim_express/json_utils.html#toJson,T	proc toJson[T](obj: T): string		21
-nim	fromJson	nim_express/json_utils.html#fromJson,string	proc fromJson[T](json: string): T		25
-nim	fromJson	nim_express/json_utils.html#fromJson,string,typedesc[T]	proc fromJson[T](json: string; _: typedesc[T]): T		29
-nim	serialize	nim_express/json_utils.html#serialize,T	proc serialize[T](obj: T): string		33
-nim	deserialize	nim_express/json_utils.html#deserialize,string,typedesc[T]	proc deserialize[T](json: string; _: typedesc[T]): T		37
-nim	fromJsonOr	nim_express/json_utils.html#fromJsonOr,string,T	proc fromJsonOr[T](json: string; default: T): T		41
-nim	tryFromJson	nim_express/json_utils.html#tryFromJson,string	proc tryFromJson[T](json: string): Option[T]		48
-nim	JsonError	nim_express/json_utils.html#JsonError	object JsonError		55
-nim	JsonMessage	nim_express/json_utils.html#JsonMessage	object JsonMessage		58
-nim	JsonStatus	nim_express/json_utils.html#JsonStatus	object JsonStatus		61
-nim	JsonData	nim_express/json_utils.html#JsonData	object JsonData		64
-nim	JsonSuccess	nim_express/json_utils.html#JsonSuccess	object JsonSuccess		67
-nim	JsonList	nim_express/json_utils.html#JsonList	object JsonList		71
-nim	errorJson	nim_express/json_utils.html#errorJson,string	proc errorJson(msg: string): string		76
-nim	messageJson	nim_express/json_utils.html#messageJson,string	proc messageJson(msg: string): string		80
-nim	statusJson	nim_express/json_utils.html#statusJson,string	proc statusJson(status: string): string		84
-nim	dataJson	nim_express/json_utils.html#dataJson,T	proc dataJson[T](data: T): string		88
-nim	successJson	nim_express/json_utils.html#successJson,T	proc successJson[T](data: T): string		92
-nim	listJson	nim_express/json_utils.html#listJson,seq[T]	proc listJson[T](items: seq[T]): string		96
-nimgrp	fromjson	nim_express/json_utils.html#fromJson-procs-all	proc		25
+nim	serializeReusable	nim_express/json_utils.html#serializeReusable,T	proc serializeReusable[T](obj: T): lent string		13
+nim	toJson	nim_express/json_utils.html#toJson,T	proc toJson[T](obj: T): string		19
+nim	fromJson	nim_express/json_utils.html#fromJson,string	proc fromJson[T](json: string): T		23
+nim	fromJson	nim_express/json_utils.html#fromJson,string,typedesc[T]	proc fromJson[T](json: string; _: typedesc[T]): T		27
+nim	serialize	nim_express/json_utils.html#serialize,T	proc serialize[T](obj: T): string		31
+nim	deserialize	nim_express/json_utils.html#deserialize,string,typedesc[T]	proc deserialize[T](json: string; _: typedesc[T]): T		35
+nim	fromJsonOr	nim_express/json_utils.html#fromJsonOr,string,T	proc fromJsonOr[T](json: string; default: T): T		39
+nim	tryFromJson	nim_express/json_utils.html#tryFromJson,string	proc tryFromJson[T](json: string): Option[T]		46
+nim	JsonError	nim_express/json_utils.html#JsonError	object JsonError		53
+nim	JsonMessage	nim_express/json_utils.html#JsonMessage	object JsonMessage		56
+nim	JsonStatus	nim_express/json_utils.html#JsonStatus	object JsonStatus		59
+nim	JsonData	nim_express/json_utils.html#JsonData	object JsonData		62
+nim	JsonSuccess	nim_express/json_utils.html#JsonSuccess	object JsonSuccess		65
+nim	JsonList	nim_express/json_utils.html#JsonList	object JsonList		69
+nim	errorJson	nim_express/json_utils.html#errorJson,string	proc errorJson(msg: string): string		74
+nim	messageJson	nim_express/json_utils.html#messageJson,string	proc messageJson(msg: string): string		78
+nim	statusJson	nim_express/json_utils.html#statusJson,string	proc statusJson(status: string): string		82
+nim	dataJson	nim_express/json_utils.html#dataJson,T	proc dataJson[T](data: T): string		86
+nim	successJson	nim_express/json_utils.html#successJson,T	proc successJson[T](data: T): string		90
+nim	listJson	nim_express/json_utils.html#listJson,seq[T]	proc listJson[T](items: seq[T]): string		94
+nimgrp	fromjson	nim_express/json_utils.html#fromJson-procs-all	proc		23

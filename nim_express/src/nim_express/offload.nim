@@ -258,25 +258,38 @@ proc decRefOffloadSharedState[T](state: ptr OffloadSharedState[T]) {.inline.} =
     `=destroy`(state[])
     deallocShared(state)
 
-proc allocOffloadMaster(activeProducer = false): ptr Master =
-  result = cast[ptr Master](allocShared0(sizeof(Master)))
-  if result == nil:
-    raise newException(OutOfMemDefect, "could not allocate offload master")
-  var master = createMaster(activeProducer = activeProducer)
-  copyMem(result, addr master, sizeof(Master))
-  wasMoved(master)
+## One malebolgia master per thread, created on first use and kept for the
+## lifetime of the process. A worker thread still touches the master's lock
+## (`taskCompleted`) after the task body has run, so freeing the master as soon
+## as the task result is published destroys a mutex that is still in use and
+## aborts inside glibc (`pthread_mutex_lock ... __owner == 0`, or the robust
+## `e != ESRCH || !robust` variant).
+var offloadMasterForThread {.threadvar.}: ptr Master
 
-proc freeOffloadMaster(master: ptr Master) {.inline.} =
-  if master == nil:
-    return
-  `=destroy`(master[])
-  deallocShared(master)
+proc currentOffloadMaster(): ptr Master =
+  result = offloadMasterForThread
+  if result == nil:
+    result = cast[ptr Master](allocShared0(sizeof(Master)))
+    if result == nil:
+      raise newException(OutOfMemDefect, "could not allocate offload master")
+    var master = createMaster(activeProducer = true)
+    copyMem(result, addr master, sizeof(Master))
+    wasMoved(master)
+    offloadMasterForThread = result
+
+when defined(nimExpressOffloadTest):
+  ## Returns this thread's reused malebolgia master pointer, or nil when no
+  ## offload ran on this thread yet. Regression hook: the pointer must be
+  ## stable across `runOffload` calls (per-call free caused glibc aborts).
+  proc offloadMasterPtrForTest*(): pointer =
+    cast[pointer](offloadMasterForThread)
 
 macro runOffload*(expr: typed): untyped =
   ## Run a blocking call on malebolgia's worker pool and return a Future.
   ## Example: let rows = await runOffload(loadRowsBlocking())
   ##
-  ## Note: this expects a call expression, e.g. `foo(a, b)`.
+  ## Note: this expects a call expression, e.g. `foo(a, b)`. The pool master is
+  ## created once per thread and reused by every offload on that thread.
   if expr.kind notin nnkCallKinds:
     error("runOffload expects a call expression", expr)
 
@@ -285,7 +298,7 @@ macro runOffload*(expr: typed): untyped =
 
   let workerProc = genSym(nskProc, "runOffloadWorker")
   let awaitProc = genSym(nskProc, "runOffloadAwait")
-  let masterSym = genSym(nskLet, "master")
+  let masterSym = genSym(nskLet, "offloadMaster")
   let stateSym = genSym(nskLet, "sharedState")
   let completionFutureSym = genSym(nskVar, "completionFuture")
   let dispatchServerSym = genSym(nskLet, "dispatchServer")
@@ -338,7 +351,7 @@ macro runOffload*(expr: typed): untyped =
 
   let awaitDef = quote do:
     proc `awaitProc`(): Future[`retType`] {.async.} =
-      let `masterSym` = allocOffloadMaster(activeProducer = true)
+      let `masterSym` = currentOffloadMaster()
       let `dispatchServerSym` = currentOffloadDispatchServer()
       var `completionFutureSym`: Future[`retType`] = nil
       if `dispatchServerSym` != nil:
@@ -347,7 +360,6 @@ macro runOffload*(expr: typed): untyped =
       `stateSym`[].dispatchServerPtr = cast[pointer](`dispatchServerSym`)
       `stateSym`[].completionFuture = `completionFutureSym`
       defer:
-        freeOffloadMaster(`masterSym`)
         decRefOffloadSharedState(`stateSym`)
 
       if not acquireOffloadAdmission():

@@ -14,8 +14,8 @@ Part of the [nim_uwebsocket](../../../../../../README.md) framework.
 - **RFC 8259 strict compliance** — leading zeros rejected, NaN/Infinity rejected, surrogate pairs validated, control characters in strings rejected
 - **Fused field prefix writes** — field name + separator + opening quote written as a single `uint64` store
 - **Batch numeric formatting** — float and integer fields in `seq[object]` are pre-formatted in tight loops for better icache utilization
-- **Optional simdjson backend** — C++ simdjson integration for parsing via `-d:useSimdJson`
-- **Optional native C escape scanner** — compiled C helper for escape scanning via `-d:nativeEscapeScan`
+- **Zero-copy borrowed views** — `BorrowedString` / `JsonStringView` fields decode as views into the document with no string copies
+- **Pure Nim** — no C/C++ dependencies; SIMD string scanning is emitted inline for SSE2 (x86_64) and NEON (ARM64)
 
 ## Platform Support
 
@@ -51,7 +51,6 @@ The same cascade applies to both `scanSafeJsonBytes` (scan-only) and `copySafeJs
 
 - **Nim** >= 2.0.0
 - **C compiler** — gcc, clang, or any C99-compatible compiler
-- **C++ compiler** — only required when using the simdjson backend (`-d:useSimdJson`)
 
 ## Installation
 
@@ -129,6 +128,29 @@ let n = deserializeDirect("42", int)
 let s = deserializeDirect("\"hello\"", string)
 let v = deserializeDirect("[1,2,3]", seq[int])
 ```
+
+#### Borrowed string views (`BorrowedString` / `JsonStringView`)
+
+Declare string fields as `JsonStringView` to decode without copying string
+bytes. Fast-path (escape-free) views point directly into the input document;
+views for strings containing JSON escapes point into a decoded buffer. Both
+share one ref-counted holder per document (`BorrowedDocRef`), so views stay
+valid even after the caller drops its own copy of the document.
+
+```nim
+type Todo = object
+  id: int
+  title: JsonStringView
+
+let t = deserializeDirect("""{"id":1,"title":"ship it"}""" + , Todo)
+assert t.title.toString() == "ship it"   # toString copies when you need ownership
+```
+
+`BorrowedString` exposes `len`, `isNil` (JSON null), `dataPtr`, `toString`,
+`stripAscii`, `equalsAscii`, `equalsIgnoreCaseAscii`, and
+`parseBoolLikeAscii`. Views borrow the document's bytes; mutate or resize the
+document only through its owner. The `nim_fastjson` wrapper routes borrowed
+shapes through the same direct engine as every other type.
 
 #### `parseValue[T](s: string, i: var int, value: var T)`
 
@@ -285,8 +307,6 @@ This section covers every lever available for optimizing nim_fastjson throughput
 |------|--------|---------|
 | `-d:release` | Enables `{.push checks: off.}` for bounds-check-free hot paths | Off |
 | `-d:noSimd` | Force SWAR fallback — disables SSE2 (x86_64) and NEON (ARM64) | Off (SIMD enabled) |
-| `-d:useSimdJson` | Enable simdjson C++ backend for escape scanning | Off |
-| `-d:nativeEscapeScan` | Use C-compiled `escaped_scan.c` for escape scanning | Off |
 
 #### `-d:noSimd`
 
@@ -299,41 +319,6 @@ Disables all SIMD intrinsic paths. The guard is `defined(arm64) and not defined(
 ```bash
 nim c -d:release -d:noSimd myapp.nim
 ```
-
-#### `-d:nativeEscapeScan`
-
-Compiles and links `escaped_scan.c` (colocated with `direct_engine.nim`) which provides three C functions:
-
-- `json_next_unsafe` — find next byte needing escape
-- `json_scan_copy_quoted` — scan+copy with quoting
-- `json_write_string` — full string write with escaping
-
-In release mode, strings ≥ 96 bytes use `json_write_string` as a fast path in `cPutJsonBodySlow`. This can outperform the inline SIMD emit blocks for very long strings due to better compiler optimization of the standalone C file.
-
-```bash
-nim c -d:release -d:nativeEscapeScan myapp.nim
-```
-
-#### `-d:useSimdJson`
-
-Replaces the Nim-native `scanSafeJsonBytes` with simdjson's C++ escape scanner (`jsonNextUnsafeC`). Requires a C++17 compiler. When enabled, `nextUnsafeJsonByte` delegates to the simdjson C FFI instead of the built-in SIMD/SWAR scanner.
-
-```bash
-nim c -d:release -d:useSimdJson --cc:g++ myapp.nim
-```
-
-**When to prefer simdjson backend:**
-
-- Parsing-dominated workloads with very large string-heavy documents
-- When you need the absolute fastest escape scanning on x86_64 (simdjson uses AVX2/SSE4.2 internally)
-- When you are already linking simdjson for other purposes
-
-**Trade-offs:**
-
-- Adds C++ compilation dependency
-- Increases binary size
-- Only affects the escape scanning path, not structural parsing or serialization
-- NEON-only targets may not benefit (simdjson's ARM support varies)
 
 ### Buffer Pre-Allocation Strategies
 
@@ -507,20 +492,6 @@ nim c -d:release myapp.nim
 nim c -d:release -d:noSimd myapp.nim
 ```
 
-### With native C escape scanner
-
-```bash
-nim c -d:release -d:nativeEscapeScan myapp.nim
-```
-
-### With simdjson backend
-
-Requires a C++ compiler and the simdjson source:
-
-```bash
-nim c -d:release -d:useSimdJson --cc:g++ myapp.nim
-```
-
 ### Maximum performance build
 
 Combine release mode with danger (disables all runtime checks including overflow):
@@ -641,18 +612,6 @@ The SSE2 path uses `__builtin_ctz` (GCC/Clang built-in) for trailing-zero count.
 - Switch to MinGW-w64: `nim c --cc:gcc myapp.nim`
 - Or pass `-d:noSimd` to bypass the intrinsic entirely
 
-### simdjson build failures
-
-The simdjson backend requires:
-- A C++17-capable compiler (gcc >= 7, clang >= 5)
-- The simdjson header and source files accessible to the compiler
-- Pass `--cc:g++` or `--cc:clang++` to Nim
-
-### nativeEscapeScan build failures
-
-The `-d:nativeEscapeScan` flag expects `escaped_scan.c` to be co-located with `direct_engine.nim`. If you see "file not found" errors:
-- Verify `escaped_scan.c` exists in `nim_utils/src/nim_utils/nim_fastjson/`
-- Ensure the Nim compiler's working directory can resolve the relative `{.compile.}` path
 
 ### "JSON nesting depth exceeds 512"
 
