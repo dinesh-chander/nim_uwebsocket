@@ -3,6 +3,7 @@
 import std/[asyncdispatch, strutils, os, uri]
 import common
 import file_helpers
+import nim_utils/helpers/simd_str
 
 type
   StaticCacheOptions* = object
@@ -65,7 +66,9 @@ proc serveStatic*(
     if prefix.len > 0:
       if path == prefix:
         path = "/"
-      elif path.len > prefix.len and path.startsWith(prefix) and path[prefix.len] == '/':
+      elif path.len > prefix.len and
+           simdStrEquals(unsafeAddr path[0], unsafeAddr prefix[0], prefix.len) and
+           path[prefix.len] == '/':
         path = path[prefix.len..^1]
       else:
         await next()

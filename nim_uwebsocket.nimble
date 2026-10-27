@@ -20,6 +20,7 @@ requires "libdeflate_gzip == 0.6.0"
 requires "malebolgia == 1.3.2"
 requires "jsony == 1.1.6"
 requires "checksums == 0.2.2"
+requires "nimsimd == 1.3.2"
 
 let rootDir = thisDir()
 let nimUtilsSrc = rootDir / "nim_utils" / "src"
@@ -89,11 +90,11 @@ task test, "Run all test suites":
   exec "echo '=== nim_express tests ==='"
   for f in listFiles("nim_express/tests"):
     if f.endsWith(".nim") and f.contains("test_"):
-      exec "nim c -r --panics:off --hints:off --path:nim_express/src --path:nim_usockets/src --path:nim_utils/src --path:nim_fasthttpclient/src --passL:" & quoteShell(linkFlags) & " " & quoteShell(f)
+      exec "nim c -r --panics:off --hints:off --path:nim_express/src --path:nim_usockets/src --path:nim_utils/src --path:nim_fasthttpclient/src --path:vendor/nimsimd/src --passL:" & quoteShell(linkFlags) & " " & quoteShell(f)
   exec "echo '=== nim_usockets tests ==='"
   for f in listFiles("nim_usockets/tests"):
     if f.endsWith(".nim") and f.contains("test_"):
-      exec "nim c -r --panics:off --hints:off --path:nim_usockets/src --path:nim_utils/src --passL:" & quoteShell(linkFlags) & " " & quoteShell(f)
+      exec "nim c -r --panics:off --hints:off --path:nim_usockets/src --path:nim_utils/src --path:vendor/nimsimd/src --passL:" & quoteShell(linkFlags) & " " & quoteShell(f)
   exec "echo '=== nim_fastjson tests ==='"
   for f in listFiles("nim_utils/nim_fastjson/tests"):
     if f.endsWith(".nim") and f.contains("test_"):

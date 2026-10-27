@@ -2,6 +2,7 @@
 
 import std/[asyncdispatch, httpclient, httpcore, strutils, uri, nativesockets, net, monotimes]
 import common
+import nim_utils/helpers/simd_str
 from logger import sanitizeLogField
 
 const
@@ -95,7 +96,8 @@ proc resolveUpstreamUrl(opts: ProxyOptions, req: Req): string =
   var path = $req.path
 
   # Strip prefix if configured.
-  if opts.stripPrefix.len > 0 and path.startsWith(opts.stripPrefix):
+  if opts.stripPrefix.len > 0 and path.len >= opts.stripPrefix.len and
+      simdStrEquals(unsafeAddr path[0], unsafeAddr opts.stripPrefix[0], opts.stripPrefix.len):
     path = path[opts.stripPrefix.len .. ^1]
     if path.len == 0 or path[0] != '/':
       path = "/" & path

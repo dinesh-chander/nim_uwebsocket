@@ -127,5 +127,5 @@ bench_nim() {
   shift
   cache_dir="$(bench_nimcache_path "${cache_name}")"
   mkdir -p "${cache_dir}"
-  nim "${nim_subcmd}" -f "--nimcache:${cache_dir}" "$@"
+  nim "${nim_subcmd}" -f --cc:clang "--nimcache:${cache_dir}" "$@"
 }

@@ -8,6 +8,7 @@ when not defined(windows):
   import std/posix
 import types, request, response, fast_hash, paged_buffer, offload
 import http_clients
+import nim_utils/helpers/simd_str
 
 export types, request, response
 export http_clients
@@ -659,12 +660,9 @@ proc analyzePathSegments(path: string, segmentCount: var int, firstSegStart: var
 proc sliceEquals(path: string, startPos: int, segLen: int, value: string): bool {.inline.} =
   if segLen != value.len or startPos < 0:
     return false
-  var i = 0
-  while i < segLen:
-    if path[startPos + i] != value[i]:
-      return false
-    inc i
-  true
+  if segLen == 0:
+    return true
+  simdStrEquals(unsafeAddr path[startPos], unsafeAddr value[0], segLen)
 
 proc routeFastReject(
   route: Route,
@@ -673,7 +671,10 @@ proc routeFastReject(
   firstSegStart: int,
   firstSegLen: int
 ): bool {.inline.} =
-  if route.staticPrefix.len > 0 and not path.startsWith(route.staticPrefix):
+  if route.staticPrefix.len > 0 and
+      (path.len < route.staticPrefix.len or
+       not simdStrEquals(unsafeAddr path[0], unsafeAddr route.staticPrefix[0],
+                         route.staticPrefix.len)):
     return true
   if route.maxSegmentCount >= 0:
     if pathSegCount != route.maxSegmentCount.int:

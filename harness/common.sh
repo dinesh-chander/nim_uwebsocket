@@ -27,7 +27,13 @@ COMMON_PATHS=(
   --path:"$ROOT_DIR/vendor/malebolgia/src"
   --path:"$ROOT_DIR/vendor/jsony/src"
   --path:"$ROOT_DIR/vendor/checksums"
+  --path:"$ROOT_DIR/vendor/nimsimd/src"
 )
+
+# C backend for harness builds: clang (LLVM), matching the top-level Makefile.
+# uSockets.a is built as clang LTO bitcode, so the final link must run LTO
+# (-flto) or the archive symbols are unreadable ("file format not recognized").
+COMMON_FLAGS=(--cc:clang --passL:"-flto")
 
 # harness_run_tests <label> [extra nim flags...] -- <test file> [<test file>...]
 # Everything after "--" is a test file. Flags before "--" are appended to the
@@ -62,7 +68,7 @@ harness_run_tests() {
     out="$bin_dir/${idx}_${b}"
     echo "+ $label/$b"
     if "$NIM" c --run --nimcache:"$cache_dir/nimcache_${idx}" -o:"$out" \
-        "${COMMON_PATHS[@]}" "${extra[@]}" "$f" >"$cache_dir/${idx}_${b}.log" 2>&1; then
+        "${COMMON_FLAGS[@]}" "${COMMON_PATHS[@]}" "${extra[@]}" "$f" >"$cache_dir/${idx}_${b}.log" 2>&1; then
       echo "  ok"
       passed=$((passed + 1))
     else
@@ -93,7 +99,7 @@ harness_nim_check() {
     b="$(basename "$f" .nim)"
     echo "+ check $label/$b"
     if "$NIM" check --nimcache:"$cache_dir/nimcache_${b}" \
-        "${COMMON_PATHS[@]}" "${extra[@]}" "$f" >"$cache_dir/${b}.log" 2>&1; then
+        "${COMMON_FLAGS[@]}" "${COMMON_PATHS[@]}" "${extra[@]}" "$f" >"$cache_dir/${b}.log" 2>&1; then
       echo "  ok"
     else
       echo "  FAILED (log: $cache_dir/${b}.log)"
