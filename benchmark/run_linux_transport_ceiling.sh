@@ -205,7 +205,7 @@ build_app() {
   if [[ "${SCENARIO}" == "todo_fragment" ]]; then
     link_flags="${link_flags} -lsqlite3"
     pushd "${EXAMPLES_DIR}" >/dev/null
-    nim c -f --nimcache:"${OUT_DIR}/nimcache/${backend}_${SCENARIO}" -d:release -d:danger --opt:speed --mm:arc --hints:off \
+    nim c -f --cc:clang --nimcache:"${OUT_DIR}/nimcache/${backend}_${SCENARIO}" -d:release -d:danger --opt:speed --mm:arc --hints:off \
       ${backend_define[@]+"${backend_define[@]}"} \
       "${BENCH_COMMON_PATHS[@]}" \
       --passC:"-O3 -flto ${PLATFORM_CFLAGS} ${NATIVE_CFLAGS}" \
@@ -214,7 +214,7 @@ build_app() {
       todo_sqlite_mvc_app.nim >/dev/null
     popd >/dev/null
   else
-    nim c -f --nimcache:"${OUT_DIR}/nimcache/${backend}_${SCENARIO}" -d:release -d:danger --opt:speed --mm:arc --hints:off \
+    nim c -f --cc:clang --nimcache:"${OUT_DIR}/nimcache/${backend}_${SCENARIO}" -d:release -d:danger --opt:speed --mm:arc --hints:off \
       ${backend_define[@]+"${backend_define[@]}"} \
       "${BENCH_COMMON_PATHS[@]}" \
       --passC:"-O3 -flto ${PLATFORM_CFLAGS} ${NATIVE_CFLAGS}" \

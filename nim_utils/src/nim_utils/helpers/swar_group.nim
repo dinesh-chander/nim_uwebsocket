@@ -22,24 +22,25 @@ const
   swarGatherLo = 0x81020400'u64
 
 when swarUseSimd:
-  # SSE2 group matching emitted as self-contained statement-expressions so it
-  # fully inlines into every caller translation unit (no extern call). The
-  # broadcast uses 64-bit byte replication + vector splat; a byte-store loop
-  # defeats vectorisation and costs ~3 ns per call.
+  # SSE2 group matching via nimsimd `_mm_*` intrinsics (cross-compiler: works
+  # under both gcc and clang/LLVM, unlike the previous GCC-only
+  # `__builtin_ia32_*` emits). One unaligned 16-byte load + per-byte compare +
+  # movemask yields the 16-bit slot mask directly.
+  import nimsimd/sse2
+
   proc cSwarMatch16(p: pointer; h2: cuint): cuint {.inline.} =
-    var r: cuint
-    {.emit: "`r` = ({ typedef char nxv16 __attribute__((__vector_size__(16))); typedef char nxv16u __attribute__((__vector_size__(16), __aligned__(1), __may_alias__)); typedef long long nxv2di __attribute__((__vector_size__(16))); nxv16 nx_v = (nxv16)(*(const nxv16u*)`p`); long long nx_r8 = (long long)(`h2` * 0x0101010101010101ULL); nxv16 nx_k = (nxv16)((nxv2di){nx_r8, nx_r8}); (unsigned int)__builtin_ia32_pmovmskb128(__builtin_ia32_pcmpeqb128(nx_v, nx_k)); });".}
-    r
+    let v = mm_loadu_si128(p)
+    let k = mm_set1_epi8(h2.uint8)
+    cuint(mm_movemask_epi8(mm_cmpeq_epi8(v, k)))
 
   proc cSwarMatchEmpty16(p: pointer): cuint {.inline.} =
-    var r: cuint
-    {.emit: "`r` = ({ typedef char nxv16 __attribute__((__vector_size__(16))); typedef char nxv16u __attribute__((__vector_size__(16), __aligned__(1), __may_alias__)); typedef long long nxv2di __attribute__((__vector_size__(16))); nxv16 nx_v = (nxv16)(*(const nxv16u*)`p`); nxv16 nx_k = (nxv16)((nxv2di){-1LL, -1LL}); (unsigned int)__builtin_ia32_pmovmskb128(__builtin_ia32_pcmpeqb128(nx_v, nx_k)); });".}
-    r
+    let v = mm_loadu_si128(p)
+    let k = mm_set1_epi8(0xFF'u8)
+    cuint(mm_movemask_epi8(mm_cmpeq_epi8(v, k)))
 
   proc cSwarMatchEmptyOrDel16(p: pointer): cuint {.inline.} =
-    var r: cuint
-    {.emit: "`r` = ({ typedef char nxv16 __attribute__((__vector_size__(16))); typedef char nxv16u __attribute__((__vector_size__(16), __aligned__(1), __may_alias__)); nxv16 nx_v = (nxv16)(*(const nxv16u*)`p`); (unsigned int)__builtin_ia32_pmovmskb128(nx_v); });".}
-    r
+    let v = mm_loadu_si128(p)
+    cuint(mm_movemask_epi8(v))
 
 ## Set the high bit of lane i in the result iff byte i of `x` is zero.
 ## Exact per-lane (absl form): the (x and lo7) + 0x7F sum never carries

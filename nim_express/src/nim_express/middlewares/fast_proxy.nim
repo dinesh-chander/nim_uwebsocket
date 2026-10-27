@@ -1,6 +1,7 @@
 import std/[asyncdispatch, strutils, uri, nativesockets, net, times]
 import common
 import ../offload
+import nim_utils/helpers/simd_str
 import nim_fasthttpclient/client as fastclient
 import nim_fasthttpclient/types as fasttypes
 
@@ -139,7 +140,8 @@ proc resolveUpstreamUrl(opts: FastProxyOptions, req: Req): string =
 
   var path = $req.path
 
-  if opts.stripPrefix.len > 0 and path.startsWith(opts.stripPrefix):
+  if opts.stripPrefix.len > 0 and path.len >= opts.stripPrefix.len and
+      simdStrEquals(unsafeAddr path[0], unsafeAddr opts.stripPrefix[0], opts.stripPrefix.len):
     path = path[opts.stripPrefix.len .. ^1]
     if path.len == 0 or path[0] != '/':
       path = "/" & path

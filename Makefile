@@ -1,5 +1,7 @@
 NIM ?= nim
-NIM_EXTRA_FLAGS := 
+# C backend: use clang (LLVM) for all Nim builds. Override with --cc: on the
+# make command line (e.g. make CC=gcc) or NIM_EXTRA_FLAGS="--cc:gcc" if needed.
+NIM_EXTRA_FLAGS := --cc:clang
 CXX ?= c++
 NATIVE_OPT ?= 1
 USE_PGO ?= 0
@@ -37,7 +39,7 @@ NIM_FLAGS ?= -d:release -d:danger --opt:speed --mm:arc --stackTrace:on --panics:
   --path:nim_utils/src --path:nim_usockets/src --path:nim_express/src --path:nim_fasthttpclient/src \
   --path:vendor/zippy/src --path:vendor/brotli/src --path:vendor/nim_zstd \
   --path:vendor/nim_libdeflate_gzip/src --path:vendor/malebolgia/src \
-  --path:vendor/jsony/src --path:vendor/checksums
+  --path:vendor/jsony/src --path:vendor/checksums --path:vendor/nimsimd/src
 
 # Platform link flags
 PLATFORM_LINK_FLAGS_DARWIN = -framework CoreFoundation
@@ -177,12 +179,14 @@ check-iouring-deps:
 # reference fails with "undefined reference". Archive with the GCC wrapper so
 # the LTO plugin indexes real symbols (only needed where GNU LTO is enabled).
 ifeq ($(UNAME_S),Linux)
-USOCKETS_AR := AR=gcc-ar
+# uSockets is compiled with clang (LLVM) + LTO; pack the bitcode objects with
+# llvm-ar (gcc-ar produces an archive clang's LTO link cannot resolve).
+USOCKETS_AR := AR=llvm-ar
 endif
 
 usockets: check-iouring-deps
 	$(MAKE) -C $(USOCKETS_DIR) clean
-	$(MAKE) -C $(USOCKETS_DIR) $(USOCKETS_BUILD_ENV) $(USOCKETS_AR) CFLAGS="$(C_OPT_FLAGS)"
+	$(MAKE) -C $(USOCKETS_DIR) $(USOCKETS_BUILD_ENV) $(USOCKETS_AR) CC=clang CXX=clang++ CFLAGS="$(C_OPT_FLAGS)"
 	@printf '%s\n' \
 		'backend=$(USOCKETS_BACKEND)' \
 		'env=$(USOCKETS_BUILD_ENV)' \
@@ -267,14 +271,14 @@ bench-smoke: deps
 		--path:nim_utils/src --path:nim_usockets/src --path:nim_fasthttpclient/src \
 		--path:vendor/zippy/src --path:vendor/brotli/src --path:vendor/nim_zstd \
 		--path:vendor/nim_libdeflate_gzip/src --path:vendor/malebolgia/src \
-		--path:vendor/jsony/src --path:vendor/checksums \
+		--path:vendor/jsony/src --path:vendor/checksums --path:vendor/nimsimd/src \
 		-o:$(BENCH_SMOKE_DIR)/bench_fasthttpclient nim_fasthttpclient/benchmark/bench_client.nim
 		$(NIM) c --compileOnly -d:release --nimcache:$(BENCH_SMOKE_DIR)/express \
 			$(NIM_EXTRA_FLAGS) \
 			--path:nim_utils/src --path:nim_usockets/src --path:nim_fasthttpclient/src --path:nim_express/src \
 			--path:vendor/zippy/src --path:vendor/brotli/src --path:vendor/nim_zstd \
 			--path:vendor/nim_libdeflate_gzip/src --path:vendor/malebolgia/src \
-			--path:vendor/jsony/src --path:vendor/checksums \
+			--path:vendor/jsony/src --path:vendor/checksums --path:vendor/nimsimd/src \
 			-o:$(BENCH_SMOKE_DIR)/bench_nim_express benchmark/bench_nim_express.nim
 
 linux-compat-check: deps
@@ -320,7 +324,7 @@ examples build-examples: deps usockets
 				--path:../nim_utils/src --path:../nim_usockets/src --path:../nim_express/src --path:../nim_fasthttpclient/src \
 				--path:../vendor/zippy/src --path:../vendor/brotli/src --path:../vendor/nim_zstd \
 				--path:../vendor/nim_libdeflate_gzip/src --path:../vendor/malebolgia/src \
-				--path:../vendor/jsony/src --path:../vendor/checksums \
+				--path:../vendor/jsony/src --path:../vendor/checksums --path:../vendor/nimsimd/src \
 				--passC:"$(C_OPT_FLAGS)" \
 				--passL:"../$(LINK_FLAGS) $(L_OPT_FLAGS)" -o:"bin/$$name" "./$$file"; \
 		done
@@ -373,7 +377,7 @@ docs-express:
 		--path:nim_utils/src --path:nim_usockets/src --path:nim_express/src --path:nim_fasthttpclient/src \
 		--path:vendor/zippy/src --path:vendor/brotli/src --path:vendor/nim_zstd \
 		--path:vendor/nim_libdeflate_gzip/src --path:vendor/malebolgia/src \
-		--path:vendor/jsony/src --path:vendor/checksums \
+		--path:vendor/jsony/src --path:vendor/checksums --path:vendor/nimsimd/src \
 		nim_express/src/nim_express.nim
 
 docs-fastjson:
@@ -381,7 +385,7 @@ docs-fastjson:
 	rm -rf doc/api/fastjson/
 	mkdir -p doc/api/fastjson/
 	$(NIM) doc --outdir:"doc/api/fastjson/" \
-		--path:nim_utils/src \
+		--path:nim_utils/src --path:vendor/nimsimd/src \
 		nim_utils/src/nim_utils/nim_fastjson.nim
 
 docs-async-logger:
@@ -397,7 +401,7 @@ docs-fast-map:
 	rm -rf doc/api/fast-map/
 	mkdir -p doc/api/fast-map/
 	$(NIM) doc --outdir:"doc/api/fast-map/" \
-		--path:nim_utils/src \
+		--path:nim_utils/src --path:vendor/nimsimd/src \
 		nim_utils/src/nim_utils/helpers/fast_map.nim
 
 docs-usockets:
@@ -408,7 +412,7 @@ docs-usockets:
 		--path:nim_utils/src --path:nim_usockets/src \
 		--path:vendor/zippy/src --path:vendor/brotli/src --path:vendor/nim_zstd \
 		--path:vendor/nim_libdeflate_gzip/src --path:vendor/malebolgia/src \
-		--path:vendor/jsony/src --path:vendor/checksums \
+		--path:vendor/jsony/src --path:vendor/checksums --path:vendor/nimsimd/src \
 		nim_usockets/src/nim_usockets.nim
 
 docs-fasthttpclient:
@@ -419,7 +423,7 @@ docs-fasthttpclient:
 		--path:nim_utils/src --path:nim_usockets/src --path:nim_fasthttpclient/src \
 		--path:vendor/zippy/src --path:vendor/brotli/src --path:vendor/nim_zstd \
 		--path:vendor/nim_libdeflate_gzip/src --path:vendor/malebolgia/src \
-		--path:vendor/jsony/src --path:vendor/checksums \
+		--path:vendor/jsony/src --path:vendor/checksums --path:vendor/nimsimd/src \
 		nim_fasthttpclient/src/nim_fasthttpclient.nim
 
 docs-fast-set:
@@ -427,7 +431,7 @@ docs-fast-set:
 	rm -rf doc/api/fast-set/
 	mkdir -p doc/api/fast-set/
 	$(NIM) doc --outdir:"doc/api/fast-set/" \
-		--path:nim_utils/src \
+		--path:nim_utils/src --path:vendor/nimsimd/src \
 		nim_utils/src/nim_utils/helpers/fast_set.nim
 
 .PHONY: docs docs-express docs-usockets docs-fasthttpclient docs-fastjson docs-async-logger docs-fast-map docs-fast-set

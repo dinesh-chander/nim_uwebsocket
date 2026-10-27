@@ -4,6 +4,7 @@
 import std/[os, times]
 import std/bitops
 import ./swar_group
+import ./simd_str
 
 const nimWyHashUseMulhi = defined(amd64) and (defined(gcc) or defined(clang)) and
   not defined(js) and not defined(vcc) and not defined(nimWyHashPortable)
@@ -273,7 +274,7 @@ proc equalsAscii*(value: FastStringView, literal: string): bool {.inline.} =
     return false
   if value.len == 0:
     return true
-  equalMem(value.data, literal.stringPtr, value.len)
+  simdStrEquals(value.data, literal.stringPtr, value.len)
 
 ## Check ASCII equality between the view and a literal, ignoring case.
 proc equalsIgnoreCaseAscii*(value: FastStringView, literal: string): bool {.inline.} =
@@ -374,7 +375,7 @@ proc fastMapStringEquals(a, b: string): bool {.inline.} =
     return false
   if a.len == 0:
     return true
-  equalMem(a.stringPtr, b.stringPtr, a.len)
+  simdStrEquals(a.stringPtr, b.stringPtr, a.len)
 
 ## Raw string helpers for unmanaged FastMapStringNimEntry storage.
 ## These bypass Nim's string GC entirely — alloc/dealloc manually.
@@ -712,7 +713,7 @@ proc findFastMapStringFoundIdx(storage: FastMapStringNimStorage, key: string, ha
       if c <= 0x7F'u8:
         let entry = cast[ptr FastMapStringNimEntry](entriesBase + uint(i) * entrySize)
         if entry.hash == hash and entry.keyLen == uint16(kLen) and
-            (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
+            (kLen == 0 or simdStrEquals(entry.keyPtr, kPtr, kLen)):
           homeBucket = i
           return i
       i += 1
@@ -730,7 +731,7 @@ proc findFastMapStringFoundIdx(storage: FastMapStringNimStorage, key: string, ha
       let idx = (offset + slotOff) and mask
       let entry = cast[ptr FastMapStringNimEntry](entriesBase + uint(idx) * entrySize)
       if entry.hash == hash and entry.keyLen == uint16(kLen) and
-          (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
+          (kLen == 0 or simdStrEquals(entry.keyPtr, kPtr, kLen)):
         homeBucket = idx
         return idx
       matchMask = swarClearLowest(matchMask)
@@ -757,7 +758,7 @@ proc swGroupLookupLen(ctrl: ptr UncheckedArray[uint8], entriesBase: uint, entryS
       let idx = (offset + slotOff) and mask
       let entry = addr entries[idx]
       if entry.hash == hash and entry.keyLen == uint16(kLen) and
-          (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
+          (kLen == 0 or simdStrEquals(entry.keyPtr, kPtr, kLen)):
         return int(entry.valLen)
       matchMask = swarClearLowest(matchMask)
     let emptyMask = swarMatchEmpty16(ctrlBase)
@@ -781,7 +782,7 @@ proc findFastMapStringIdxByPtr(storage: FastMapStringNimStorage, kPtr: pointer, 
       if ctrl[i] <= 0x7F'u8:
         let entry = addr entries[i]
         if entry.hash == hash and entry.keyLen == uint16(kLen) and
-            (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
+            (kLen == 0 or simdStrEquals(entry.keyPtr, kPtr, kLen)):
           return i
       inc i
     return -1
@@ -798,7 +799,7 @@ proc findFastMapStringIdxByPtr(storage: FastMapStringNimStorage, kPtr: pointer, 
       let idx = (offset + slotOff) and mask
       let entry = addr entries[idx]
       if entry.hash == hash and entry.keyLen == uint16(kLen) and
-          (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
+          (kLen == 0 or simdStrEquals(entry.keyPtr, kPtr, kLen)):
         return idx
       matchMask = swarClearLowest(matchMask)
     let emptyMask = swarMatchEmpty16(ctrlBase)
@@ -819,7 +820,7 @@ proc findFastMapStringIdxByKeyOnly(storage: FastMapStringNimStorage, kPtr: point
   while i < storage.capacity:
     if ctrl[i] <= 0x7F'u8:
       let entry = addr entries[i]
-      if entry.keyLen == uint16(kLen) and (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
+      if entry.keyLen == uint16(kLen) and (kLen == 0 or simdStrEquals(entry.keyPtr, kPtr, kLen)):
         return i
     inc i
   -1
@@ -863,7 +864,7 @@ proc swGroupLookupView(ctrl: ptr UncheckedArray[uint8], entriesBase: uint, entry
       let idx = (offset + slotOff) and mask
       let entry = addr entries[idx]
       if entry.hash == hash and entry.keyLen == uint16(kLen) and
-          (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
+          (kLen == 0 or simdStrEquals(entry.keyPtr, kPtr, kLen)):
         value = FastStringView(data: swEntryValPtr(entry), len: int(entry.valLen))
         return true
       matchMask = swarClearLowest(matchMask)

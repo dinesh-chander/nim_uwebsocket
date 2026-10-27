@@ -3,9 +3,49 @@ import checksums/sha1
 import types
 import validation
 
+# Optional SSE2 WebSocket payload mask/unmask (nimsimd): XOR 16 payload bytes per
+# vector against the repeating 4-byte mask key. Portable scalar fallback (and the
+# default under -d:nimWsFramePortable).
+const wsFrameUseSse2* =
+  (hostCPU == "amd64" or hostCPU == "i386") and
+  (defined(gcc) or defined(clang)) and
+  not defined(js) and not defined(nimWsFramePortable)
+
+when wsFrameUseSse2:
+  import nimsimd/sse2
+
 proc fillWsRandom(buf: var openArray[byte]) {.inline.} =
   if not urandom(buf):
     raise newException(OSError, "secure random source unavailable")
+
+proc applyWsMask*(buf: ptr byte, n: int, key: array[4, byte]) {.inline.} =
+  ## XOR `buf[0..n)` in place with the repeating 4-byte WebSocket mask key.
+  ## SSE2 (nimsimd) processes 16 bytes per vector; a scalar tail handles the rest.
+  let p = cast[ptr byte](buf)
+  when wsFrameUseSse2:
+    var k16: array[16, byte]
+    for r in 0 .. 3:
+      k16[r*4+0] = key[0]
+      k16[r*4+1] = key[1]
+      k16[r*4+2] = key[2]
+      k16[r*4+3] = key[3]
+    let vk = mm_loadu_si128(cast[ptr uint64](unsafeAddr k16[0]))
+    var i = 0
+    while i + 16 <= n:
+      let off = cast[uint](p) + uint(i)
+      let v = mm_loadu_si128(cast[ptr uint64](off))
+      mm_storeu_si128(cast[ptr uint64](off), mm_xor_si128(v, vk))
+      i += 16
+    while i < n:
+      let q = cast[ptr byte](cast[uint](p) + uint(i))
+      q[] = q[] xor key[i mod 4]
+      inc i
+  else:
+    var i = 0
+    while i < n:
+      let q = cast[ptr byte](cast[uint](p) + uint(i))
+      q[] = q[] xor key[i mod 4]
+      inc i
 
 type
   WsFrameParser* = object
@@ -189,8 +229,11 @@ proc encodeWsFrame*(opcode: WsOpcode, payload: string, fin: bool = true, masked:
     fillWsRandom(maskKey)
     for b in maskKey:
       result.add char(b)
-    for i in 0..<payload.len:
-      result.add char(uint8(payload[i]) xor maskKey[i mod 4])
+    var maskedPayload = newString(payload.len)
+    if payload.len > 0:
+      copyMem(addr maskedPayload[0], unsafeAddr payload[0], payload.len)
+      applyWsMask(cast[ptr byte](addr maskedPayload[0]), payload.len, maskKey)
+    result.add maskedPayload
   else:
     result.add payload
 
@@ -287,8 +330,7 @@ proc decodeWsFrame*(data: openArray[byte], pos: var int): Option[WsFrame] =
   if payloadLen > 0:
     copyMem(addr payload[0], unsafeAddr data[pos + headerSize], int(payloadLen))
     if masked:
-      for i in 0..<int(payloadLen):
-        payload[i] = char(uint8(payload[i]) xor maskKey[i mod 4])
+      applyWsMask(cast[ptr byte](addr payload[0]), int(payloadLen), maskKey)
 
   pos += totalSize
   some(WsFrame(fin: fin, opcode: opcode, masked: masked, maskKey: maskKey, payload: payload))

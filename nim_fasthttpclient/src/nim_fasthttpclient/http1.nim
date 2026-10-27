@@ -2,6 +2,16 @@ import std/[strutils]
 import types
 import validation
 
+# Optional SSE2 CRLF (\r\n) finder via nimsimd for the per-line response scan.
+# Portable byte scan is the fallback (and the default under -d:nimHttp1CrlfPortable).
+const http1CrlfUseSse2* =
+  (hostCPU == "amd64" or hostCPU == "i386") and
+  (defined(gcc) or defined(clang)) and
+  not defined(js) and not defined(nimHttp1CrlfPortable)
+
+when http1CrlfUseSse2:
+  import nimsimd/sse2
+
 const MethodStrings*: array[HttpMethod, string] = [
   hmGet: "GET",
   hmHead: "HEAD",
@@ -119,8 +129,24 @@ proc toLowerInPlace(s: var string) {.inline.} =
       s[i] = chr(ord(c) + 32)
 
 proc findCrLf(data: string, start: int): int {.inline.} =
+  ## Find the next \r\n at/after `start`, or -1. SSE2 (nimsimd) tests 16 byte
+  ## pairs per vector; a scalar tail resolves the short remainder. The SIMD
+  ## loop only runs while 17 bytes remain, so short lines use the tail only.
   var i = start
-  let limit = data.len - 1
+  let len = data.len
+  when http1CrlfUseSse2:
+    while i + 17 <= len:
+      let vcr = mm_loadu_si128(cast[ptr uint64](unsafeAddr data[i]))
+      let vlf = mm_loadu_si128(cast[ptr uint64](unsafeAddr data[i + 1]))
+      let hit = mm_and_si128(mm_cmpeq_epi8(vcr, mm_set1_epi8(13.uint8)),
+                             mm_cmpeq_epi8(vlf, mm_set1_epi8(10.uint8)))
+      var m = mm_movemask_epi8(hit)
+      if m != 0:
+        var b = 0
+        while (m and 1) == 0: m = m shr 1; inc b
+        return i + b
+      i += 16
+  let limit = len - 1
   while i < limit:
     if data[i] == '\r' and data[i + 1] == '\n':
       return i

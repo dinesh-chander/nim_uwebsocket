@@ -29,7 +29,7 @@ NPROC="$(nproc 2>/dev/null || echo 4)"
 make -C "$ROOT_DIR" usockets USOCKETS_BACKEND="${USOCKETS_BACKEND:-epoll}"
 
 pushd "$BENCH_DIR" >/dev/null
-nim c -f --nimcache:"${OUT_DIR}/nimcache/bench_nim_express_linux" -d:release -d:danger --opt:speed --hints:off \
+nim c -f --cc:clang --nimcache:"${OUT_DIR}/nimcache/bench_nim_express_linux" -d:release -d:danger --opt:speed --hints:off \
   ${BACKEND_NIM_FLAGS} \
   "${BENCH_COMMON_PATHS[@]}" \
   --passC:"-Ofast -flto ${PLATFORM_CFLAGS} ${NATIVE_CFLAGS}" \

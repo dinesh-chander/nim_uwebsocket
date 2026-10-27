@@ -202,15 +202,17 @@ proc compileExpressFixture(repoRoot, serverBin: string) =
   if nimExe.len == 0:
     raise newException(OSError, "nim executable not found in PATH")
   # macOS GCD builds of uSockets need CoreFoundation at link time; Linux needs
-  # pthread/dl. Wrong flags here fail the fixture compile with a bare exit 1.
+  # pthread/dl. uSockets.a is packed with llvm-ar as clang LTO bitcode, so the
+  # link needs --cc:clang and -flto (mirrors harness/common.sh). Wrong flags
+  # here fail the fixture compile with a bare exit 1.
   let linkFlags =
     when defined(macosx):
-      "--passL:\"nim_usockets/usockets/uSockets.a -framework CoreFoundation\""
+      "--passL:\"-flto\" --passL:\"nim_usockets/usockets/uSockets.a -framework CoreFoundation\""
     else:
-      "--passL:\"nim_usockets/usockets/uSockets.a -lpthread -ldl\""
-  var cmd = "\"" & nimExe & "\" c -d:release"
+      "--passL:\"-flto\" --passL:\"nim_usockets/usockets/uSockets.a -lpthread -ldl\""
+  var cmd = "\"" & nimExe & "\" c -d:release --cc:clang"
   cmd.add " --path:nim_utils/src --path:nim_usockets/src"
-  cmd.add " --path:vendor/zippy/src --path:vendor/checksums"
+  cmd.add " --path:vendor/zippy/src --path:vendor/checksums --path:vendor/nimsimd/src"
   cmd.add " " & linkFlags
   cmd.add " -o:\"" & serverBin & "\""
   cmd.add " nim_express/tests/ws_permessage_deflate_integration_server.nim"

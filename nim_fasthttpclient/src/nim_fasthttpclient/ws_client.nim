@@ -311,8 +311,7 @@ proc readWsFrame*(buf: string, pos: var int, maxPayloadSize: int = DefaultWsMaxM
   if payloadLen > 0:
     copyMem(addr payload[0], unsafeAddr buf[payloadStart], int(payloadLen))
     if masked:
-      for i in 0..<payload.len:
-        payload[i] = char(uint8(payload[i]) xor maskKey[i mod 4])
+      applyWsMask(cast[ptr byte](addr payload[0]), payload.len, maskKey)
 
   pos += totalSize
   result.status = wfrOk

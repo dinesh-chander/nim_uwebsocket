@@ -4,6 +4,17 @@ import macrocache
 import macros
 import ./borrowed
 
+## True when the SSE2 (nimsimd) JSON-safety scan is active for serialization.
+## Falls back to the portable SWAR scanner under -d:nimFastjsonPortable or on
+## non-x86/unsupported compilers. Workload-dependent win; see docs/design/simd-adoption.md.
+const fastjsonScanUseSse2* =
+  (hostCPU == "amd64" or hostCPU == "i386") and
+  (defined(gcc) or defined(clang)) and
+  not defined(js) and not defined(nimFastjsonPortable)
+
+when fastjsonScanUseSse2:
+  import nimsimd/sse2
+
 type
   JsonError* = object of ValueError
   JsonSafeString* = distinct string
@@ -951,11 +962,21 @@ proc parseValue*(s: string, i: var int, value: var string) =
 # creates a new owner only when a different buffer comes in. The template
 # form keeps the (rare) creation code out of the hot path's register plan.
 var tjBorrowDoc {.threadvar.}: BorrowedDocRef
+var tjBorrowDocSrc {.threadvar.}: pointer
 
 template borrowedDocHolderFor(s: string): BorrowedDocRef =
   var holder = tjBorrowDoc
-  if holder.isNil or s.len == 0 or s.cstring != holder.doc.cstring:
+  # Identity by the SOURCE buffer pointer (O(1)). The previous check compared
+  # `s.cstring != holder.doc.cstring`, which materialized/strcmp-ed the WHOLE
+  # document on every borrowed field -> O(n^2) decode (measured ~39x slower
+  # than owned-string decode on a seq of 1000 strings). We remember the source
+  # pointer that created the current holder so a document reused across its
+  # fields allocates exactly one owner.
+  let p = if s.len > 0: cast[pointer](unsafeAddr s[0]) else: nil
+  if holder.isNil or p != tjBorrowDocSrc:
     holder = newBorrowedDocRef(s)
+    tjBorrowDoc = holder
+    tjBorrowDocSrc = p
     tjBorrowDoc = holder
   holder
 
@@ -1630,25 +1651,44 @@ const NeedsEscape: array[256, bool] = block:
   t[ord('\\')] = true
   t
 
-# ── SWAR scan: find first byte needing JSON escape ──
-# Portable SWAR (8 bytes/iteration) via std-style uint64 masks. Previous
-# SSE2/NEON emit kernels measured 3x faster on 1MB strings but were removed
-# to keep the package pure Nim (docs/benchmarks A/B report Part 11);
-# byte-wise borrow semantics prevent compiler auto-vectorization.
+# ── JSON-safety scan: find first byte needing JSON escape ──
+# Two backends: a portable SWAR (8 bytes/uint64) and an optional SSE2
+# (nimsimd, 16 bytes/vector) selected by fastjsonScanUseSse2. The SSE2 kernel
+# replaces the earlier {.emit.} SSE2/NEON regions (removed in 073cd40 for pure
+# Nim) as cross-compiler nimsimd intrinsics. It wins on long safe spans and
+# loses on escape-dense/short strings, so the choice is workload-dependent
+# (docs/design/simd-adoption.md, git 073cd40/85747c7).
 
 proc scanSafeJsonBytes(value: string, start: int): int {.inline.} =
   ## Find first byte needing JSON escape from `start`, or value.len if none.
-  ## SWAR: tests 8 bytes per uint64 load with the quote/backslash/control
-  ## predicate; a scalar loop resolves the break chunk and the <8B tail.
+  ## SSE2 (nimsimd) tests 16 bytes per vector when `fastjsonScanUseSse2`, else
+  ## the portable SWAR tests 8 bytes per uint64; a scalar loop resolves the
+  ## break chunk and the short tail. Unsafe = control byte (<0x20), quote, or
+  ## backslash. Workload-dependent: wins on long safe spans, loses on dense.
   let vlen = value.len
   if vlen == 0: return 0
   var idx = start
-  while idx + 8 <= vlen:
-    var chunk: uint64
-    copyMem(addr chunk, unsafeAddr value[idx], 8)
-    if escChunkHit(chunk):
-      break
-    idx += 8
+  when fastjsonScanUseSse2:
+    let qv = mm_set1_epi8(0x22.uint8)
+    let sv = mm_set1_epi8(0x5c.uint8)
+    let cv = mm_set1_epi8(0x1f.uint8)
+    while idx + 16 <= vlen:
+      let d = mm_loadu_si128(cast[ptr uint64](unsafeAddr value[idx]))
+      let u = mm_or_si128(mm_or_si128(mm_cmpeq_epi8(d, qv), mm_cmpeq_epi8(d, sv)),
+                          mm_cmpeq_epi8(mm_min_epu8(d, cv), d))
+      var m = mm_movemask_epi8(u)
+      if m != 0:
+        var b = 0
+        while (m and 1) == 0: m = m shr 1; inc b
+        return idx + b
+      idx += 16
+  else:
+    while idx + 8 <= vlen:
+      var chunk: uint64
+      copyMem(addr chunk, unsafeAddr value[idx], 8)
+      if escChunkHit(chunk):
+        break
+      idx += 8
   while idx < vlen:
     if NeedsEscape[ord(value[idx])]:
       return idx

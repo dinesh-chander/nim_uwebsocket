@@ -38,7 +38,7 @@ build_nim_bench() {
   local cache_dir="$PGO_DIR/nimcache_${stage}"
   pushd "$BENCH_DIR" >/dev/null
   rm -rf "$cache_dir"
-  nim c -f --nimcache:"$cache_dir" -d:release -d:danger --opt:speed --hints:off \
+  nim c -f --cc:clang --nimcache:"$cache_dir" -d:release -d:danger --opt:speed --hints:off \
     "${BENCH_COMMON_PATHS[@]}" \
     --passC:"-Ofast -flto $NATIVE_CFLAGS $prof_flags" \
     --passL:"$USOCKETS_LINK_FLAGS -flto $prof_flags" \

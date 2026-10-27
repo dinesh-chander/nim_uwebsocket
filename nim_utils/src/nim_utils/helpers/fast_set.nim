@@ -4,6 +4,7 @@
 import std/os
 import std/bitops
 import ./swar_group
+import ./simd_str
 from ./fast_map import hashBytes, syncFastMapCSeed
 
 # Install the shared per-process seed for this module's hash helpers.
@@ -358,7 +359,7 @@ proc findFastSetStringFoundIdx(storage: FastSetStringNimStorage, key: string, ha
       let idx = (offset + slotOff) and mask
       let entry = swEntryAt(storage, idx)
       if entry.keyLen == uint16(kLen) and
-          (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
+          (kLen == 0 or simdStrEquals(entry.keyPtr, kPtr, kLen)):
         return idx
       matchMask = swarClearLowest(matchMask)
     if swarMatchEmpty16(ctrlBase) != 0:
@@ -383,7 +384,7 @@ proc findFastSetRawFoundIdx(storage: FastSetStringNimStorage, kPtr: pointer, kLe
       let idx = (offset + slotOff) and mask
       let entry = swEntryAt(storage, idx)
       if entry.keyLen == uint16(kLen) and
-          (kLen == 0 or equalMem(entry.keyPtr, kPtr, kLen)):
+          (kLen == 0 or simdStrEquals(entry.keyPtr, kPtr, kLen)):
         return idx
       matchMask = swarClearLowest(matchMask)
     if swarMatchEmpty16(ctrlBase) != 0:
@@ -423,7 +424,7 @@ proc findOrInsertFastSetRaw(storage: FastSetStringNimStorage, keyPtr: pointer, k
           let idx = (offset + slotOff) and mask
           let entry = swEntryAt(storage, idx)
           if entry.keyLen == uint16(keyLen) and
-              (keyLen == 0 or equalMem(entry.keyPtr, keyPtr, keyLen)):
+              (keyLen == 0 or simdStrEquals(entry.keyPtr, keyPtr, keyLen)):
             foundExisting = true
             return idx
           matchMask = swarClearLowest(matchMask)
