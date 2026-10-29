@@ -12,6 +12,13 @@ if [ -n "$NIM_EXTRA_FLAGS" ]; then
   EXTRA_FLAGS=($NIM_EXTRA_FLAGS)
 fi
 
+# uSockets.a is a clang LTO bitcode archive, so linking it without -flto fails with
+# "error adding symbols: file format not recognized". harness/common.sh does the same.
+if printf '%s\n' "${EXTRA_FLAGS[@]+"${EXTRA_FLAGS[@]}"}" | grep -q -- '--cc:clang' &&
+   ! printf '%s\n' "${EXTRA_FLAGS[@]+"${EXTRA_FLAGS[@]}"}" | grep -q -- '-flto'; then
+  EXTRA_FLAGS+=(--passL:-flto)
+fi
+
 COMMON_PATHS=(
   --path:"$ROOT_DIR/nim_utils/src"
   --path:"$ROOT_DIR/nim_usockets/src"
@@ -24,6 +31,7 @@ COMMON_PATHS=(
   --path:"$ROOT_DIR/vendor/malebolgia/src"
   --path:"$ROOT_DIR/vendor/jsony/src"
   --path:"$ROOT_DIR/vendor/checksums"
+  --path:"$ROOT_DIR/vendor/nimsimd/src"
 )
 
 mkdir -p "$NIMCACHE_ROOT" "$TEST_BIN_ROOT"
