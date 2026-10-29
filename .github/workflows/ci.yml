@@ -70,8 +70,10 @@ jobs:
 
       # Each suite is bounded by FUZZ_TIMEOUT so the layer can finish inside one CI
       # job. fuzz_integration is the long one by design: 500 slow-client iterations
-      # with a 250 ms sleep and 2 s receive timeouts each, so the bound has to clear
-      # roughly 20 minutes for that suite alone.
+      # with a 250 ms sleep and 2 s receive timeouts each. It cleared an 1800 s bound
+      # on an idle machine but was still running past 1840 s while a build competed
+      # for the same box, so this carries headroom rather than the tightest observed
+      # value.
       - name: Fuzz suites
         if: runner.os == 'Linux'
-        run: FUZZ_TIMEOUT=1800 bash tests/run_fuzz.sh
+        run: FUZZ_TIMEOUT=2700 bash tests/run_fuzz.sh

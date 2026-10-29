@@ -61,10 +61,12 @@ run_test() {
   echo "Running: $name"
   echo "-----------------------------------------"
 
-  # FUZZ_TIMEOUT bounds a single suite: fuzz_integration drives real sockets and
-  # runs far longer than the others, and without a bound it can consume the whole
-  # run and leave no Results line at all.
-  if timeout "${FUZZ_TIMEOUT:-900}" "$BIN_DIR/$name"; then
+  # FUZZ_TIMEOUT bounds a single suite so one slow suite cannot consume the whole
+  # run and leave no Results line at all. fuzz_integration needs the margin: it
+  # finished inside 1800s on an idle machine but was still in its slow phase past
+  # 1840s while another build competed for the box, so the default carries headroom
+  # for a loaded machine instead of a tight single-sample figure.
+  if timeout "${FUZZ_TIMEOUT:-2400}" "$BIN_DIR/$name"; then
     echo "PASSED: $name"
     PASSED=$((PASSED + 1))
   else
