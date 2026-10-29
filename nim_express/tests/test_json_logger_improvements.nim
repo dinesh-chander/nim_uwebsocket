@@ -488,3 +488,99 @@ suite "json_logger — middleware integration":
     let res = newMockResponse()
     runMiddlewareChain(@[jsonLogger()], req, res)
     check res.statusCode == 200
+
+suite "json_logger — clock and buffer regression":
+
+  test "200 response line has required keys, non-negative duration with 3 decimals":
+    var logLine = ""
+    let opts = makeLoggerOpts(proc(line: string) = logLine = line)
+    let req = newMockRequest("/api/data", hmGet)
+    let res = newMockResponse()
+    runMiddlewareChain(@[jsonLogger(opts)], req, res)
+    # single-line JSON
+    check '\n' notin logLine
+    check logLine[0] == '{' and logLine[^1] == '}'
+    # required substrings present
+    check "\"timestamp\":\"" in logLine
+    check "\"duration_ms\":" in logLine
+    check "\"status\":" in logLine
+    check "\"method\":" in logLine
+    check "\"path\":" in logLine
+    # parse and validate
+    let j = parseJson(logLine)
+    check getStr(j["method"]) == "GET"
+    check getStr(j["path"]) == "/api/data"
+    check getInt(j["status"]) == 200
+    check getFloat(j["duration_ms"]) >= 0.0
+    # duration_ms has exactly 3 decimal places in raw text
+    let dmIdx = logLine.find("\"duration_ms\":")
+    let dmStart = dmIdx + "\"duration_ms\":".len
+    let dmEnd = logLine.find(',', dmStart)
+    let dmStr = logLine[dmStart ..< dmEnd]
+    let dotIdx = dmStr.find('.')
+    check dotIdx > 0
+    check dmStr.len - dotIdx - 1 == 3
+
+  test "timestamp structure: 19+ chars, contains T, valid ISO shape":
+    var logLine = ""
+    let opts = makeLoggerOpts(proc(line: string) = logLine = line)
+    let req = newMockRequest("/ts")
+    let res = newMockResponse()
+    runMiddlewareChain(@[jsonLogger(opts)], req, res)
+    let j = parseJson(logLine)
+    let ts = getStr(j["timestamp"])
+    check ts.len >= 19
+    check 'T' in ts
+    check isTimestampShape(ts)
+
+  test "two consecutive requests produce independent non-aliased lines":
+    var lines: seq[string] = @[]
+    let opts = makeLoggerOpts(proc(line: string) = lines.add(line))
+    # request 1: path /first, status 200
+    let req1 = newMockRequest("/first", hmGet)
+    let res1 = newMockResponse()
+    runMiddlewareChain(@[jsonLogger(opts)], req1, res1)
+    # request 2: path /second, status 404
+    let req2 = newMockRequest("/second", hmPost)
+    let res2 = newMockResponse()
+    res2.statusCode = 404
+    res2.finished = true
+    runMiddlewareChain(@[jsonLogger(opts)], req2, res2)
+    check lines.len == 2
+    let l1 = lines[0]
+    let l2 = lines[1]
+    # both intact, independently correct
+    check l1 != l2
+    check getStr(parseJson(l1)["path"]) == "/first"
+    check getInt(parseJson(l1)["status"]) == 200
+    check getStr(parseJson(l2)["path"]) == "/second"
+    check getInt(parseJson(l2)["status"]) == 404
+    # not aliases: line1 contains its path, line2 contains its path
+    check "/first" in l1
+    check "/second" in l2
+    check "/second" notin l1
+    check "/first" notin l2
+
+  test "error path emits error field and truncates long stack trace":
+    var logLine = ""
+    let opts = makeLoggerOpts(proc(line: string) = logLine = line)
+    proc deep(depth: int) =
+      if depth <= 0:
+        raise newException(JsonLoggerDeepErr, "bottom")
+      deep(depth - 1)
+    let req = newMockRequest("/err")
+    let res = newMockResponse()
+    proc boom(r: Request, s: Response): Future[void] {.async.} =
+      deep(1000)
+    var caught = false
+    try:
+      runMiddlewareChain(@[jsonLogger(opts)], req, res, boom)
+    except CatchableError:
+      caught = true
+    check caught
+    let j = parseJson(logLine)
+    check j.hasKey("error")
+    check j.hasKey("error_trace")
+    let trace = getStr(j["error_trace"])
+    check trace.len <= MaxErrorTraceLen + 16
+    check trace.endsWith("... [truncated]")

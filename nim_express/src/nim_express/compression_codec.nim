@@ -182,6 +182,118 @@ proc chooseCompressionEncodingFastPtr(data: pointer, length: int): CompressionEn
       best = candidate
   best
 
+## Allocation-free q-value Accept-Encoding scanner. Walks the raw buffer once and
+## picks the best encoding using per-token max q (with ``*`` as wildcard). Returns
+## ``handled: false`` for any q value or parameter it cannot interpret exactly, so the
+## caller must fall back to the allocating reference path.
+proc chooseCompressionEncodingQPtr(data: pointer, length: int):
+    tuple[handled: bool, enc: CompressionEncoding] =
+  let chars = cast[ptr UncheckedArray[char]](data)
+  var maxZstd = -1.0
+  var maxBr = -1.0
+  var maxGzip = -1.0
+  var maxStar = -1.0
+  var i = 0
+  while i < length:
+    while i < length and chars[i] in {' ', '\t'}:
+      inc i
+    if i >= length:
+      break
+    let tokStart = i
+    while i < length and chars[i] notin {',', ';', ' ', '\t'}:
+      inc i
+    let tokLen = i - tokStart
+    var cand = 0
+    if tokLen > 0:
+      if tokLen == 4 and sliceEqAsciiLower(data, tokStart, tokLen, "zstd"):
+        cand = 1
+      elif tokLen == 2 and sliceEqAsciiLower(data, tokStart, tokLen, "br"):
+        cand = 2
+      elif (tokLen == 4 and sliceEqAsciiLower(data, tokStart, tokLen, "gzip")) or
+           (tokLen == 6 and sliceEqAsciiLower(data, tokStart, tokLen, "x-gzip")):
+        cand = 3
+      elif tokLen == 1 and chars[tokStart] == '*':
+        cand = 4
+    var entryQ = 1.0
+    var ok = true
+    if i < length and chars[i] == ';':
+      inc i
+      while i < length and chars[i] in {' ', '\t'}:
+        inc i
+      if i + 1 >= length or (chars[i] != 'q' and chars[i] != 'Q') or chars[i + 1] != '=':
+        ok = false
+      else:
+        inc i
+        inc i
+        while i < length and chars[i] in {' ', '\t'}:
+          inc i
+        var intPart = 0.0
+        var fracPart = 0.0
+        var fracScale = 0.1
+        var sawDigit = false
+        while i < length and chars[i] >= '0' and chars[i] <= '9':
+          intPart = intPart * 10.0 + float(chars[i].ord - 48)
+          sawDigit = true
+          inc i
+        if i < length and chars[i] == '.':
+          inc i
+          while i < length and chars[i] >= '0' and chars[i] <= '9':
+            fracPart += float(chars[i].ord - 48) * fracScale
+            fracScale *= 0.1
+            sawDigit = true
+            inc i
+        if not sawDigit:
+          ok = false
+        while i < length and chars[i] in {' ', '\t'}:
+          inc i
+        if i < length and chars[i] != ',':
+          ok = false
+        entryQ = clamp01(intPart + fracPart)
+    if not ok:
+      return (handled: false, enc: ceNone)
+    case cand
+    of 1:
+      if entryQ > maxZstd: maxZstd = entryQ
+    of 2:
+      if entryQ > maxBr: maxBr = entryQ
+    of 3:
+      if entryQ > maxGzip: maxGzip = entryQ
+    of 4:
+      if entryQ > maxStar: maxStar = entryQ
+    else:
+      discard
+    while i < length and chars[i] != ',':
+      inc i
+    if i < length and chars[i] == ',':
+      inc i
+  var best = ceNone
+  var bestQ = -1.0
+  var bestRank = 99
+  for candidate in [ceZstd, ceBrotli, ceGzip]:
+    let q =
+      case candidate
+      of ceZstd:
+        if maxZstd >= 0.0: maxZstd elif maxStar >= 0.0: maxStar else: 0.0
+      of ceBrotli:
+        if maxBr >= 0.0: maxBr elif maxStar >= 0.0: maxStar else: 0.0
+      of ceGzip:
+        if maxGzip >= 0.0: maxGzip elif maxStar >= 0.0: maxStar else: 0.0
+      else:
+        0.0
+    if q <= 0.0:
+      continue
+    let rank =
+      case candidate
+      of ceZstd: 0
+      of ceBrotli: 1
+      of ceGzip: 2
+      else: 99
+    if q > bestQ or (q == bestQ and rank < bestRank):
+      bestQ = q
+      bestRank = rank
+      best = candidate
+  (handled: true, enc: best)
+
 ## Fast path for choosing a compression encoding from raw Accept-Encoding characters without q-value parsing.
 proc chooseCompressionEncodingFast*(acceptEncoding: openArray[char]): CompressionEncoding {.inline.} =
   if acceptEncoding.len == 0:
@@ -239,6 +351,9 @@ proc chooseCompressionEncoding*(acceptEncoding: string): CompressionEncoding {.i
     return ceNone
   if not acceptEncodingHasQValuePtr(unsafeAddr acceptEncoding[0], acceptEncoding.len):
     return chooseCompressionEncodingFastPtr(unsafeAddr acceptEncoding[0], acceptEncoding.len)
+  let qres = chooseCompressionEncodingQPtr(unsafeAddr acceptEncoding[0], acceptEncoding.len)
+  if qres.handled:
+    return qres.enc
   let ranked = acceptedEncodingsInPreferenceOrder(acceptEncoding)
   if ranked.len == 0:
     return ceNone
@@ -250,6 +365,9 @@ proc chooseCompressionEncoding*(acceptEncoding: FastStringView): CompressionEnco
     return ceNone
   if not acceptEncodingHasQValuePtr(acceptEncoding.data, acceptEncoding.len):
     return chooseCompressionEncodingFastPtr(acceptEncoding.data, acceptEncoding.len)
+  let qres = chooseCompressionEncodingQPtr(acceptEncoding.data, acceptEncoding.len)
+  if qres.handled:
+    return qres.enc
   chooseCompressionEncoding($acceptEncoding)
 
 proc compressGzipLibdeflate(payload: string, level: int): string =

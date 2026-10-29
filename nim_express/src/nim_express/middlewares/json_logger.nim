@@ -204,7 +204,8 @@ proc jsonLogger*(
     if errorTrace.len > maxTrace:
       errorTrace = errorTrace[0 ..< maxTrace] & "... [truncated]"
 
-    let durationMs = ((epochTime() - start) * 1000.0)
+    let finish = epochTime()
+    let durationMs = ((finish - start) * 1000.0)
 
     var line = newStringOfCap(512)
     line.add("{")
@@ -243,7 +244,7 @@ proc jsonLogger*(
         line.add(",")
       first = false
       line.add("\"timestamp\":\"")
-      appendIso8601Ms(line, epochTime())
+      appendIso8601Ms(line, finish)
       line.add("\"")
 
     if opts.shouldInclude(jlfMethod):

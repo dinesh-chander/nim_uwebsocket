@@ -379,3 +379,94 @@ suite "logger(format)":
     check lines.len == 1
     check lines[0].startsWith("- - - ")
     check lines[0].endsWith(" \"-\" \"-\"")
+
+# ---- regression tests: per-second cached timestamp (audit MWA-003) ----
+
+proc extractLogTs(line: string): string =
+  ## Extracts the bracketed timestamp token from a common or combined log line.
+  let a = line.find(" - - ")
+  let b = line.find(" \"")
+  if a >= 0 and b > a:
+    result = line.substr(a + 5, b - 1)
+
+proc tsSecondField(ts: string): string =
+  ## Returns the ss field of a bracketed log timestamp: the two digits right before the zone suffix.
+  ts.substr(ts.len - 9, ts.len - 8)
+
+proc checkTsShape(ts: string): bool =
+  ## Validates the historical bracketed shape digit-slash-letters-slash-digits, colons for
+  ## hour minute second, a space, the plus zone digits and the closing bracket, without
+  ## assuming any particular wall-clock value.
+  if ts.len != 28: return false
+  if ts[0] != '[' or ts[27] != ']': return false
+  if not (ts[1] in '0'..'9' and ts[2] in '0'..'9'): return false
+  if ts[3] != '/': return false
+  if not (ts[4] in 'A'..'Z' and ts[5] in 'a'..'z' and ts[6] in 'a'..'z'): return false
+  if ts[7] != '/': return false
+  if not (ts[8] in '0'..'9' and ts[9] in '0'..'9' and ts[10] in '0'..'9' and ts[11] in '0'..'9'): return false
+  if ts[12] != ':': return false
+  if not (ts[13] in '0'..'9' and ts[14] in '0'..'9'): return false
+  if ts[15] != ':': return false
+  if not (ts[16] in '0'..'9' and ts[17] in '0'..'9'): return false
+  if ts[18] != ':': return false
+  if not (ts[19] in '0'..'9' and ts[20] in '0'..'9'): return false
+  if ts[21] != ' ': return false
+  if ts[22] != '+': return false
+  if not (ts[23] in '0'..'9' and ts[24] in '0'..'9' and ts[25] in '0'..'9' and ts[26] in '0'..'9'): return false
+  return true
+
+suite "logger timestamp cache (MWA-003)":
+  test "two consecutive calls return equal text within the same second":
+    let req1 = newMockRequest("/ts1")
+    let res1 = newMockResponse()
+    let l1 = captureLog(@[logger(lfCommon)], req1, res1, statusHandler(200))
+    let req2 = newMockRequest("/ts2")
+    let res2 = newMockResponse()
+    let l2 = captureLog(@[logger(lfCommon)], req2, res2, statusHandler(200))
+    check l1.len == 1
+    check l2.len == 1
+    let t1 = extractLogTs(l1[0])
+    let t2 = extractLogTs(l2[0])
+    check t1.startsWith("[")
+    check t1.endsWith("]")
+    check ":" in t1
+    check t1.endsWith("+0000]")
+    check t2.startsWith("[")
+    check t2.endsWith("]")
+    check ":" in t2
+    check t2.endsWith("+0000]")
+    # Cache contract: two calls landing in the same wall-clock second must
+    # return the identical cached text. If the clock crossed a second boundary
+    # between the calls the second field legitimately differs and the texts
+    # must then differ as well.
+    if tsSecondField(t1) == tsSecondField(t2):
+      check t1 == t2
+    else:
+      check t1 != t2
+
+  test "timestamp keeps the historical bracketed shape":
+    let req = newMockRequest("/shape")
+    let res = newMockResponse()
+    let lines = captureLog(@[logger(lfCommon)], req, res, statusHandler(200))
+    check lines.len == 1
+    let ts = extractLogTs(lines[0])
+    check ts.startsWith("[")
+    check ts.endsWith("]")
+    check ":" in ts
+    check ts.endsWith("+0000]")
+    check checkTsShape(ts)
+    let reqC = newMockRequest("/shapeC")
+    let resC = newMockResponse()
+    let linesC = captureLog(@[logger(lfCombined)], reqC, resC, statusHandler(200))
+    check linesC.len == 1
+    check checkTsShape(extractLogTs(linesC[0]))
+
+  test "lfCommon end-to-end line still contains the bracketed timestamp":
+    let req = newMockRequest("/api")
+    let res = newMockResponse()
+    let lines = captureLog(@[logger(lfCommon)], req, res, statusHandler(200))
+    check lines.len == 1
+    check lines[0].startsWith("127.0.0.1 - - [")
+    let ts = extractLogTs(lines[0])
+    check checkTsShape(ts)
+    check (ts & " \"GET /api HTTP/1.1\" 200") in lines[0]

@@ -211,6 +211,25 @@ proc matchesCidrBytes*(
   ## Match pre-parsed client IP bytes against a CIDR entry.
   if not cidr.isValid:
     return false
+  # Fast path: both sides IPv4 (the overwhelmingly common case) needs no
+  # family normalization, so skip the 16-byte copies and the normalization
+  # branches and compare only the four address bytes against the prefix.
+  # Semantics are identical to the generic path below for this case: a
+  # prefixLen of 0 matches everything, a non-byte-aligned prefix masks the
+  # boundary byte, and maxByte is 4 for IPv4 entries.
+  if not cidr.isV6 and not ipIsV6:
+    let totalBits = cidr.prefixLen
+    let fullBytes = totalBits div 8
+    let remainingBits = totalBits mod 8
+    for i in 0 ..< min(fullBytes, 4):
+      if ipBytes[i] != cidr.addrBytes[i]:
+        return false
+    if remainingBits > 0 and fullBytes < 4:
+      let mask = uint8(0xFF shl (8 - remainingBits))
+      if (ipBytes[fullBytes] and mask) != (cidr.addrBytes[fullBytes] and mask):
+        return false
+    return true
+
   var ipBytes = ipBytes
   var ipIsV6 = ipIsV6
 

@@ -219,9 +219,19 @@ proc json*(
   options: JsonParserOptions = defaultJsonParserOptions()
 ): AsyncMiddleware =
   let opts = options
+  # True when the configured allow list is exactly the library's JSON MIME set,
+  # which lets the hot path test the borrowed Content-Type view instead of the
+  # allocating token + pattern scan. Custom lists keep the generic path.
+  let defaultJsonMimes = opts.acceptedMimeTypes.len == 2 and
+    opts.acceptedMimeTypes[0] == "application/json" and
+    opts.acceptedMimeTypes[1] == "application/*+json"
   result = proc(req: Req, res: Res, next: NextProc): Future[void] {.async.} =
-    let contentType = contentTypeToken(req.get("content-type"))
-    if not matchesAnyMime(contentType, opts.acceptedMimeTypes):
+    let jsonRequested =
+      if defaultJsonMimes:
+        isJsonContentType(req.getView("content-type"))
+      else:
+        matchesAnyMime(contentTypeToken(req.get("content-type")), opts.acceptedMimeTypes)
+    if not jsonRequested:
       await next()
       return
 
@@ -373,13 +383,14 @@ proc bodyParser*(): AsyncMiddleware =
   let jsonMw = json()
   let urlencodedMw = urlencoded()
   result = proc(req: Req, res: Res, next: NextProc): Future[void] {.async.} =
-    let contentType = contentTypeToken(req.get("content-type"))
-    if matchesAnyMime(contentType, @["application/json", "application/*+json"]):
+    if isJsonContentType(req.getView("content-type")):
       await jsonMw(req, res, next)
-    elif contentType == "application/x-www-form-urlencoded":
-      await urlencodedMw(req, res, next)
     else:
-      await next()
+      let contentType = contentTypeToken(req.get("content-type"))
+      if contentType == "application/x-www-form-urlencoded":
+        await urlencodedMw(req, res, next)
+      else:
+        await next()
 
 ## Synchronous variant of `bodyParser`. Supports JSON and urlencoded parsing
 ## only (no text/raw/xml). Kept inline for the sync hot path; if parsing
@@ -388,9 +399,16 @@ proc bodyParser*(): AsyncMiddleware =
 proc bodyParserSync*(): SyncNextMiddleware =
   let jsonOpts = defaultJsonParserOptions()
   let urlencodedOpts = defaultUrlEncodedParserOptions()
+  let defaultJsonMimesSync = jsonOpts.acceptedMimeTypes.len == 2 and
+    jsonOpts.acceptedMimeTypes[0] == "application/json" and
+    jsonOpts.acceptedMimeTypes[1] == "application/*+json"
   result = proc(req: Req, res: Res, next: proc() {.closure.}) =
-    let contentType = contentTypeToken(req.get("content-type"))
-    if matchesAnyMime(contentType, jsonOpts.acceptedMimeTypes):
+    let jsonRequested =
+      if defaultJsonMimesSync:
+        isJsonContentType(req.getView("content-type"))
+      else:
+        matchesAnyMime(contentTypeToken(req.get("content-type")), jsonOpts.acceptedMimeTypes)
+    if jsonRequested:
       let loaded = readBodyWithLimit(req, res, jsonOpts.limitBytes)
       if not loaded.ok:
         return
@@ -399,6 +417,7 @@ proc bodyParserSync*(): SyncNextMiddleware =
       next()
       return
 
+    let contentType = contentTypeToken(req.get("content-type"))
     if contentType == "application/x-www-form-urlencoded":
       let loaded = readBodyWithLimit(req, res, urlencodedOpts.limitBytes)
       if not loaded.ok:

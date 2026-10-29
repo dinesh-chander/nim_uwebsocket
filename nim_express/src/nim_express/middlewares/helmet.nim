@@ -116,10 +116,17 @@ proc normalizeHelmetOptions*(options: HelmetOptions): HelmetOptions {.noSideEffe
   result.crossOriginOpenerPolicyValue = sanitizeHeaderValue(result.crossOriginOpenerPolicyValue)
   result.crossOriginResourcePolicyValue = sanitizeHeaderValue(result.crossOriginResourcePolicyValue)
 
+## Uppercase nibble table; must stay byte-identical to the previous `toHex(2)` output.
+const nonceHexNibble = "0123456789ABCDEF"
+
+when defined(singleThread):
+  var nonceScratch: array[32, char]
+else:
+  var nonceScratch {.threadvar.}: array[32, char]
+
 ## Generates a 32-character hex CSP nonce from 16 random bytes, or an empty string if randomness is unavailable.
 proc buildNonce*(): string {.inline.} =
   var bytes: array[16, byte]
-  result = newStringOfCap(32)
   if not urandom(bytes):
     var f: File
     if not open(f, "/dev/urandom", fmRead):
@@ -128,8 +135,12 @@ proc buildNonce*(): string {.inline.} =
     close(f)
     if n != bytes.len:
       return ""
-  for b in bytes:
-    result.add(b.toHex(2))
+  # Encode into the reused thread-local scratch; only the returned string is allocated.
+  for i, b in bytes:
+    nonceScratch[2 * i] = nonceHexNibble[b shr 4]
+    nonceScratch[2 * i + 1] = nonceHexNibble[b and 0x0F]
+  result = newString(32)
+  copyMem(addr(result[0]), addr(nonceScratch[0]), 32)
 
 ## Returns the CSP policy with the nonce directive injected, replacing {nonce} placeholders or extending script-src.
 proc applyCspNonce*(policy, policyLower, nonce: string): string {.noSideEffect, inline.} =
@@ -177,23 +188,26 @@ proc helmet*(
   if opts.contentSecurityPolicy and opts.contentSecurityPolicyNonce and buildNonce().len == 0:
     onError("CSP nonce source unavailable at startup; nonce directives will be omitted")
   result = proc(req: Req, res: Res, next: NextProc): Future[void] {.async.} =
+    # Header names are pre-lowercased: `set` lowercases names internally (see
+    # `sanitizeHeaderName`), so this is wire-invisible and skips the per-header
+    # lowercase allocation on the hot path.
     if opts.xContentTypeOptions:
-      res.set("X-Content-Type-Options", "nosniff")
+      res.set("x-content-type-options", "nosniff")
     if opts.xFrameOptions and opts.xFrameOptionsValue.len > 0:
-      res.set("X-Frame-Options", opts.xFrameOptionsValue)
+      res.set("x-frame-options", opts.xFrameOptionsValue)
     if opts.referrerPolicy and opts.referrerPolicyValue.len > 0:
-      res.set("Referrer-Policy", opts.referrerPolicyValue)
+      res.set("referrer-policy", opts.referrerPolicyValue)
     if opts.strictTransportSecurity and opts.strictTransportSecurityValue.len > 0 and req.secure():
       # RFC 6797 §7.2: HSTS MUST NOT be sent over non-HTTPS responses.
-      res.set("Strict-Transport-Security", opts.strictTransportSecurityValue)
+      res.set("strict-transport-security", opts.strictTransportSecurityValue)
     if opts.xXssProtection and opts.xXssProtectionValue.len > 0:
-      res.set("X-XSS-Protection", opts.xXssProtectionValue)
+      res.set("x-xss-protection", opts.xXssProtectionValue)
     if opts.permissionsPolicy and opts.permissionsPolicyValue.len > 0:
-      res.set("Permissions-Policy", opts.permissionsPolicyValue)
+      res.set("permissions-policy", opts.permissionsPolicyValue)
     if opts.crossOriginOpenerPolicy and opts.crossOriginOpenerPolicyValue.len > 0:
-      res.set("Cross-Origin-Opener-Policy", opts.crossOriginOpenerPolicyValue)
+      res.set("cross-origin-opener-policy", opts.crossOriginOpenerPolicyValue)
     if opts.crossOriginResourcePolicy and opts.crossOriginResourcePolicyValue.len > 0:
-      res.set("Cross-Origin-Resource-Policy", opts.crossOriginResourcePolicyValue)
+      res.set("cross-origin-resource-policy", opts.crossOriginResourcePolicyValue)
 
     if opts.contentSecurityPolicy:
       var policy = opts.contentSecurityPolicyValue
@@ -203,6 +217,6 @@ proc helmet*(
           req.locals[opts.contentSecurityPolicyNonceLocalKey] = nonce
           policy = applyCspNonce(policy, cspPolicyLower, nonce)
       if policy.len > 0:
-        res.set("Content-Security-Policy", policy)
+        res.set("content-security-policy", policy)
 
     await next()

@@ -116,6 +116,52 @@ proc expectV6(groups: openArray[int]): array[16, uint8] =
     result[i * 2] = uint8(g shr 8)
     result[i * 2 + 1] = uint8(g and 0xFF)
 
+# Reference copy of the ORIGINAL matchesCidrBytes comparison logic (pre fast-
+# path), kept verbatim in the test file so the parity assertion compares the new
+# implementation against the pre-existing behavior without depending on
+# wall-clock timing. It must stay in lock-step with the original algorithm.
+proc refMatchesCidrBytes(
+  ipBytes: array[16, uint8], ipIsV6: bool, cidr: CidrEntry
+): bool =
+  if not cidr.isValid:
+    return false
+  var ipBytes = ipBytes
+  var ipIsV6 = ipIsV6
+  if not cidr.isV6 and ipIsV6:
+    if isIpv4MappedIpv6(ipBytes):
+      var mapped: array[16, uint8]
+      extractMappedIpv4(ipBytes, mapped)
+      ipBytes = mapped
+      ipIsV6 = false
+    else:
+      return false
+  elif cidr.isV6 and not ipIsV6:
+    var v6Bytes: array[16, uint8]
+    for i in 0..9:
+      v6Bytes[i] = 0
+    v6Bytes[10] = 0xFF
+    v6Bytes[11] = 0xFF
+    v6Bytes[12] = ipBytes[0]
+    v6Bytes[13] = ipBytes[1]
+    v6Bytes[14] = ipBytes[2]
+    v6Bytes[15] = ipBytes[3]
+    ipBytes = v6Bytes
+    ipIsV6 = true
+  let totalBits = cidr.prefixLen
+  let fullBytes = totalBits div 8
+  let remainingBits = totalBits mod 8
+  let maxByte =
+    if cidr.isV6: 16
+    else: 4
+  for i in 0 ..< min(fullBytes, maxByte):
+    if ipBytes[i] != cidr.addrBytes[i]:
+      return false
+  if remainingBits > 0 and fullBytes < maxByte:
+    let mask = uint8(0xFF shl (8 - remainingBits))
+    if (ipBytes[fullBytes] and mask) != (cidr.addrBytes[fullBytes] and mask):
+      return false
+  true
+
 suite "ip_filter unit — parseIpv4Bytes":
   test "parses valid dotted-decimal IPv4 into bytes 0..3":
     var buf: array[16, uint8]
@@ -466,3 +512,146 @@ suite "ip_filter integration":
     runMiddlewareChain(@[mw], reqNoXff, resNoXff, flagHandler(addr nextNoXff))
     check not nextNoXff
     check resNoXff.statusCode == 403
+
+suite "ip_filter fast path — parity vs original logic":
+  test "fast path agrees with original reference logic across family matrix (>=400 cases)":
+    let v4Prefixes = @[0, 1, 7, 8, 15, 16, 24, 25, 31, 32]
+    let v4Networks = @[
+      "0.0.0.0", "10.0.0.0", "10.0.0.1", "192.168.1.0", "192.168.1.128", "11.0.0.0"]
+    # v4 clients span network/broadcast, first/last host, and just-outside
+    # addresses so every prefix boundary (byte-aligned and sub-byte) is hit.
+    let v4Clients = @[
+      "0.0.0.0", "10.0.0.0", "10.0.0.1", "10.0.0.254", "10.0.0.255",
+      "10.1.0.0", "10.255.255.255", "11.0.0.0", "192.168.1.0",
+      "192.168.1.128", "192.168.1.255", "192.168.2.0", "255.255.255.255"]
+    let v6Prefixes = @[0, 1, 7, 8, 15, 16, 24, 25, 31, 32, 64, 104, 112, 128]
+    let v6Networks = @[
+      "::", "2001:db8::", "2001:db9::", "::ffff:0.0.0.0", "64:ff9b::"]
+    let v6Clients = @[
+      "::", "::1", "2001:db8::1", "2001:db8::42", "2001:db9::1", "64:ff9b::1", "fe80::1"]
+    # IPv4-mapped IPv6 clients exercise the v6->v4 mapped normalization path.
+    let mappedClients = @[
+      "::ffff:10.0.0.1", "::ffff:192.168.1.50", "::ffff:11.0.0.1",
+      "::ffff:0.0.0.0", "::ffff:255.255.255.255"]
+
+    var casesChecked = 0
+    var mismatches = 0
+
+    template checkParity(clientStr: string, cidr: CidrEntry) =
+      let (cBytes, cIsV6) = clientIpBytes(clientStr)
+      let fast = matchesCidrBytes(cBytes, cIsV6, cidr)
+      let orig = refMatchesCidrBytes(cBytes, cIsV6, cidr)
+      inc casesChecked
+      if fast != orig: inc mismatches
+      check fast == orig
+
+    # v4 client vs v4 rule: this is the new fast path.
+    for p in v4Prefixes:
+      for net in v4Networks:
+        let cidr = parseCidr(net & "/" & $p)
+        check cidr.isValid and not cidr.isV6
+        for c in v4Clients:
+          checkParity(c, cidr)
+
+    # v6 mapped client vs v4 rule: generic mapped-normalization path.
+    for p in v4Prefixes:
+      for net in v4Networks:
+        let cidr = parseCidr(net & "/" & $p)
+        for c in mappedClients:
+          checkParity(c, cidr)
+
+    # v4 client vs v6 rule: generic v4->mapped normalization path.
+    for p in v6Prefixes:
+      for net in v6Networks:
+        let cidr = parseCidr(net & "/" & $p)
+        check cidr.isValid and cidr.isV6
+        for c in v4Clients:
+          checkParity(c, cidr)
+
+    # v6 client vs v6 rule: generic path.
+    for p in v6Prefixes:
+      for net in v6Networks:
+        let cidr = parseCidr(net & "/" & $p)
+        for c in v6Clients:
+          checkParity(c, cidr)
+
+    # Invalid entries must never match and must agree with the reference.
+    let bad = CidrEntry()
+    for c in v4Clients & mappedClients & v6Clients:
+      checkParity(c, bad)
+
+    check casesChecked >= 400
+    check mismatches == 0
+
+  test "fast path absolute correctness anchors (v4 boundaries)":
+    # 10/8 boundary: 10.x in-range, 11.0.0.0 just outside.
+    let c8 = parseCidr("10.0.0.0/8")
+    let (a, a6) = clientIpBytes("10.200.30.40")
+    check matchesCidrBytes(a, a6, c8) == true
+    let (b, b6) = clientIpBytes("11.0.0.0")
+    check matchesCidrBytes(b, b6, c8) == false
+    # /1 sub-byte boundary: 0-127 match 0.0.0.0/1, 128+ do not.
+    let c1 = parseCidr("0.0.0.0/1")
+    let (lo, lo6) = clientIpBytes("127.255.255.255")
+    check matchesCidrBytes(lo, lo6, c1) == true
+    let (hi, hi6) = clientIpBytes("128.0.0.0")
+    check matchesCidrBytes(hi, hi6, c1) == false
+    # /0 matches everything.
+    let c0 = parseCidr("0.0.0.0/0")
+    let (x, x6) = clientIpBytes("255.255.255.255")
+    check matchesCidrBytes(x, x6, c0) == true
+    # /31: the two addresses in the pair match, the next does not.
+    let c31 = parseCidr("192.168.1.128/31")
+    let (f, f6) = clientIpBytes("192.168.1.128")
+    check matchesCidrBytes(f, f6, c31) == true
+    let (l, l6) = clientIpBytes("192.168.1.129")
+    check matchesCidrBytes(l, l6, c31) == true
+    let (o, o6) = clientIpBytes("192.168.1.130")
+    check matchesCidrBytes(o, o6, c31) == false
+    # /25 boundary: .0-.127 match, .128 does not.
+    let c25 = parseCidr("192.168.1.0/25")
+    let (t, t6) = clientIpBytes("192.168.1.127")
+    check matchesCidrBytes(t, t6, c25) == true
+    let (u, u6) = clientIpBytes("192.168.1.128")
+    check matchesCidrBytes(u, u6, c25) == false
+
+suite "ip_filter fast path — end-to-end allow/deny":
+  test "real requests still allowed/denied identically (v4 hot path)":
+    let mw = ipFilter(IpFilterOptions(
+      allowlist: @["10.0.0.0/8", "192.168.1.0/24"],
+      denylist: @["10.1.2.3", "192.168.1.50/32"]))
+    # allowed: in 10/8, not explicitly denied.
+    let reqOk = newMockRequest(remoteIpStr = "10.9.8.7")
+    let resOk = newMockResponse()
+    var okCalled = false
+    runMiddlewareChain(@[mw], reqOk, resOk, flagHandler(addr okCalled))
+    check okCalled
+    check resOk.statusCode == 200
+    # denied: in allow range but explicitly denied host.
+    let reqDeny = newMockRequest(remoteIpStr = "10.1.2.3")
+    let resDeny = newMockResponse()
+    var denyCalled = false
+    runMiddlewareChain(@[mw], reqDeny, resDeny, flagHandler(addr denyCalled))
+    check not denyCalled
+    check resDeny.statusCode == 403
+    # allowed: 192.168.1.200 within /24.
+    let reqOk2 = newMockRequest(remoteIpStr = "192.168.1.200")
+    let resOk2 = newMockResponse()
+    var ok2Called = false
+    runMiddlewareChain(@[mw], reqOk2, resOk2, flagHandler(addr ok2Called))
+    check ok2Called
+    check resOk2.statusCode == 200
+    # denied: 192.168.1.50 explicitly denied.
+    let reqDeny2 = newMockRequest(remoteIpStr = "192.168.1.50")
+    let resDeny2 = newMockResponse()
+    var deny2Called = false
+    runMiddlewareChain(@[mw], reqDeny2, resDeny2, flagHandler(addr deny2Called))
+    check not deny2Called
+    check resDeny2.statusCode == 403
+    # denied: outside both allow ranges.
+    let reqOut = newMockRequest(remoteIpStr = "172.16.0.1")
+    let resOut = newMockResponse()
+    var outCalled = false
+    runMiddlewareChain(@[mw], reqOut, resOut, flagHandler(addr outCalled))
+    check not outCalled
+    check resOut.statusCode == 403

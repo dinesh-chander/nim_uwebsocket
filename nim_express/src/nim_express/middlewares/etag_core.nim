@@ -59,21 +59,74 @@ proc weakEqual*(a, b: string): bool {.inline, noSideEffect.} =
   ## this only runs during conditional-request handling on small headers.
   stripWeakPrefix(a) == stripWeakPrefix(b)
 
+const RfcTrimWhitespace = {' ', '\t', '\v', '\r', '\l', '\f'}
+
+## Returns the ``[start, finish)`` span of `s` with leading and trailing
+## whitespace removed, using the same whitespace set as ``strip``.
+proc trimValidatorSpan(
+  s: string, start, finish: int
+): tuple[start, finish: int] {.inline, noSideEffect.} =
+  var a = start
+  var b = finish
+  while a < b and s[a] in RfcTrimWhitespace:
+    inc a
+  while b > a and s[b - 1] in RfcTrimWhitespace:
+    dec b
+  (start: a, finish: b)
+
+## Returns the weak-comparison span of an already trimmed validator, dropping a
+## leading ``W/`` or ``w/`` prefix and trimming again, as `stripWeakPrefix` does.
+proc weakValidatorSpan(
+  s: string, start, finish: int
+): tuple[start, finish: int] {.inline, noSideEffect.} =
+  if finish - start >= 2 and (s[start] == 'W' or s[start] == 'w') and s[start + 1] == '/':
+    return trimValidatorSpan(s, start + 2, finish)
+  (start: start, finish: finish)
+
+## Compares two spans of two possibly different strings for byte equality.
+proc validatorSpansEqual(
+  a: string, aStart, aFinish: int,
+  b: string, bStart, bFinish: int
+): bool {.inline, noSideEffect.} =
+  let n = aFinish - aStart
+  if n != bFinish - bStart:
+    return false
+  var i = 0
+  while i < n:
+    if a[aStart + i] != b[bStart + i]:
+      return false
+    inc i
+  true
+
 ## Returns true if the If-None-Match header value matches the ETag using weak comparison.
 proc ifNoneMatchMatches*(ifNoneMatch, etag: string): bool {.inline, noSideEffect.} =
   ## Check If-None-Match against an ETag using weak comparison (RFC 7232 §3.2).
   ## Do NOT use for If-Match validation, which requires strong comparison.
-  let header = ifNoneMatch.strip()
-  if header.len == 0 or etag.len == 0:
+  ## Scans the header in place; token splitting keeps the previous behaviour of
+  ## splitting on every comma, including one inside a quoted entity tag.
+  let header = trimValidatorSpan(ifNoneMatch, 0, ifNoneMatch.len)
+  if header.finish == header.start or etag.len == 0:
     return false
-  if header == "*":
+  if header.finish - header.start == 1 and ifNoneMatch[header.start] == '*':
     return true
-  for raw in header.split(','):
-    let candidate = raw.strip()
-    if candidate.len == 0:
-      continue
-    if candidate == "*":
-      return true
-    if weakEqual(candidate, etag):
-      return true
+  let etagSpan = trimValidatorSpan(etag, 0, etag.len)
+  let etagWeak = weakValidatorSpan(etag, etagSpan.start, etagSpan.finish)
+  var pos = header.start
+  while true:
+    var segEnd = pos
+    while segEnd < header.finish and ifNoneMatch[segEnd] != ',':
+      inc segEnd
+    let token = trimValidatorSpan(ifNoneMatch, pos, segEnd)
+    if token.finish > token.start:
+      if token.finish - token.start == 1 and ifNoneMatch[token.start] == '*':
+        return true
+      let tokenWeak = weakValidatorSpan(ifNoneMatch, token.start, token.finish)
+      if validatorSpansEqual(
+        ifNoneMatch, tokenWeak.start, tokenWeak.finish,
+        etag, etagWeak.start, etagWeak.finish
+      ):
+        return true
+    if segEnd == header.finish:
+      break
+    pos = segEnd + 1
   false

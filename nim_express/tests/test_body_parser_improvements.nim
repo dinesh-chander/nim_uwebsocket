@@ -1,9 +1,58 @@
 import std/[unittest, asyncdispatch, json, strutils]
+import nim_utils/helpers/fast_map
 import ../src/nim_express/types
 import ../src/nim_express/request
 import ../src/nim_express/response
 import ../src/nim_express/middlewares/common
 import ../src/nim_express/middlewares/body_parser
+
+suite "isJsonContentType overload parity":
+  test "string and view overloads agree on 30 spellings":
+    let cases = @[
+      "application/json",
+      "APPLICATION/JSON",
+      "application/json; charset=utf-8",
+      "application/json\x0c",
+      "application/json\v",
+      "\vapplication/json",
+      "\tapplication/json\t",
+      "  application/json  ",
+      "application/json\x0d\x0a",
+      "application/+json",
+      "APPLICATION/+JSON",
+      "application/vnd.api+json",
+      "application/vnd.api+JSON",
+      "application/x+json",
+      "application/x+y+json",
+      "application/json+",
+      "application/jsonx",
+      "application/+jsonx",
+      "application//+json",
+      "application/",
+      "+json",
+      "",
+      " ",
+      ";",
+      "application/json;",
+      "text/plain",
+      "application/xml",
+      "application/json ; charset=utf-8",
+      "application/JSON;Charset=UTF-8",
+      "application/vnd.api+yaml",
+    ]
+    var compared = 0
+    for ct in cases:
+      let sRes = isJsonContentType(ct)
+      var vRes: bool
+      if ct.len > 0:
+        let v = fast_map.FastStringView(data: unsafeAddr ct[0], len: ct.len)
+        vRes = isJsonContentType(v)
+      else:
+        let v = fast_map.FastStringView(data: nil, len: 0)
+        vRes = isJsonContentType(v)
+      check sRes == vRes
+      inc compared
+    check compared == cases.len
 
 proc newMockHttpRequest(
   pathVal: string = "/", methodKind: HttpMethod = hmGet, bodyStr: string = "",
@@ -245,3 +294,52 @@ suite "body_parser integration":
     check nextRan3
     check resOther.statusCode == 200
     check resOther.finished
+
+suite "body_parser borrowed content-type gate (audit MWB-001)":
+  ## The default JSON gate now tests the borrowed Content-Type view via
+  ## isJsonContentType(FastStringView) instead of contentTypeToken(req.get(...))
+  ## + a per-request sequence literal. These cases pin that the accepted set is
+  ## unchanged, including the parameter/glob behaviour of the old path.
+  template assertJsonGate(mw: untyped, ct: string, wantParsed: bool) =
+    var ran = false
+    let req = newMockRequest("/", hmPost, """{"a":1}""", headerMap = @[("content-type", ct)])
+    let res = newMockResponse()
+    runMiddlewareChain(@[mw], req, res, flagHandler(addr ran))
+    check ran
+    if wantParsed:
+      check req.locals.getOrDefault("_json_valid", "") == "1"
+    else:
+      check req.locals.getOrDefault("_json_valid", "") != "1"
+
+  test "default gate accepts the same spellings as the old token scan":
+    let mw = bodyParser()
+    assertJsonGate(mw, "application/json", true)
+    assertJsonGate(mw, "APPLICATION/JSON", true)
+    assertJsonGate(mw, "application/json; charset=utf-8", true)
+    assertJsonGate(mw, "application/vnd.api+json", true)
+    assertJsonGate(mw, "application/JSON;Charset=UTF-8", true)
+
+  test "default gate rejects the same spellings as the old token scan":
+    let mw = bodyParser()
+    assertJsonGate(mw, "application/jsonx", false)
+    assertJsonGate(mw, "text/plain", false)
+    assertJsonGate(mw, "application/xml", false)
+    assertJsonGate(mw, "", false)
+
+  test "custom MIME list still uses the generic matcher path":
+    ## A non-default allow list must NOT take the JSON fast path: the custom
+    ## type has to parse and the library default must not.
+    let custom = body_parser.json(JsonParserOptions(
+      limitBytes: DefaultJsonLimitBytes,
+      acceptedMimeTypes: @["text/json"]))
+    assertJsonGate(custom, "text/json", true)
+    assertJsonGate(custom, "application/json", false)
+
+  test "urlencoded routing still works after the json gate restructure":
+    var ran = false
+    let req = newMockRequest("/", hmPost, "a=1",
+      headerMap = @[("content-type", "APPLICATION/X-WWW-FORM-URLENCODED")])
+    let res = newMockResponse()
+    runMiddlewareChain(@[bodyParser()], req, res, flagHandler(addr ran))
+    check ran
+    check req.locals.getOrDefault("form_a", "") == "1"

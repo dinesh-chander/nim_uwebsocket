@@ -415,3 +415,115 @@ suite "static_files precompressed variants":
       check res.native.capturedRaw.contains("GZDATA") == false
     finally:
       removeDir(root)
+
+suite "cachedExpandFilename cache-first probe (audit F1)":
+  test "warm cache hit returns the same value as the cold path":
+    let root = makeStaticRoot()
+    try:
+      let target = root / "hello.txt"
+      let cold = cachedExpandFilenameForTest(target)
+      let warm = cachedExpandFilenameForTest(target)
+      check cold == warm
+      check cold == target.expandFilename()
+    finally:
+      removeDir(root)
+
+  test "cached value always matches a fresh resolution of the same input":
+    # The no-negative-cache property is structural: the except fallback
+    # returns early and is never inserted, and only successful expansions are
+    # cached, so a failing value can never enter the cache. Assert the
+    # observable invariant instead: for any spelling, the helper's value
+    # equals a fresh expandFilename of that same spelling, or the documented
+    # plain-absolute fallback where the OS cannot resolve the path.
+    proc freshResolution(p: string): string =
+      try:
+        result = p.expandFilename()
+      except CatchableError:
+        result = if p.isAbsolute: p else: getCurrentDir() / p
+    let origCwd = getCurrentDir()
+    let root = createTempDir("nim_express_expand_", "")
+    createDir(root / "sub")
+    writeFile(root / "hello.txt", "hello")
+    try:
+      setCurrentDir(root)
+      let resolvable = [
+        root & "/hello.txt",         # plain existing file
+        root & "/./hello.txt",       # dot segment
+        root & "/sub/../hello.txt",  # dot-dot segment
+        "sub/../hello.txt",          # relative spelling
+      ]
+      for s in resolvable:
+        check cachedExpandFilenameForTest(s) == s.expandFilename()
+        check cachedExpandFilenameForTest(s) == freshResolution(s)
+      let unresolvable = [
+        root & "/missing.txt",       # missing file
+        root & "/no_dir/missing.txt",  # missing directory plus file
+        root & "/hello.txt/",        # trailing separator on a file
+      ]
+      for s in unresolvable:
+        check cachedExpandFilenameForTest(s) == freshResolution(s)
+      # A spelling never probed before must still be freshly expanded once
+      # the file exists, not served from any stale cache entry.
+      writeFile(root & "/late_created.txt", "late")
+      let freshSpelling = root & "/sub/../late_created.txt"
+      check cachedExpandFilenameForTest(freshSpelling) == freshSpelling.expandFilename()
+    finally:
+      setCurrentDir(origCwd)
+      removeDir(root)
+
+  test "relative and absolute spellings resolve to the same expanded path":
+    let origCwd = getCurrentDir()
+    let root = createTempDir("nim_express_expand_", "")
+    writeFile(root / "hello.txt", "x")
+    try:
+      setCurrentDir(root)
+      let viaRel = cachedExpandFilenameForTest("hello.txt")
+      let viaAbs = cachedExpandFilenameForTest(root / "hello.txt")
+      check viaRel == viaAbs
+      check viaRel == (root / "hello.txt").expandFilename()
+    finally:
+      setCurrentDir(origCwd)
+      removeDir(root)
+
+suite "static_meta_cache single-probe":
+  test "first call populates cache, second call serves from cache":
+    let root = makeStaticRoot()
+    try:
+      # First call: cold miss → file served, metadata cached.
+      let (res1, _) = runStatic(root, "/hello.txt")
+      check res1.statusCode == 200
+      check res1.native.capturedRaw.contains("Hello, static world!\n")
+
+      # Second call: warm hit → same file served from cached metadata.
+      let (res2, _) = runStatic(root, "/hello.txt")
+      check res2.statusCode == 200
+      check res2.native.capturedRaw.contains("Hello, static world!\n")
+    finally:
+      removeDir(root)
+
+  test "different paths do not cross-contaminate cache":
+    let root = makeStaticRoot()
+    try:
+      let (res1, _) = runStatic(root, "/hello.txt")
+      check res1.statusCode == 200
+      check res1.native.capturedRaw.contains("Hello, static world!\n")
+
+      let (res2, _) = runStatic(root, "/sub/note.txt")
+      check res2.statusCode == 200
+      check res2.native.capturedRaw.contains("sub-note")
+    finally:
+      removeDir(root)
+
+  test "miss for non-existent file does not pollute cache":
+    let root = makeStaticRoot()
+    try:
+      # Non-existent file → middleware passes through to app handler.
+      let (res1, _) = runStatic(root, "/no_such_file.txt")
+      check res1.native.capturedRaw.contains("app-handled")
+
+      # Existing file still works after the miss.
+      let (res2, _) = runStatic(root, "/hello.txt")
+      check res2.statusCode == 200
+      check res2.native.capturedRaw.contains("Hello, static world!\n")
+    finally:
+      removeDir(root)

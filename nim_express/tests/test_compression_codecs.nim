@@ -193,3 +193,75 @@ suite "Compression codec coverage":
     noTransform.set("Cache-Control", "public, no-transform")
     noTransform.send(payload)
     check noTransform.headers.getOrDefault("content-encoding", "") == ""
+
+suite "Accept-Encoding q-value fast path differential fuzz":
+  # Oracle built from the untouched exported reference proc -> IS current behaviour.
+  proc oracle(s: string): CompressionEncoding =
+    let r = acceptedEncodingsInPreferenceOrder(s)
+    if r.len == 0: ceNone else: r[0]
+
+  proc genStrings(): seq[string] =
+    var state: uint64 = 0x9E3779B97F4A7C15.uint64
+    proc rnd(): uint64 =
+      state = state xor (state shl 13)
+      state = state xor (state shr 7)
+      state = state xor (state shl 17)
+      state
+    let tokens = ["zstd","br","gzip","ZSTD","Br","GZIP","deflate","*","identity","x-gzip",""]
+    let params = ["", ";q=1", ";q=0", ";q=0.5", ";q=.5", ";q=0.001", ";q=1.0", ";q=2",
+                  "; q=0.9", ";q=", ";q=x", ";q=0.5.5", ";other=1"]
+    let seps = [",", ", ", ",,", ""]
+    result = @[]
+    for _ in 0..<20000:
+      var s = ""
+      let n = 1 + int(rnd() mod 4.uint64)
+      for k in 0..<n:
+        s.add(tokens[int(rnd() mod tokens.len.uint64)])
+        s.add(params[int(rnd() mod params.len.uint64)])
+        if k < n-1:
+          s.add(seps[int(rnd() mod seps.len.uint64)])
+      result.add(s)
+
+  let nasty = [
+    "",
+    "*",
+    "*;q=0",
+    "gzip;q=0.5, br;q=0.9, zstd;q=0.1",
+    "zstd;q=1.0, zstd;q=0.2",
+    "*;q=0.5, gzip;q=0",
+    ",,",
+    " , ",
+    "gzip;q=0.0000",
+    "deflate",
+    "identity",
+    "foo, bar",
+    "*;q=2",
+    "gzip;q=0.5;q=0.9",
+    "zstd;q=",
+    "br;q=x",
+    "gzip;q=0.5.5",
+    "*;q=0.5",
+    "gzip, br;q=0, zstd;q=0",
+    "zstd;q=1",
+    "gzip;q=2, zstd;q=1",
+    "x-gzip;q=0.5",
+    "  gzip  ;  q=0.5  ",
+    ";q=0.5",
+    "gzip;q=.5",
+    "br, gzip, zstd",
+    "*;q=0, gzip;q=1",
+    "zstd;q=0.999, br;q=0.999",
+  ]
+
+  let allStrings = genStrings() & (@nasty)
+  var comparisons = 0
+  var firstMismatch = ""
+  for s in allStrings:
+    inc comparisons
+    let a = chooseCompressionEncoding(s)
+    let b = oracle(s)
+    if a != b and firstMismatch == "":
+      firstMismatch = "input=<" & s & "> got=" & $a & " oracle=" & $b
+  echo "differential fuzz: ", comparisons, " comparisons over ", allStrings.len, " inputs"
+  check firstMismatch == ""
+  check comparisons == allStrings.len
