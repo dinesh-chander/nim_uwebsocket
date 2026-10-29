@@ -433,3 +433,40 @@ suite "integer digit-chunk regression (GEN-054 table)":
     for v in [642'i64, 643, 644, 664_200, 664_300, 999_999, 1_642_643, 8_888_642_000]:
       let doc = fj.serialize(IntWrap(v: v))
       check fj.deserialize(doc, IntWrap).v == v
+
+suite "unsigned overflow guard and borrowed utf8 span regression":
+  type
+    UIntWrap = object
+      v: uint64
+    StrWrap = object
+      s: string
+
+  test "uint64 samples below the max parse":
+    let fj = initFastJson()
+    let docs = ["0", "9", "18446744073709551615", "1234567890123456789",
+                "12345678901234567", "123456789012345678"]
+    let want = [0'u64, 9'u64, 18446744073709551615'u64, 1234567890123456789'u64,
+                12345678901234567'u64, 123456789012345678'u64]
+    for k in 0 ..< docs.len:
+      let doc = "{\"v\":" & docs[k] & "}"
+      check fj.deserialize(doc, UIntWrap).v == want[k]
+
+  test "uint64 overflow is rejected":
+    let fj = initFastJson()
+    let over = ["18446744073709551616", "99999999999999999999",
+                "1234567890123456789012345",
+                "123456789012345678901234567890123456789"]
+    for raw in over:
+      expect nim_fastjson.JsonError:
+        discard fj.deserialize("{\"v\":" & raw & "}", UIntWrap)
+
+  test "multi-byte utf8 string decodes through borrowed span":
+    let fj = initFastJson()
+    let payload = "caf" & "\xC3\xA9" & " \xE2\x98\x83 \xF0\x9F\x98\x80 end"
+    let doc = "{\"s\":\"" & payload & "\"}"
+    check fj.deserialize(doc, StrWrap).s == payload
+
+  test "invalid utf8 inside a string is rejected":
+    let fj = initFastJson()
+    expect nim_fastjson.JsonError:
+      discard fj.deserialize("{\"s\":\"bad \xC3\x28 tail\"}", StrWrap)
