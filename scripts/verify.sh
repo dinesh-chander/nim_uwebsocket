@@ -93,6 +93,7 @@ COMMON_PATHS=(
   --path:"$ROOT_DIR/vendor/malebolgia/src"
   --path:"$ROOT_DIR/vendor/jsony/src"
   --path:"$ROOT_DIR/vendor/checksums"
+  --path:"$ROOT_DIR/vendor/nimsimd/src"
 )
 
 check_sources nim_utils "${COMMON_PATHS[@]}"

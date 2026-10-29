@@ -8,7 +8,7 @@ HTTP_WS_PORT="${HTTP_WS_PORT:-9001}"
 CLUSTER_PORT="${CLUSTER_PORT:-19080}"
 THREADED_PORT="${THREADED_PORT:-19081}"
 USOCKETS_BACKEND="${USOCKETS_BACKEND:-epoll}"
-LINK_FLAGS="${ROOT_DIR}/nim_usockets/usockets/uSockets.a -lpthread -ldl"
+LINK_FLAGS="${ROOT_DIR}/nim_usockets/usockets/uSockets.a -lpthread -ldl -flto"
 NIM_BACKEND_FLAGS=()
 
 case "$USOCKETS_BACKEND" in
@@ -66,6 +66,7 @@ COMMON_PATHS=(
   --path:"$ROOT_DIR/vendor/malebolgia/src"
   --path:"$ROOT_DIR/vendor/jsony/src"
   --path:"$ROOT_DIR/vendor/checksums"
+  --path:"$ROOT_DIR/vendor/nimsimd/src"
 )
 
 wait_http() {
