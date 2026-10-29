@@ -61,7 +61,10 @@ run_test() {
   echo "Running: $name"
   echo "-----------------------------------------"
 
-  if "$BIN_DIR/$name"; then
+  # FUZZ_TIMEOUT bounds a single suite: fuzz_integration drives real sockets and
+  # runs far longer than the others, and without a bound it can consume the whole
+  # run and leave no Results line at all.
+  if timeout "${FUZZ_TIMEOUT:-900}" "$BIN_DIR/$name"; then
     echo "PASSED: $name"
     PASSED=$((PASSED + 1))
   else
