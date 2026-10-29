@@ -162,3 +162,63 @@ suite "etag integration":
     check res.locals[EtagLocalMode] == "strong"
     check res.locals[EtagLocalAllowedMethods] == "GET,POST"
     check res.locals[EtagLocalRespectExisting] == "0"
+
+## Reference copies of the ORIGINAL allocation-based implementation, kept here
+## verbatim so the span-based rewrite can be compared against real behaviour
+## rather than against a re-statement of intent.
+proc refStripWeakPrefix(tag: string): string =
+  let trimmed = tag.strip()
+  if trimmed.len >= 2 and (trimmed.startsWith("W/") or trimmed.startsWith("w/")):
+    return trimmed[2..^1].strip()
+  trimmed
+
+proc refIfNoneMatchMatches(ifNoneMatch, etag: string): bool =
+  let header = ifNoneMatch.strip()
+  if header.len == 0 or etag.len == 0:
+    return false
+  if header == "*":
+    return true
+  for raw in header.split(','):
+    let candidate = raw.strip()
+    if candidate.len == 0:
+      continue
+    if candidate == "*":
+      return true
+    if refStripWeakPrefix(candidate) == refStripWeakPrefix(etag):
+      return true
+  false
+
+suite "etag_core span-based If-None-Match (audit MWA-001)":
+  test "span scanner agrees with the original split/strip logic on a matrix":
+    let headers = @[
+      "", " ", "*", " , ", "\"abc\"", "W/\"abc\"", "w/\"abc\"",
+      " \"abc\" , \"def\" ", "\"a,b\"", "\"abc", "abc,,def", "\t\"abc\"\t",
+      "abc, *", "\"ABC\"", "\"\"", "\"abc\",\"abc\"", "x,\"abc\"", "\"abc\",",
+      "W/abc", "\"abc\" ,*,\"x\"", "  ,  ", "W/\"abc\",W/\"abc\"", "\"\"",
+      "\r\n\"abc\"", "*, ", "\"abc\";q=1"]
+    let etags = @["", "\"abc\"", "abc", "W/\"abc\"", "\"a,b\"", "\"ABC\"",
+                  "\"abc", "*", "W/", " \"abc\" "]
+    var checked = 0
+    var mismatches = 0
+    var firstMismatch = ""
+    for h in headers:
+      for e in etags:
+        let want = refIfNoneMatchMatches(h, e)
+        let got = ifNoneMatchMatches(h, e)
+        if want != got:
+          if mismatches == 0:
+            firstMismatch = "header=" & escape(h) & " etag=" & escape(e) &
+              " want=" & $want & " got=" & $got
+          inc mismatches
+        inc checked
+    check checked == headers.len * etags.len
+    if mismatches != 0:
+      echo "firstMismatch=", firstMismatch
+    check mismatches == 0
+
+  test "stripWeakPrefix output is unchanged for adversarial validators":
+    for tag in @[
+      "", " ", "W/\"abc\"", "w/\"abc\"", "W/", "w/", "  W/\"abc\"  ",
+      "WW/abc", "W//abc", "\"abc\"", "W/  \"abc\"  ", "W/x", "wx", "*",
+      "\tW/\"a b\"\t", "W/\"\"", "W/\"\"abc\""]:
+      check stripWeakPrefix(tag) == refStripWeakPrefix(tag)

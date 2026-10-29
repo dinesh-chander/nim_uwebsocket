@@ -569,6 +569,16 @@ app.use("/api", proxy(ProxyOptions(
 )))
 ```
 
+**Connection reuse.** `proxy` opens a new upstream connection for every request and
+resolves DNS on the event loop. For pooled upstream connections and offloaded DNS,
+build `fastProxy` once and keep it for the process lifetime:
+
+```nim
+import nim_express/src/nim_express/middlewares/fast_proxy
+
+app.use("/api", fastProxy("http://backend:8080"))
+```
+
 | Option | Default | Description |
 |--------|---------|-------------|
 | `target` | `""` | Static upstream URL |

@@ -4,4 +4,4 @@ nim	methodToken	nim_express/middlewares/etag_core.html#methodToken,HttpMethod	pr
 nim	methodAllowed	nim_express/middlewares/etag_core.html#methodAllowed,HttpMethod,string	proc methodAllowed(methodKind: HttpMethod; allowedCsv: string): bool		30
 nim	stripWeakPrefix	nim_express/middlewares/etag_core.html#stripWeakPrefix,string	proc stripWeakPrefix(tag: string): string		48
 nim	weakEqual	nim_express/middlewares/etag_core.html#weakEqual,string,string	proc weakEqual(a, b: string): bool		56
-nim	ifNoneMatchMatches	nim_express/middlewares/etag_core.html#ifNoneMatchMatches,string,string	proc ifNoneMatchMatches(ifNoneMatch, etag: string): bool		63
+nim	ifNoneMatchMatches	nim_express/middlewares/etag_core.html#ifNoneMatchMatches,string,string	proc ifNoneMatchMatches(ifNoneMatch, etag: string): bool		102

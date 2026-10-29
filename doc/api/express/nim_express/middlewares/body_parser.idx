@@ -19,9 +19,9 @@ nim	defaultUrlEncodedParserOptions	nim_express/middlewares/body_parser.html#defa
 nim	defaultXmlParserOptions	nim_express/middlewares/body_parser.html#defaultXmlParserOptions	proc defaultXmlParserOptions(): XmlParserOptions		83
 nim	contentTypeCharset	nim_express/middlewares/body_parser.html#contentTypeCharset,string	proc contentTypeCharset(contentType: string): string		90
 nim	json	nim_express/middlewares/body_parser.html#json,JsonParserOptions	proc json(options: JsonParserOptions = defaultJsonParserOptions()): AsyncMiddleware		218
-nim	text	nim_express/middlewares/body_parser.html#text,TextParserOptions	proc text(options: TextParserOptions = defaultTextParserOptions()): AsyncMiddleware		236
-nim	raw	nim_express/middlewares/body_parser.html#raw,RawParserOptions	proc raw(options: RawParserOptions = defaultRawParserOptions()): AsyncMiddleware		260
-nim	urlencoded	nim_express/middlewares/body_parser.html#urlencoded,UrlEncodedParserOptions	proc urlencoded(options: UrlEncodedParserOptions = defaultUrlEncodedParserOptions()): AsyncMiddleware		332
-nim	xml	nim_express/middlewares/body_parser.html#xml,XmlParserOptions	proc xml(options: XmlParserOptions = defaultXmlParserOptions()): AsyncMiddleware		352
-nim	bodyParser	nim_express/middlewares/body_parser.html#bodyParser	proc bodyParser(): AsyncMiddleware		372
-nim	bodyParserSync	nim_express/middlewares/body_parser.html#bodyParserSync	proc bodyParserSync(): SyncNextMiddleware		388
+nim	text	nim_express/middlewares/body_parser.html#text,TextParserOptions	proc text(options: TextParserOptions = defaultTextParserOptions()): AsyncMiddleware		246
+nim	raw	nim_express/middlewares/body_parser.html#raw,RawParserOptions	proc raw(options: RawParserOptions = defaultRawParserOptions()): AsyncMiddleware		270
+nim	urlencoded	nim_express/middlewares/body_parser.html#urlencoded,UrlEncodedParserOptions	proc urlencoded(options: UrlEncodedParserOptions = defaultUrlEncodedParserOptions()): AsyncMiddleware		342
+nim	xml	nim_express/middlewares/body_parser.html#xml,XmlParserOptions	proc xml(options: XmlParserOptions = defaultXmlParserOptions()): AsyncMiddleware		362
+nim	bodyParser	nim_express/middlewares/body_parser.html#bodyParser	proc bodyParser(): AsyncMiddleware		382
+nim	bodyParserSync	nim_express/middlewares/body_parser.html#bodyParserSync	proc bodyParserSync(): SyncNextMiddleware		399

@@ -1,0 +1,79 @@
+name: CI
+
+# release.yml only fires on v* tags, so nothing verified a pull request or a push
+# to main: several build defects lived in the tree because they were first
+# discovered while cutting a release. This workflow runs the same checks on the
+# way in. Docker image steps stay in release.yml, since they gate a release rather
+# than a change.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify:
+    name: verify (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Nim
+        uses: jiro4989/setup-nim-action@v2.3.0
+        with:
+          nim-version: "2.2.10"
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config liburing-dev libsqlite3-dev sqlite3
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install pkg-config jemalloc || true
+
+      # make test is Linux-only here: production-check below already compiles and
+      # runs the package suites on both platforms, so the extra root-level suites
+      # are checked on Linux rather than risking a platform-specific suite turning
+      # every pull request red. Extend the condition once it is proven on macOS.
+      - name: Unit and package tests
+        if: runner.os == 'Linux'
+        run: make test
+
+      - name: Production check
+        run: make production-check NATIVE_OPT=0
+
+      - name: Linux compatibility check
+        if: runner.os == 'Linux'
+        run: make linux-compat-check NATIVE_OPT=0
+
+      - name: Linux live transport smoke (epoll)
+        if: runner.os == 'Linux'
+        run: USOCKETS_BACKEND=epoll bash scripts/linux_smoke.sh
+
+      - name: Linux live transport smoke (io_uring)
+        if: runner.os == 'Linux'
+        run: USOCKETS_BACKEND=io_uring bash scripts/linux_smoke.sh
+
+      - name: macOS live transport smoke (GCD)
+        if: runner.os == 'macOS'
+        run: bash scripts/macos_smoke.sh
+
+      # Each suite is bounded by FUZZ_TIMEOUT so the layer can finish inside one CI
+      # job. fuzz_integration is the long one by design: 500 slow-client iterations
+      # with a 250 ms sleep and 2 s receive timeouts each. It cleared an 1800 s bound
+      # on an idle machine but was still running past 1840 s while a build competed
+      # for the same box, so this carries headroom rather than the tightest observed
+      # value.
+      - name: Fuzz suites
+        if: runner.os == 'Linux'
+        run: FUZZ_TIMEOUT=2700 bash tests/run_fuzz.sh

@@ -13,6 +13,25 @@ type
 
 var loggerSink*: LoggerSink = proc(line: string) = echo line
 
+## Per-thread, per-second cache of the formatted common/combined log timestamp;
+## formatting the clock is avoided on every request (audit MWA-003).
+when defined(singleThread):
+  var logTsSec: int64 = 0
+  var logTsText: string = ""
+else:
+  var logTsSec {.threadvar.}: int64
+  var logTsText {.threadvar.}: string
+
+## Returns the common/combined log timestamp, formatted once per wall-clock second and reused per thread.
+proc cachedLogTimestamp(): string {.inline.} =
+  let t = getTime()
+  let sec = toUnix(t)
+  if sec == logTsSec and logTsText.len > 0:
+    return logTsText
+  logTsText = t.utc.format("[dd/MMM/yyyy:HH:mm:ss '+0000']")
+  logTsSec = sec
+  logTsText
+
 const
   ordLlDebug = ord(MiddlewareLogLevel.llDebug)
   ordLlInfo = ord(MiddlewareLogLevel.llInfo)
@@ -149,14 +168,14 @@ proc logger*(format: MiddlewareLogFormat): AsyncMiddleware =
         loggerSink(color & $req.methodKind & "\e[0m " & safePath & " " & color & $res.statusCode & "\e[0m - " & $duration & "ms")
     elif logFormatOrd == ordLfCommon:
       let remoteIp = remoteIpForLog(req)
-      let ts = now().utc.format("[dd/MMM/yyyy:HH:mm:ss '+0000']")
+      let ts = cachedLogTimestamp()
       let requestLine = $req.methodKind & " " & safePath & " " & httpVersionString(req)
       let cl = req.get("content-length")
       let bodySize = if cl.len > 0: cl else: "-"
       loggerSink(remoteIp & " - - " & ts & " \"" & requestLine & "\" " & $res.statusCode & " " & bodySize)
     elif logFormatOrd == ordLfCombined:
       let remoteIp = remoteIpForLog(req)
-      let ts = now().utc.format("[dd/MMM/yyyy:HH:mm:ss '+0000']")
+      let ts = cachedLogTimestamp()
       let requestLine = $req.methodKind & " " & safePath & " " & httpVersionString(req)
       let cl = req.get("content-length")
       let bodySize = if cl.len > 0: cl else: "-"

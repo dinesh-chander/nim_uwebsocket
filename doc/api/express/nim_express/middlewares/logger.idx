@@ -3,7 +3,7 @@ nim	MiddlewareLogLevel	nim_express/middlewares/logger.html#MiddlewareLogLevel	ty
 nim	MiddlewareLogFormat	nim_express/middlewares/logger.html#MiddlewareLogFormat	type MiddlewareLogFormat		11
 nim	LoggerSink	nim_express/middlewares/logger.html#LoggerSink	type LoggerSink		12
 nim	loggerSink	nim_express/middlewares/logger.html#loggerSink_2	var loggerSink		14
-nim	sanitizeLogField	nim_express/middlewares/logger.html#sanitizeLogField,string	proc sanitizeLogField(value: string): string		29
-nim	logger	nim_express/middlewares/logger.html#logger,LogLevel	proc logger(level: MiddlewareLogLevel = types.llInfo): AsyncMiddleware		82
-nim	logger	nim_express/middlewares/logger.html#logger,LogFormat	proc logger(format: MiddlewareLogFormat): AsyncMiddleware		119
-nimgrp	logger	nim_express/middlewares/logger.html#logger-procs-all	proc		82
+nim	sanitizeLogField	nim_express/middlewares/logger.html#sanitizeLogField,string	proc sanitizeLogField(value: string): string		48
+nim	logger	nim_express/middlewares/logger.html#logger,LogLevel	proc logger(level: MiddlewareLogLevel = types.llInfo): AsyncMiddleware		101
+nim	logger	nim_express/middlewares/logger.html#logger,LogFormat	proc logger(format: MiddlewareLogFormat): AsyncMiddleware		138
+nimgrp	logger	nim_express/middlewares/logger.html#logger-procs-all	proc		101

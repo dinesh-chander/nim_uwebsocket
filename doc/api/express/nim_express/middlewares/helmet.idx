@@ -2,6 +2,6 @@ nimTitle	helmet	nim_express/middlewares/helmet.html	module nim_express/middlewar
 nim	HelmetOptions	nim_express/middlewares/helmet.html#HelmetOptions	object HelmetOptions		7
 nim	defaultHelmetOptions	nim_express/middlewares/helmet.html#defaultHelmetOptions	proc defaultHelmetOptions(): HelmetOptions		39
 nim	normalizeHelmetOptions	nim_express/middlewares/helmet.html#normalizeHelmetOptions,HelmetOptions	proc normalizeHelmetOptions(options: HelmetOptions): HelmetOptions		70
-nim	buildNonce	nim_express/middlewares/helmet.html#buildNonce	proc buildNonce(): string		120
-nim	applyCspNonce	nim_express/middlewares/helmet.html#applyCspNonce,string,string,string	proc applyCspNonce(policy, policyLower, nonce: string): string		135
-nim	helmet	nim_express/middlewares/helmet.html#helmet,HelmetOptions	proc helmet(options: HelmetOptions = defaultHelmetOptions()): AsyncMiddleware		160
+nim	buildNonce	nim_express/middlewares/helmet.html#buildNonce	proc buildNonce(): string		128
+nim	applyCspNonce	nim_express/middlewares/helmet.html#applyCspNonce,string,string,string	proc applyCspNonce(policy, policyLower, nonce: string): string		146
+nim	helmet	nim_express/middlewares/helmet.html#helmet,HelmetOptions	proc helmet(options: HelmetOptions = defaultHelmetOptions()): AsyncMiddleware		171

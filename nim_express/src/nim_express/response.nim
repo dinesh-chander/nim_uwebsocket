@@ -703,6 +703,11 @@ proc setTrusted*(res: Response, key: string, value: string): Response {.inline, 
   return res
 
 ## Return the current value of response header ``header``, or "" if unset.
+proc fastContentTypeValue(kind: FastContentType): string {.inline.} =
+  case kind
+  of fctNone: ""
+  of fctJson: MimeJsonUtf8
+
 proc get*(res: Response, header: string): string {.inline.} =
   let key = sanitizeHeaderName(header)
   if key.len == 0:
@@ -711,20 +716,26 @@ proc get*(res: Response, header: string): string {.inline.} =
     if res.setCookies.len > 0:
       return res.setCookies[0]
     return ""
-  if not res.headersInited:
-    return ""
-  res.headers.getOrDefault(key, "")
+  if res.headersInited and res.headers.contains(key):
+    return res.headers.getOrDefault(key, "")
+  if key == HeaderContentType:
+    return res.defaultContentType.fastContentTypeValue()
+  ""
 
 ## Return a zero-copy view of response header ``header``.
 proc getView*(res: Response, header: string): fast_map.FastStringView {.inline.} =
   let key = sanitizeHeaderName(header)
-  if key.len == 0 or not res.headersInited:
+  if key.len == 0:
     return default(fast_map.FastStringView)
   if key.isSetCookieHeader():
     if res.setCookies.len == 0:
       return default(fast_map.FastStringView)
     return fast_map.toFastStringView(res.setCookies[0])
-  res.headers.getView(key)
+  if res.headersInited and res.headers.contains(key):
+    return res.headers.getView(key)
+  if key == HeaderContentType and res.defaultContentType == fctJson:
+    return fast_map.toFastStringView(MimeJsonUtf8)
+  default(fast_map.FastStringView)
 
 ## Append ``value`` to response header ``header``, comma-joining with any existing value.
 proc append*(res: Response, header: string, value: string): Response {.inline, discardable.} =
@@ -826,6 +837,8 @@ proc removeHeader*(res: Response, header: string): Response {.inline, discardabl
   if key.isSetCookieHeader():
     res.setCookies.setLen(0)
     return res
+  if key == HeaderContentType:
+    res.defaultContentType = fctNone
   if res.headersInited:
     discard res.headers.del(key)
   return res
@@ -1366,6 +1379,9 @@ proc jsonRaw*(res: Response, jsonStr: sink string) {.inline.} =
   res.applyEtagPolicy(validatorBody, body, noBody)
   if noBody:
     body.setLen(0)
+  if not res.omitContentTypeForNoBody(noBody) and
+      not (res.headersInited and res.headers.contains(HeaderContentType)):
+    res.defaultContentType = fctJson
   if res.trySendSimpleFramedResponse(body, noBody, HeaderLineJsonContentType, representationLength):
     return
 
@@ -1428,18 +1444,18 @@ proc jsonRaw*(res: Response, jsonStr: sink string) {.inline.} =
 
 # Standard JSON response (JsonNode - slower but dynamic)
 ## Terminal writer: serialize ``data`` to JSON and send it; later writes are dropped.
+## Uses the ``jsonRaw`` framing path, so the content type is emitted from the
+## precomputed header line instead of a ``headers`` map insert.
 proc json*(res: Response, data: JsonNode) =
-  res.contentType(MimeJsonUtf8)
   if data.isNil:
-    res.send("null")
+    res.jsonRaw("null")
   else:
-    res.send($data)
+    res.jsonRaw($data)
 
 ## Send pre-serialized ``data`` as application/json without parsing; finalizes the response.
 proc json*(res: Response, data: sink string) =
   ## Send JSON string directly (no parsing)
-  res.contentType(MimeJsonUtf8)
-  res.send(move(data))
+  res.jsonRaw(move(data))
 
 ## Serialize ``data`` with nim_fastjson and send it as application/json; finalizes the response.
 proc json*[T](res: Response, data: T, sizeHint: int = 128) {.inline.} =

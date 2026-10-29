@@ -1,4 +1,4 @@
 nimTitle	static_files	nim_express/middlewares/static_files.html	module nim_express/middlewares/static_files		0
-nim	StaticCacheOptions	nim_express/middlewares/static_files.html#StaticCacheOptions	object StaticCacheOptions		8
-nim	defaultStaticCacheOptions	nim_express/middlewares/static_files.html#defaultStaticCacheOptions	proc defaultStaticCacheOptions(): StaticCacheOptions		15
-nim	serveStatic	nim_express/middlewares/static_files.html#serveStatic,string,string,StaticCacheOptions	proc serveStatic(root: string; prefix: string = "";\n            cache: StaticCacheOptions = defaultStaticCacheOptions()): AsyncMiddleware		42
+nim	StaticCacheOptions	nim_express/middlewares/static_files.html#StaticCacheOptions	object StaticCacheOptions		9
+nim	defaultStaticCacheOptions	nim_express/middlewares/static_files.html#defaultStaticCacheOptions	proc defaultStaticCacheOptions(): StaticCacheOptions		16
+nim	serveStatic	nim_express/middlewares/static_files.html#serveStatic,string,string,StaticCacheOptions	proc serveStatic(root: string; prefix: string = "";\n            cache: StaticCacheOptions = defaultStaticCacheOptions()): AsyncMiddleware		43

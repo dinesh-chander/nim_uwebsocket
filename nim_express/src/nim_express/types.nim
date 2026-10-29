@@ -103,9 +103,9 @@ proc isJsonContentType*(contentType: fast_map.FastStringView): bool {.inline.} =
       break
     inc i
   var startPos = 0
-  while startPos < tokenLen and (data[startPos] == ' ' or data[startPos] == '\t'):
+  while startPos < tokenLen and (data[startPos] in {' ', '\t', '\v', '\r', '\l', '\f'}):
     inc startPos
-  while tokenLen > startPos and (data[tokenLen - 1] == ' ' or data[tokenLen - 1] == '\t'):
+  while tokenLen > startPos and (data[tokenLen - 1] in {' ', '\t', '\v', '\r', '\l', '\f'}):
     dec tokenLen
   let valueLen = tokenLen - startPos
   if valueLen <= 0:
@@ -116,11 +116,11 @@ proc isJsonContentType*(contentType: fast_map.FastStringView): bool {.inline.} =
   )
   if trimmed.equalsIgnoreCaseAscii("application/json"):
     return true
-  if valueLen < 18:
+  if valueLen < 17:
     return false
   const prefix = "application/"
   const suffix = "+json"
-  if valueLen < prefix.len + suffix.len + 1:
+  if valueLen < prefix.len + suffix.len:
     return false
   for i in 0..<prefix.len:
     var a = data[startPos + i]
@@ -210,6 +210,12 @@ type
     ownsNativeRequestCleanup: bool
 
   # Response wrapper with Express.js-like API
+  ## Content type a response supplies from a precomputed header line instead of a
+  ## ``headers`` map entry, so ``get`` and ``getView`` can still report it.
+  FastContentType* = enum
+    fctNone ## No content type was supplied by a fast path.
+    fctJson ## The ``application/json; charset=utf-8`` header line was supplied.
+
   ## Express.js-like response wrapper around a native uSockets response.
   Response* = ref object
     ## Raw uSockets response handle.
@@ -238,6 +244,10 @@ type
     compressEncoding*: string # Selected content-encoding token (zstd/br/gzip)
     ## Whether headers were initialized.
     headersInited*: bool
+    ## Content type emitted from a precomputed header line; never a ``headers``
+    ## entry, so ``headersInited`` stays false. Read back by ``get`` and ``getView``
+    ## only when the map has no ``content-type`` key.
+    defaultContentType*: FastContentType
     ## Whether the response has been finalized.
     finished*: bool
     ## Scratch buffer for serialized headers.
@@ -1510,6 +1520,7 @@ proc newResponse*(native: HttpResponse, viewsDir: string = "views", viewExt: str
   result.locals = newFastMap[string]()
   discard result.locals.reserve(4)
   result.headersInited = false
+  result.defaultContentType = fctNone
   result.finished = false
   # Lazily initialize on first write.
   result.compress = false
@@ -1800,6 +1811,7 @@ proc resetResponseForReuse(res: Response, native: HttpResponse, app: ExpressApp,
   res.viewExt = viewExt
   res.requestMethodKind = if native != nil: native.requestMethodKind() else: hmGet
   res.statusCode = 200
+  res.defaultContentType = fctNone
   res.finished = false
   res.compress = false
   res.compressEncoding.setLen(0)

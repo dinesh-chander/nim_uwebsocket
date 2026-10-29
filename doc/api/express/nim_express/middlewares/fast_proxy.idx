@@ -1,17 +1,17 @@
 nimTitle	fast_proxy	nim_express/middlewares/fast_proxy.html	module nim_express/middlewares/fast_proxy		0
-nim	DefaultFastProxyRequestTimeoutMs	nim_express/middlewares/fast_proxy.html#DefaultFastProxyRequestTimeoutMs	const DefaultFastProxyRequestTimeoutMs		8
-nim	DefaultFastProxyConnectTimeoutMs	nim_express/middlewares/fast_proxy.html#DefaultFastProxyConnectTimeoutMs	const DefaultFastProxyConnectTimeoutMs		9
-nim	DefaultFastProxyMaxRequestBytes	nim_express/middlewares/fast_proxy.html#DefaultFastProxyMaxRequestBytes	const DefaultFastProxyMaxRequestBytes		10
-nim	DefaultFastProxyMaxResponseBytes	nim_express/middlewares/fast_proxy.html#DefaultFastProxyMaxResponseBytes	const DefaultFastProxyMaxResponseBytes		11
-nim	FastProxyTargetResolver	nim_express/middlewares/fast_proxy.html#FastProxyTargetResolver	type FastProxyTargetResolver		14
-nim	FastProxyPathRewriter	nim_express/middlewares/fast_proxy.html#FastProxyPathRewriter	type FastProxyPathRewriter		16
-nim	hostPublic	nim_express/middlewares/fast_proxy.html#hostPublic	FastProxyHostValidation.hostPublic		18
-nim	hostPrivate	nim_express/middlewares/fast_proxy.html#hostPrivate	FastProxyHostValidation.hostPrivate		18
-nim	hostResolutionFailed	nim_express/middlewares/fast_proxy.html#hostResolutionFailed	FastProxyHostValidation.hostResolutionFailed		18
-nim	FastProxyHostValidation	nim_express/middlewares/fast_proxy.html#FastProxyHostValidation	enum FastProxyHostValidation		18
-nim	FastProxyOptions	nim_express/middlewares/fast_proxy.html#FastProxyOptions	object FastProxyOptions		36
-nim	defaultFastProxyOptions	nim_express/middlewares/fast_proxy.html#defaultFastProxyOptions	proc defaultFastProxyOptions(): FastProxyOptions		74
-nim	initFastProxyOptions	nim_express/middlewares/fast_proxy.html#initFastProxyOptions,string	proc initFastProxyOptions(target: string): FastProxyOptions		95
-nim	fastProxy	nim_express/middlewares/fast_proxy.html#fastProxy,string,int,int,int	proc fastProxy(target: string; maxConnsPerHost: int = 16;\n          maxRequestBytes: int = DefaultFastProxyMaxRequestBytes;\n          maxResponseBytes: int = DefaultFastProxyMaxResponseBytes): AsyncMiddleware		869
-nim	fastProxy	nim_express/middlewares/fast_proxy.html#fastProxy,FastProxyOptions	proc fastProxy(options: FastProxyOptions = defaultFastProxyOptions()): AsyncMiddleware		910
-nimgrp	fastproxy	nim_express/middlewares/fast_proxy.html#fastProxy-procs-all	proc		869
+nim	DefaultFastProxyRequestTimeoutMs	nim_express/middlewares/fast_proxy.html#DefaultFastProxyRequestTimeoutMs	const DefaultFastProxyRequestTimeoutMs		9
+nim	DefaultFastProxyConnectTimeoutMs	nim_express/middlewares/fast_proxy.html#DefaultFastProxyConnectTimeoutMs	const DefaultFastProxyConnectTimeoutMs		10
+nim	DefaultFastProxyMaxRequestBytes	nim_express/middlewares/fast_proxy.html#DefaultFastProxyMaxRequestBytes	const DefaultFastProxyMaxRequestBytes		11
+nim	DefaultFastProxyMaxResponseBytes	nim_express/middlewares/fast_proxy.html#DefaultFastProxyMaxResponseBytes	const DefaultFastProxyMaxResponseBytes		12
+nim	FastProxyTargetResolver	nim_express/middlewares/fast_proxy.html#FastProxyTargetResolver	type FastProxyTargetResolver		15
+nim	FastProxyPathRewriter	nim_express/middlewares/fast_proxy.html#FastProxyPathRewriter	type FastProxyPathRewriter		17
+nim	hostPublic	nim_express/middlewares/fast_proxy.html#hostPublic	FastProxyHostValidation.hostPublic		19
+nim	hostPrivate	nim_express/middlewares/fast_proxy.html#hostPrivate	FastProxyHostValidation.hostPrivate		19
+nim	hostResolutionFailed	nim_express/middlewares/fast_proxy.html#hostResolutionFailed	FastProxyHostValidation.hostResolutionFailed		19
+nim	FastProxyHostValidation	nim_express/middlewares/fast_proxy.html#FastProxyHostValidation	enum FastProxyHostValidation		19
+nim	FastProxyOptions	nim_express/middlewares/fast_proxy.html#FastProxyOptions	object FastProxyOptions		37
+nim	defaultFastProxyOptions	nim_express/middlewares/fast_proxy.html#defaultFastProxyOptions	proc defaultFastProxyOptions(): FastProxyOptions		75
+nim	initFastProxyOptions	nim_express/middlewares/fast_proxy.html#initFastProxyOptions,string	proc initFastProxyOptions(target: string): FastProxyOptions		96
+nim	fastProxy	nim_express/middlewares/fast_proxy.html#fastProxy,string,int,int,int	proc fastProxy(target: string; maxConnsPerHost: int = 16;\n          maxRequestBytes: int = DefaultFastProxyMaxRequestBytes;\n          maxResponseBytes: int = DefaultFastProxyMaxResponseBytes): AsyncMiddleware		871
+nim	fastProxy	nim_express/middlewares/fast_proxy.html#fastProxy,FastProxyOptions	proc fastProxy(options: FastProxyOptions = defaultFastProxyOptions()): AsyncMiddleware		912
+nimgrp	fastproxy	nim_express/middlewares/fast_proxy.html#fastProxy-procs-all	proc		871

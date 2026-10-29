@@ -7,12 +7,12 @@ nim	ceZstd	nim_express/compression_codec.html#ceZstd	CompressionEncoding.ceZstd	
 nim	CompressionEncoding	nim_express/compression_codec.html#CompressionEncoding	enum CompressionEncoding		26
 nim	encodingFromToken	nim_express/compression_codec.html#encodingFromToken,string	proc encodingFromToken(token: string): CompressionEncoding		87
 nim	headerValue	nim_express/compression_codec.html#headerValue,CompressionEncoding	proc headerValue(enc: CompressionEncoding): string		95
-nim	chooseCompressionEncodingFast	nim_express/compression_codec.html#chooseCompressionEncodingFast,openArray[char]	proc chooseCompressionEncodingFast(acceptEncoding: openArray[char]): CompressionEncoding		186
-nim	acceptedEncodingsInPreferenceOrder	nim_express/compression_codec.html#acceptedEncodingsInPreferenceOrder,string	proc acceptedEncodingsInPreferenceOrder(acceptEncoding: string): seq[\n    CompressionEncoding]		208
-nim	chooseCompressionEncoding	nim_express/compression_codec.html#chooseCompressionEncoding,string	proc chooseCompressionEncoding(acceptEncoding: string): CompressionEncoding		237
-nim	chooseCompressionEncoding	nim_express/compression_codec.html#chooseCompressionEncoding,FastStringView	proc chooseCompressionEncoding(acceptEncoding: FastStringView): CompressionEncoding		248
-nim	compressGzip	nim_express/compression_codec.html#compressGzip,string,int	proc compressGzip(payload: string; level: int): string		276
-nim	compressBrotliPayload	nim_express/compression_codec.html#compressBrotliPayload,string,int,string	proc compressBrotliPayload(payload: string; level: int; contentType: string = ""): string		292
-nim	compressZstdPayload	nim_express/compression_codec.html#compressZstdPayload,string,int	proc compressZstdPayload(payload: string; level: int): string		297
-nim	compressPayload	nim_express/compression_codec.html#compressPayload,string,CompressionEncoding,int,string	proc compressPayload(payload: string; encoding: CompressionEncoding; level: int;\n                contentType: string = ""): string		302
-nimgrp	choosecompressionencoding	nim_express/compression_codec.html#chooseCompressionEncoding-procs-all	proc		237
+nim	chooseCompressionEncodingFast	nim_express/compression_codec.html#chooseCompressionEncodingFast,openArray[char]	proc chooseCompressionEncodingFast(acceptEncoding: openArray[char]): CompressionEncoding		298
+nim	acceptedEncodingsInPreferenceOrder	nim_express/compression_codec.html#acceptedEncodingsInPreferenceOrder,string	proc acceptedEncodingsInPreferenceOrder(acceptEncoding: string): seq[\n    CompressionEncoding]		320
+nim	chooseCompressionEncoding	nim_express/compression_codec.html#chooseCompressionEncoding,string	proc chooseCompressionEncoding(acceptEncoding: string): CompressionEncoding		349
+nim	chooseCompressionEncoding	nim_express/compression_codec.html#chooseCompressionEncoding,FastStringView	proc chooseCompressionEncoding(acceptEncoding: FastStringView): CompressionEncoding		363
+nim	compressGzip	nim_express/compression_codec.html#compressGzip,string,int	proc compressGzip(payload: string; level: int): string		394
+nim	compressBrotliPayload	nim_express/compression_codec.html#compressBrotliPayload,string,int,string	proc compressBrotliPayload(payload: string; level: int; contentType: string = ""): string		410
+nim	compressZstdPayload	nim_express/compression_codec.html#compressZstdPayload,string,int	proc compressZstdPayload(payload: string; level: int): string		415
+nim	compressPayload	nim_express/compression_codec.html#compressPayload,string,CompressionEncoding,int,string	proc compressPayload(payload: string; encoding: CompressionEncoding; level: int;\n                contentType: string = ""): string		420
+nimgrp	choosecompressionencoding	nim_express/compression_codec.html#chooseCompressionEncoding-procs-all	proc		349

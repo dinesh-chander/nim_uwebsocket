@@ -264,6 +264,9 @@
     ## Whether the wake thread is running.
     asyncPumpWakeThreadRunning*: Atomic[bool] ## Whether the wake thread started.
     asyncPumpWakeThreadStarted*: bool">ExpressApp</a></li>
+<li><a class="reference" href="#FastContentType" title="FastContentType = enum
+  fctNone,                  ## No content type was supplied by a fast path.
+  fctJson                    ## The ``application/json; charset=utf-8`` header line was supplied.">FastContentType</a></li>
 <li><a class="reference" href="#InspectorEvent" title="InspectorEvent = object
   kind*: InspectorEventKind  ## Phase where the event occurred.
   phase*: string             ## Request path when the event fired.
@@ -364,7 +367,10 @@
   statusCode*: int           ## Enable response compression for this response.
   compress*: bool            ## Selected content-encoding token (zstd/br/gzip).
   compressEncoding*: string  ## Whether headers were initialized.
-  headersInited*: bool       ## Whether the response has been finalized.
+  headersInited*: bool ## Content type emitted from a precomputed header line; never a ``headers``
+                       ## entry, so ``headersInited`` stays false. Read back by ``get`` and ``getView``
+                       ## only when the map has no ``content-type`` key.
+  defaultContentType*: FastContentType ## Whether the response has been finalized.
   finished*: bool            ## Scratch buffer for serialized headers.
   headerBuf*: string         ## Count of writes dropped after finalize.
   droppedLateWrites*: int    ## Hooks run before the response is finalized.
@@ -1131,6 +1137,16 @@
     
   </dd>
 </div>
+<div id="FastContentType">
+  <dt><pre><a href="#FastContentType"><span class="Identifier">FastContentType</span></a> <span class="Other">=</span> <span class="Keyword">enum</span>
+  <span class="Identifier">fctNone</span><span class="Other">,</span>                  <span class="Comment">## No content type was supplied by a fast path.</span>
+  <span class="Identifier">fctJson</span>                    <span class="Comment">## The ``application/json; charset=utf-8`` header line was supplied.</span></pre></dt>
+  <dd>
+    
+    
+    
+  </dd>
+</div>
 <div id="InspectorEvent">
   <dt><pre><a href="#InspectorEvent"><span class="Identifier">InspectorEvent</span></a> <span class="Other">=</span> <span class="Keyword">object</span>
   <span class="Identifier">kind</span><span class="Operator">*</span><span class="Other">:</span> <a href="#InspectorEventKind"><span class="Identifier">InspectorEventKind</span></a>  <span class="Comment">## Phase where the event occurred.</span>
@@ -1379,7 +1395,10 @@
   <span class="Identifier">statusCode</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>           <span class="Comment">## Enable response compression for this response.</span>
   <span class="Identifier">compress</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>            <span class="Comment">## Selected content-encoding token (zstd/br/gzip).</span>
   <span class="Identifier">compressEncoding</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>  <span class="Comment">## Whether headers were initialized.</span>
-  <span class="Identifier">headersInited</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>       <span class="Comment">## Whether the response has been finalized.</span>
+  <span class="Identifier">headersInited</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span> <span class="Comment">## Content type emitted from a precomputed header line; never a ``headers``</span>
+                       <span class="Comment">## entry, so ``headersInited`` stays false. Read back by ``get`` and ``getView``</span>
+                       <span class="Comment">## only when the map has no ``content-type`` key.</span>
+  <span class="Identifier">defaultContentType</span><span class="Operator">*</span><span class="Other">:</span> <a href="#FastContentType"><span class="Identifier">FastContentType</span></a> <span class="Comment">## Whether the response has been finalized.</span>
   <span class="Identifier">finished</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>            <span class="Comment">## Scratch buffer for serialized headers.</span>
   <span class="Identifier">headerBuf</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>         <span class="Comment">## Count of writes dropped after finalize.</span>
   <span class="Identifier">droppedLateWrites</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>    <span class="Comment">## Hooks run before the response is finalized.</span>
@@ -2519,7 +2538,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-26 18:22:17 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-10-29 04:40:33 UTC</small>
       </div>
     </div>
   </div>

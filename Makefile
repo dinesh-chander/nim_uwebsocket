@@ -152,7 +152,7 @@ WEBSOCKETLOAD_BIN ?= nim_websocketcli/websocketload
 WS_RANDOM_OBJECT_BENCH_BIN ?= benchmark/ws_random_object_bench
 
 # Build targets
-.PHONY: all build build-all deps check-iouring-deps usockets validate-usockets-backend usockets-gcd usockets-kqueue usockets-epoll usockets-iouring bench benchmarks bench-gcd bench-kqueue bench-epoll bench-iouring bench-smoke linux-compat-check macos-smoke production-check websocketload ws-echo-bench ws-random-object-bench ws-scale-setup examples build-examples test coverage verify clean clean-examples clean-bench clean-all
+.PHONY: all build build-all deps check-iouring-deps usockets validate-usockets-backend usockets-gcd usockets-kqueue usockets-epoll usockets-iouring bench benchmarks bench-gcd bench-kqueue bench-epoll bench-iouring bench-smoke linux-compat-check macos-smoke production-check websocketload ws-echo-bench ws-random-object-bench ws-scale-setup examples build-examples test coverage verify clean clean-examples clean-bench clean-all ci
 
 NIM_PARALLEL ?= --parallelBuild:8
 
@@ -252,19 +252,19 @@ bench-smoke: deps
 	@mkdir -p $(BENCH_SMOKE_DIR)
 	$(NIM) c --compileOnly -d:release --nimcache:$(BENCH_SMOKE_DIR)/fastmap \
 		$(NIM_EXTRA_FLAGS) \
-		--path:nim_utils/src \
+		--path:nim_utils/src --path:vendor/nimsimd/src \
 		-o:$(BENCH_SMOKE_DIR)/bench_fastmap nim_utils/benchmark/bench_fastmap.nim
 	$(NIM) c --compileOnly -d:release --nimcache:$(BENCH_SMOKE_DIR)/hpack \
 		$(NIM_EXTRA_FLAGS) \
-		--path:nim_utils/src --path:nim_usockets/src \
+		--path:nim_utils/src --path:nim_usockets/src --path:vendor/nimsimd/src \
 		-o:$(BENCH_SMOKE_DIR)/bench_hpack benchmark/bench_hpack.nim
 	$(NIM) c --compileOnly -d:release --nimcache:$(BENCH_SMOKE_DIR)/h2_frames \
 		$(NIM_EXTRA_FLAGS) \
-		--path:nim_utils/src --path:nim_usockets/src \
+		--path:nim_utils/src --path:nim_usockets/src --path:vendor/nimsimd/src \
 		-o:$(BENCH_SMOKE_DIR)/bench_h2_frames benchmark/bench_h2_frames.nim
 	$(NIM) c --compileOnly -d:release --nimcache:$(BENCH_SMOKE_DIR)/websocket \
 		$(NIM_EXTRA_FLAGS) \
-		--path:nim_utils/src --path:nim_usockets/src \
+		--path:nim_utils/src --path:nim_usockets/src --path:vendor/nimsimd/src \
 		-o:$(BENCH_SMOKE_DIR)/bench_websocket benchmark/bench_websocket.nim
 	$(NIM) c --compileOnly -d:release --nimcache:$(BENCH_SMOKE_DIR)/fasthttpclient \
 		$(NIM_EXTRA_FLAGS) \
@@ -340,6 +340,13 @@ verify: deps usockets
 
 production-check: verify bench-smoke
 
+# Pre-merge gate that mirrors .github/workflows/ci.yml. GitHub Actions cannot run
+# jobs for this account (every job, including a two-line ping probe, fails before
+# its first step), so run this locally instead. See scripts/ci_local.sh.
+ci:
+	@./scripts/ci_local.sh
+
+
 # Clean targets
 clean: clean-examples clean-bench
 	rm -f $(USOCKETS_DIR)/*.o $(USOCKETS_DIR)/*.a $(USOCKETS_DIR)/.certs 2>/dev/null || true
@@ -393,7 +400,7 @@ docs-async-logger:
 	rm -rf doc/api/async-logger/
 	mkdir -p doc/api/async-logger/
 	$(NIM) doc --outdir:"doc/api/async-logger/" \
-		--path:nim_utils/src \
+		--path:nim_utils/src --path:vendor/nimsimd/src \
 		nim_utils/src/nim_utils/async_logger.nim
 
 docs-fast-map:

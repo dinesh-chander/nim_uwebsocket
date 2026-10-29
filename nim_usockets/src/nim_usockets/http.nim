@@ -9714,18 +9714,36 @@ proc sendWsCloseAndTerminate(sockData: ptr SocketData, s: UsSocketPtr, payload: 
   if s != nil and sockData.server != nil and sockData.hasFlag(SDF_PENDING_CLOSE) and sockData.wsQueueIsEmpty():
     us_socket_shutdown(sockData.server.ssl.toInt, s)
 
+from nim_utils/helpers/swar_group import swarUseSimd
+when swarUseSimd:
+  import nimsimd/sse2
+
 proc isAsciiOnly(data: string): bool {.inline.} =
   if data.len == 0:
     return true
   var i = 0
-  when cpuEndian == littleEndian:
+  when swarUseSimd:
     let p = cast[uint](unsafeAddr data[0])
-    while i + 8 <= data.len:
-      var w: uint64
-      copyMem(addr w, cast[pointer](p + uint(i)), 8)
-      if (w and 0x8080808080808080'u64) != 0:
+    while i + 32 <= data.len:
+      let a = mm_loadu_si128(cast[ptr M128i](cast[pointer](p + uint(i))))
+      let b = mm_loadu_si128(cast[ptr M128i](cast[pointer](p + uint(i + 16))))
+      if (mm_movemask_epi8(a) or mm_movemask_epi8(b)) != 0:
         return false
-      i += 8
+      i += 32
+    while i + 16 <= data.len:
+      let v = mm_loadu_si128(cast[ptr M128i](cast[pointer](p + uint(i))))
+      if mm_movemask_epi8(v) != 0:
+        return false
+      i += 16
+  else:
+    when cpuEndian == littleEndian:
+      let p = cast[uint](unsafeAddr data[0])
+      while i + 8 <= data.len:
+        var w: uint64
+        copyMem(addr w, cast[pointer](p + i), 8)
+        if (w and 0x8080808080808080'u64) != 0:
+          return false
+        i += 8
   while i < data.len:
     if ord(data[i]) > 127:
       return false
@@ -9736,19 +9754,41 @@ proc isAsciiOnlyBytes(data: openArray[byte], start: int, length: int): bool {.in
   if length == 0:
     return true
   var i = 0
-  when cpuEndian == littleEndian:
+  when swarUseSimd:
     let p = cast[uint](unsafeAddr data[start])
-    while i + 8 <= length:
-      var w: uint64
-      copyMem(addr w, cast[pointer](p + uint(i)), 8)
-      if (w and 0x8080808080808080'u64) != 0:
+    while i + 32 <= length:
+      let a = mm_loadu_si128(cast[ptr M128i](cast[pointer](p + uint(i))))
+      let b = mm_loadu_si128(cast[ptr M128i](cast[pointer](p + uint(i + 16))))
+      if (mm_movemask_epi8(a) or mm_movemask_epi8(b)) != 0:
         return false
-      i += 8
+      i += 32
+    while i + 16 <= length:
+      let v = mm_loadu_si128(cast[ptr M128i](cast[pointer](p + uint(i))))
+      if mm_movemask_epi8(v) != 0:
+        return false
+      i += 16
+  else:
+    when cpuEndian == littleEndian:
+      let p = cast[uint](unsafeAddr data[start])
+      while i + 8 <= length:
+        var w: uint64
+        copyMem(addr w, cast[pointer](p + i), 8)
+        if (w and 0x8080808080808080'u64) != 0:
+          return false
+        i += 8
   while i < length:
     if data[start + i] > 127:
       return false
     inc i
   true
+
+## Test hook exposing `isAsciiOnly` for regression tests.
+proc isAsciiOnlyForTest*(data: string): bool {.inline.} =
+  isAsciiOnly(data)
+
+## Test hook exposing `isAsciiOnlyBytes` for regression tests.
+proc isAsciiOnlyBytesForTest*(data: openArray[byte], start: int, length: int): bool {.inline.} =
+  isAsciiOnlyBytes(data, start, length)
 
 proc validateUtf8Bytes(data: openArray[byte], start: int, length: int): int {.inline.} =
   if length == 0:

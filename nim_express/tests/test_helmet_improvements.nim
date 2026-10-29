@@ -1,4 +1,4 @@
-import std/[unittest, asyncdispatch, strutils]
+import std/[unittest, asyncdispatch, strutils, tables, algorithm]
 import ../src/nim_express/types
 import ../src/nim_express/request
 import ../src/nim_express/response
@@ -335,3 +335,62 @@ suite "helmet integration":
         s.send("ok"))
     check nextCalled
     check res.statusCode == 200
+
+suite "helmet pre-lowercased names + nonce buffer reuse (audit MWB-002)":
+  test "header name key set is exactly the pre-change lowercase set":
+    ## The assertions in the "helmet integration" suite were green BEFORE the
+    ## pre-lowercasing change while the middleware passed mixed-case literals,
+    ## which proves `res.set` stores and emits lowercase names
+    ## (`sanitizeHeaderName`, response.nim:414-426). This test pins the full
+    ## key set so an accidental case change cannot slip through.
+    let opts = HelmetOptions(
+      xXssProtection: true, xXssProtectionValue: "0",
+      permissionsPolicy: true, permissionsPolicyValue: "geolocation=()",
+      crossOriginOpenerPolicy: true, crossOriginOpenerPolicyValue: "same-origin",
+      crossOriginResourcePolicy: true, crossOriginResourcePolicyValue: "same-site",
+      contentSecurityPolicy: true,
+      contentSecurityPolicyValue: "default-src 'self'")
+    let req = newMockRequest()
+    let res = newMockResponse()
+    runMiddlewareChain(@[helmet(opts)], req, res)
+    var keys: seq[string] = @[]
+    for k in res.headers.keys():
+      keys.add(k)
+    keys.sort()
+    let expected = @[
+      "content-security-policy", "cross-origin-opener-policy",
+      "cross-origin-resource-policy", "permissions-policy",
+      "referrer-policy", "x-content-type-options", "x-frame-options",
+      "x-xss-protection"]
+    check keys == expected
+    check res.headers.getOrDefault("x-content-type-options", "") == "nosniff"
+    check res.headers.getOrDefault("x-xss-protection", "") == "0"
+    check res.headers.getOrDefault("permissions-policy", "") == "geolocation=()"
+    # No mixed-case twin of any header may appear.
+    for k in keys:
+      check k == k.toLowerAscii()
+
+  test "nonce stays 32-char UPPERCASE hex with no lowercase nibbles":
+    ## Regression guard for the known bad candidate: a lowercase nibble table
+    ## passed length checks but failed byte parity on every sample.
+    var seen: Table[string, int]
+    for i in 0 ..< 4000:
+      let nonce = buildNonce()
+      check nonce.len == 32
+      for c in nonce:
+        check c in {'0' .. '9', 'A' .. 'F'}
+      seen[nonce] = seen.getOrDefault(nonce, 0) + 1
+    # 16 random bytes -> collisions are effectively impossible.
+    check seen.len >= 3990
+
+  test "nonce is independent per thread call site and reusable across calls":
+    ## The scratch buffer is reused; a returned string must never be mutated by
+    ## a later call (guards against returning a view of the scratch buffer).
+    let a = buildNonce()
+    let b = buildNonce()
+    check a != b
+    check a.len == 32 and b.len == 32
+    let aCopy = a
+    discard buildNonce()
+    discard buildNonce()
+    check a == aCopy

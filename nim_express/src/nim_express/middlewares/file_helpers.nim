@@ -53,6 +53,10 @@ when defined(singleThread):
 else:
   var pathExpandCache {.threadvar.}: FastMap[string]
 
+proc initPathExpandCache() {.inline.} =
+  if pathExpandCache == nil:
+    pathExpandCache = newFastMap[string]()
+
 const StaticPathExpandCacheMax* = 1024
 
 ## stat without std/os path normalization (fileExists/getFileInfo each pay
@@ -100,6 +104,13 @@ proc fileStatusOrNone*(path: string): RawFileStatus =
       result = RawFileStatus()
 
 proc cachedExpandFilename(path: string): string {.inline.} =
+  initPathExpandCache()
+  # Probe the cache before expanding: a warm hit skips the realpath-style
+  # walk entirely (audit F1: expandFilename cost ~1.5 us per static request
+  # while the probe itself is ~13 ns).
+  if pathExpandCache != nil and pathExpandCache.len > 0 and
+      pathExpandCache.tryGet(path, result):
+    return
   # `expandFilename` raises OSError when a final component does not exist;
   # sendFile must answer 404 instead, so fall back to a plain absolute path.
   var expanded: string
@@ -111,27 +122,27 @@ proc cachedExpandFilename(path: string): string {.inline.} =
     return if path.isAbsolute: path else: getCurrentDir() / path
   if pathExpandCache == nil:
     return expanded
-  if pathExpandCache.len > 0 and pathExpandCache.tryGet(path, result):
-    return
   result = expanded
   if pathExpandCache.len >= StaticPathExpandCacheMax:
     pathExpandCache.clear()
   discard pathExpandCache.put(path, result)
 
-proc staticMetaLookup(path: string): bool {.inline.} =
-  ## Return true with a fresh cached entry available via staticMetaTryGet.
+## Test hook: exposes the private `cachedExpandFilename` helper so unit tests
+## can assert its warm-hit and no-negative-cache contract directly.
+proc cachedExpandFilenameForTest*(path: string): string =
+  cachedExpandFilename(path)
+
+proc staticMetaGet(path: string, entry: var StaticMeta): bool {.inline.} =
+  ## Single-probe: returns true with `entry` filled if a fresh cache entry
+  ## exists; deletes and returns false if absent or stale.
   if staticMetaCache == nil or staticMetaCache.len == 0:
     return false
-  var entry: StaticMeta
   if not staticMetaCache.tryGet(path, entry):
     return false
   if epochTime() - entry.insertedAt < float64(StaticMetaCacheTtlSeconds):
     return true
   discard staticMetaCache.del(path)
   false
-
-proc staticMetaTryGet(path: string, entry: var StaticMeta): bool {.inline.} =
-  staticMetaCache.tryGet(path, entry)
 
 proc staticMetaInsert(path: string, meta: StaticMeta) {.inline.} =
   initStaticMetaCache()
@@ -483,7 +494,7 @@ proc sendFileCore(res: Res, req: Req, filePath: string, trustedRoot: string): Se
   var lastMod = ""
   var cachedMeta: StaticMeta
   var cachedMetaUsed = false
-  if staticMetaLookup(cacheKey) and staticMetaTryGet(cacheKey, cachedMeta):
+  if staticMetaGet(cacheKey, cachedMeta):
     # Steady-state fast path: one raw stat confirms file + mtime unchanged.
     # The entry was path-validated when inserted and stays trusted for its
     # TTL window (<= StaticMetaCacheTtlSeconds), bounding symlink/traversal

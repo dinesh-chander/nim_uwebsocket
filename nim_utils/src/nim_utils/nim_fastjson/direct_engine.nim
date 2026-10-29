@@ -303,8 +303,7 @@ proc ensureValidJsonUtf8Span(s: string, startIdx, endIdx: int) {.inline.} =
     return
   if not containsHighByte(s, startIdx, endIdx):
     return
-  let span = s[startIdx ..< endIdx]
-  let invalidAt = validateUtf8(span)
+  let invalidAt = validateUtf8(s.toOpenArray(startIdx, endIdx - 1))
   if invalidAt >= 0:
     jsonError("invalid UTF-8 in string", startIdx + invalidAt)
 
@@ -763,13 +762,13 @@ proc parseValue*(s: string, i: var int, value: var SomeUnsignedInt) =
   # Two digits per iteration halves the loop work for multi-digit numbers.
   while i + 1 < s.len and s[i] in {'0'..'9'} and s[i + 1] in {'0'..'9'}:
     let pair = uint64((ord(s[i]) - ord('0')) * 10 + (ord(s[i + 1]) - ord('0')))
-    if raw > (high(uint64) - pair) div 100:
+    if raw >= (1'u64 shl 56) and raw > (high(uint64) - pair) div 100:
       jsonError("unsigned integer overflow", i)
     raw = raw * 100'u64 + pair
     i += 2
   if i < s.len and s[i] in {'0'..'9'}:
     let digit = uint64(ord(s[i]) - ord('0'))
-    if raw > (high(uint64) - digit) div 10:
+    if raw >= (1'u64 shl 56) and raw > (high(uint64) - digit) div 10:
       jsonError("unsigned integer overflow", i)
     raw = raw * 10'u64 + digit
     inc i

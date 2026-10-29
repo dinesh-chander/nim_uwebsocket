@@ -8,12 +8,16 @@ USOCKETS_LIB="nim_usockets/usockets/uSockets.a"
 BIN_DIR="bin"
 
 NIM_COMMON="--mm:arc --hints:off --panics:off --path:nim_utils/src --path:nim_usockets/src --path:nim_express/src --path:nim_fasthttpclient/src --path:vendor/zippy/src --path:vendor/brotli/src --path:vendor/nim_zstd --path:vendor/nim_libdeflate_gzip/src --path:vendor/malebolgia/src --path:vendor/jsony/src --path:vendor/checksums"
+# uSockets.a is a clang LTO bitcode archive: the link must be driven by clang and
+# carry -flto, matching Makefile NIM_EXTRA_FLAGS and harness/common.sh.
+NIM_CC="${NIM_CC:---cc:clang}"
+NIM_COMMON="$NIM_COMMON $NIM_CC --path:vendor/nimsimd/src"
 case "$(uname -s)" in
   Darwin)
-    LINK_FLAGS="$USOCKETS_LIB -framework CoreFoundation"
+    LINK_FLAGS="$USOCKETS_LIB -framework CoreFoundation -flto"
     ;;
   Linux)
-    LINK_FLAGS="$USOCKETS_LIB -lpthread -ldl"
+    LINK_FLAGS="$USOCKETS_LIB -lpthread -ldl -flto"
     ;;
   *)
     LINK_FLAGS="$USOCKETS_LIB"
@@ -57,7 +61,12 @@ run_test() {
   echo "Running: $name"
   echo "-----------------------------------------"
 
-  if "$BIN_DIR/$name"; then
+  # FUZZ_TIMEOUT bounds a single suite so one slow suite cannot consume the whole
+  # run and leave no Results line at all. fuzz_integration needs the margin: it
+  # finished inside 1800s on an idle machine but was still in its slow phase past
+  # 1840s while another build competed for the box, so the default carries headroom
+  # for a loaded machine instead of a tight single-sample figure.
+  if timeout "${FUZZ_TIMEOUT:-2400}" "$BIN_DIR/$name"; then
     echo "PASSED: $name"
     PASSED=$((PASSED + 1))
   else

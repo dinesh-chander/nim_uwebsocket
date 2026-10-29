@@ -325,7 +325,7 @@ proc parseChunkSizeLine(data: string, pos: int, lineEnd: int, chunkSize: var int
   chunkSize = size
   true
 
-## Feeds a chunk of response bytes into ``parser`` and returns true once the full response or an error is finalized, recording the number of bytes taken in ``consumed``.
+## Feeds a chunk of response bytes into ``parser`` and returns true once the full response or an error is finalized, recording the number of bytes taken in ``consumed``. On incomplete data ``consumed`` reports the bytes already parsed so callers can compact the buffer; parser state carries the partial line across calls.
 proc feedData*(parser: var Http1Parser, data: string, consumed: var int): bool =
   consumed = 0
   var pos = 0
@@ -338,6 +338,7 @@ proc feedData*(parser: var Http1Parser, data: string, consumed: var int): bool =
           parser.state = psError
           consumed = pos
           return true
+        consumed = pos
         return false
       if lineEnd - pos > MaxHttp1StatusLineLen:
         parser.state = psError
@@ -356,6 +357,7 @@ proc feedData*(parser: var Http1Parser, data: string, consumed: var int): bool =
           parser.state = psError
           consumed = pos
           return true
+        consumed = pos
         return false
       if lineEnd == pos:
         pos += 2

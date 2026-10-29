@@ -3,12 +3,16 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NIM="${NIM:-nim}"
+# uSockets.a is built as a clang LTO bitcode archive, so the link must be driven by
+# clang: GNU ld without the LLVMgold plugin rejects it with "file format not
+# recognized". Mirrors Makefile NIM_EXTRA_FLAGS and harness/common.sh.
+NIM_CC="${NIM_CC:---cc:clang}"
 NIMCACHE_ROOT="${NIMCACHE_ROOT:-/tmp/nim_uwebsocket_linux_smoke}"
 HTTP_WS_PORT="${HTTP_WS_PORT:-9001}"
 CLUSTER_PORT="${CLUSTER_PORT:-19080}"
 THREADED_PORT="${THREADED_PORT:-19081}"
 USOCKETS_BACKEND="${USOCKETS_BACKEND:-epoll}"
-LINK_FLAGS="${ROOT_DIR}/nim_usockets/usockets/uSockets.a -lpthread -ldl"
+LINK_FLAGS="${ROOT_DIR}/nim_usockets/usockets/uSockets.a -lpthread -ldl -flto"
 NIM_BACKEND_FLAGS=()
 
 case "$USOCKETS_BACKEND" in
@@ -66,6 +70,7 @@ COMMON_PATHS=(
   --path:"$ROOT_DIR/vendor/malebolgia/src"
   --path:"$ROOT_DIR/vendor/jsony/src"
   --path:"$ROOT_DIR/vendor/checksums"
+  --path:"$ROOT_DIR/vendor/nimsimd/src"
 )
 
 wait_http() {
@@ -110,7 +115,7 @@ mkdir -p "$NIMCACHE_ROOT" "$ROOT_DIR/bin"
 
 make usockets USOCKETS_BACKEND="$USOCKETS_BACKEND" NATIVE_OPT=0
 
-"$NIM" c --skipProjCfg --nimcache:"$NIMCACHE_ROOT/ws_live" \
+"$NIM" c "${NIM_CC}" --skipProjCfg --nimcache:"$NIMCACHE_ROOT/ws_live" \
   "${COMMON_PATHS[@]}" "${NIM_BACKEND_FLAGS[@]}" -d:nimUwebsocketsTest \
   --passC:"-D_GNU_SOURCE -ftls-model=local-exec" \
   --passL:"$LINK_FLAGS" \
@@ -138,7 +143,7 @@ WS_UPGRADE_HEADERS="$(
 grep -q "101 Switching Protocols" <<<"$WS_UPGRADE_HEADERS"
 grep -qi "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=" <<<"$WS_UPGRADE_HEADERS"
 
-"$NIM" c --skipProjCfg --threads:on --nimcache:"$NIMCACHE_ROOT/linux_multiprocess" \
+"$NIM" c "${NIM_CC}" --skipProjCfg --threads:on --nimcache:"$NIMCACHE_ROOT/linux_multiprocess" \
   "${COMMON_PATHS[@]}" "${NIM_BACKEND_FLAGS[@]}" -d:release --opt:speed --mm:arc \
   --passC:"-D_GNU_SOURCE -ftls-model=local-exec" \
   --passL:"$LINK_FLAGS" \
@@ -184,7 +189,7 @@ if [ "$LARGE_BYTES" -lt 32000 ]; then
   exit 1
 fi
 
-"$NIM" c --skipProjCfg --threads:on --nimcache:"$NIMCACHE_ROOT/linux_multithreaded" \
+"$NIM" c "${NIM_CC}" --skipProjCfg --threads:on --nimcache:"$NIMCACHE_ROOT/linux_multithreaded" \
   "${COMMON_PATHS[@]}" "${NIM_BACKEND_FLAGS[@]}" -d:release --opt:speed --mm:arc \
   --passC:"-D_GNU_SOURCE -ftls-model=local-exec" \
   --passL:"$LINK_FLAGS" \
