@@ -531,6 +531,10 @@ proc proxy*(
   options: ProxyOptions = defaultProxyOptions()
 ): AsyncMiddleware =
   ## Forward requests to an upstream backend server.
+  ##
+  ## Opens one upstream connection per request and resolves DNS on the event
+  ## loop, so keep-alive connections are not reused. Use `fastProxy` for pooled
+  ## upstream connections and offloaded DNS resolution.
   let opts = normalizeProxyOptions(options)
 
   result = proc(req: Req, res: Res, next: NextProc): Future[void] {.async.} =
