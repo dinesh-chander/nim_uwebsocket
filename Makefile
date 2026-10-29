@@ -393,7 +393,7 @@ docs-async-logger:
 	rm -rf doc/api/async-logger/
 	mkdir -p doc/api/async-logger/
 	$(NIM) doc --outdir:"doc/api/async-logger/" \
-		--path:nim_utils/src \
+		--path:nim_utils/src --path:vendor/nimsimd/src \
 		nim_utils/src/nim_utils/async_logger.nim
 
 docs-fast-map:
