@@ -106,7 +106,12 @@ for i in 1 .. Iterations:
   if i mod ProgressInterval == 0: echo "  progress: ", i, "/", Iterations
   let payload = randomBytes(rng.rand(50))
   let data = buildFrame(true, 0, 0x1, false, payload)
-  let res = decodeFrame(data)
+  # Masking is server policy, and the shared decoder exposes it as requireMasked.
+  # The default is false because server-to-client frames are unmasked per RFC 6455,
+  # so calling this without the flag asserts nothing about server behaviour. Server
+  # enforcement is the -2 path in the http.nim frame reader, covered by
+  # test_ws_comprehensive.
+  let res = decodeFrame(data, requireMasked = true)
   if res.isSome:
     fail("unmasked_" & $i, "accepted unmasked frame", data)
 

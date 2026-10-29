@@ -106,10 +106,17 @@ fuzzCategory("Upgrade request construction verification", Iterations):
   let port = ports[rng.rand(ports.high)]
   let key = generateWebSocketKey()
   let req = buildUpgradeRequest(host, path, port, key)
-  if "websocket" notin req:
-    fail("upgrade_" & $i, "missing websocket in upgrade request")
-  if key notin req:
-    fail("upgrade_" & $i, "missing key in upgrade request")
+  if req.len == 0:
+    # A rejection, not a failure: host and path are drawn from a set that includes
+    # "" and random bytes, and buildUpgradeRequest returns "" when isValidHost or
+    # isValidPath refuses them (the CRLF/injection guard). Assert only the headers
+    # of requests that were actually built.
+    discard
+  else:
+    if "websocket" notin req:
+      fail("upgrade_" & $i, "missing websocket in upgrade request")
+    if key notin req:
+      fail("upgrade_" & $i, "missing key in upgrade request")
 
 fuzzCategory("Invalid opcodes", Iterations):
   let invalidOpcodes = [0x03, 0x04, 0x05, 0x06, 0x07, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F]
