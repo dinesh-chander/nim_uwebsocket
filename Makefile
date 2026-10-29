@@ -152,7 +152,7 @@ WEBSOCKETLOAD_BIN ?= nim_websocketcli/websocketload
 WS_RANDOM_OBJECT_BENCH_BIN ?= benchmark/ws_random_object_bench
 
 # Build targets
-.PHONY: all build build-all deps check-iouring-deps usockets validate-usockets-backend usockets-gcd usockets-kqueue usockets-epoll usockets-iouring bench benchmarks bench-gcd bench-kqueue bench-epoll bench-iouring bench-smoke linux-compat-check macos-smoke production-check websocketload ws-echo-bench ws-random-object-bench ws-scale-setup examples build-examples test coverage verify clean clean-examples clean-bench clean-all
+.PHONY: all build build-all deps check-iouring-deps usockets validate-usockets-backend usockets-gcd usockets-kqueue usockets-epoll usockets-iouring bench benchmarks bench-gcd bench-kqueue bench-epoll bench-iouring bench-smoke linux-compat-check macos-smoke production-check websocketload ws-echo-bench ws-random-object-bench ws-scale-setup examples build-examples test coverage verify clean clean-examples clean-bench clean-all ci
 
 NIM_PARALLEL ?= --parallelBuild:8
 
@@ -339,6 +339,13 @@ verify: deps usockets
 	NIM_EXTRA_FLAGS="$(NIM_EXTRA_FLAGS)" ./scripts/verify.sh
 
 production-check: verify bench-smoke
+
+# Pre-merge gate that mirrors .github/workflows/ci.yml. GitHub Actions cannot run
+# jobs for this account (every job, including a two-line ping probe, fails before
+# its first step), so run this locally instead. See scripts/ci_local.sh.
+ci:
+	@./scripts/ci_local.sh
+
 
 # Clean targets
 clean: clean-examples clean-bench
