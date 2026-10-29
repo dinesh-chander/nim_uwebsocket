@@ -12,6 +12,13 @@ if [ -n "$NIM_EXTRA_FLAGS" ]; then
   EXTRA_FLAGS=($NIM_EXTRA_FLAGS)
 fi
 
+# uSockets.a is a clang LTO bitcode archive; linking it without -flto fails with
+# "error adding symbols: file format not recognized". harness/common.sh does the same.
+if printf '%s\n' "${EXTRA_FLAGS[@]+"${EXTRA_FLAGS[@]}"}" | grep -q -- '--cc:clang' &&
+   ! printf '%s\n' "${EXTRA_FLAGS[@]+"${EXTRA_FLAGS[@]}"}" | grep -q -- '-flto'; then
+  EXTRA_FLAGS+=(--passL:-flto)
+fi
+
 run_nim() {
   echo "+ $*"
   "$@"
