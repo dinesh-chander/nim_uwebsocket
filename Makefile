@@ -252,19 +252,19 @@ bench-smoke: deps
 	@mkdir -p $(BENCH_SMOKE_DIR)
 	$(NIM) c --compileOnly -d:release --nimcache:$(BENCH_SMOKE_DIR)/fastmap \
 		$(NIM_EXTRA_FLAGS) \
-		--path:nim_utils/src \
+		--path:nim_utils/src --path:vendor/nimsimd/src \
 		-o:$(BENCH_SMOKE_DIR)/bench_fastmap nim_utils/benchmark/bench_fastmap.nim
 	$(NIM) c --compileOnly -d:release --nimcache:$(BENCH_SMOKE_DIR)/hpack \
 		$(NIM_EXTRA_FLAGS) \
-		--path:nim_utils/src --path:nim_usockets/src \
+		--path:nim_utils/src --path:nim_usockets/src --path:vendor/nimsimd/src \
 		-o:$(BENCH_SMOKE_DIR)/bench_hpack benchmark/bench_hpack.nim
 	$(NIM) c --compileOnly -d:release --nimcache:$(BENCH_SMOKE_DIR)/h2_frames \
 		$(NIM_EXTRA_FLAGS) \
-		--path:nim_utils/src --path:nim_usockets/src \
+		--path:nim_utils/src --path:nim_usockets/src --path:vendor/nimsimd/src \
 		-o:$(BENCH_SMOKE_DIR)/bench_h2_frames benchmark/bench_h2_frames.nim
 	$(NIM) c --compileOnly -d:release --nimcache:$(BENCH_SMOKE_DIR)/websocket \
 		$(NIM_EXTRA_FLAGS) \
-		--path:nim_utils/src --path:nim_usockets/src \
+		--path:nim_utils/src --path:nim_usockets/src --path:vendor/nimsimd/src \
 		-o:$(BENCH_SMOKE_DIR)/bench_websocket benchmark/bench_websocket.nim
 	$(NIM) c --compileOnly -d:release --nimcache:$(BENCH_SMOKE_DIR)/fasthttpclient \
 		$(NIM_EXTRA_FLAGS) \
