@@ -4,10 +4,11 @@ nim	DefaultStaticFallbackOversizeStatus	nim_express/middlewares/file_helpers.htm
 nim	StaticMetaCacheTtlSeconds	nim_express/middlewares/file_helpers.html#StaticMetaCacheTtlSeconds	const StaticMetaCacheTtlSeconds		27
 nim	StaticMetaCacheMaxEntries	nim_express/middlewares/file_helpers.html#StaticMetaCacheMaxEntries	const StaticMetaCacheMaxEntries		28
 nim	StaticMeta	nim_express/middlewares/file_helpers.html#StaticMeta	object StaticMeta		30
-nim	StaticPathExpandCacheMax	nim_express/middlewares/file_helpers.html#StaticPathExpandCacheMax	const StaticPathExpandCacheMax		56
-nim	RawFileStatus	nim_express/middlewares/file_helpers.html#RawFileStatus	object RawFileStatus		60
-nim	fileStatusOrNone	nim_express/middlewares/file_helpers.html#fileStatusOrNone,string	proc fileStatusOrNone(path: string): RawFileStatus		81
-nim	getMimeType	nim_express/middlewares/file_helpers.html#getMimeType,string	proc getMimeType(filename: string): string		186
-nim	SendFileOutcome	nim_express/middlewares/file_helpers.html#SendFileOutcome	object SendFileOutcome		462
-nim	sendFile	nim_express/middlewares/file_helpers.html#sendFile,Res,Req,string,string	proc sendFile(res: Res; req: Req; filePath: string; trustedRoot: string = ""): Future[\n    void]		572
-nim	sendFileDirect	nim_express/middlewares/file_helpers.html#sendFileDirect,Res,Req,string,string	proc sendFileDirect(res: Res; req: Req; filePath: string; trustedRoot: string = "")		581
+nim	StaticPathExpandCacheMax	nim_express/middlewares/file_helpers.html#StaticPathExpandCacheMax	const StaticPathExpandCacheMax		60
+nim	RawFileStatus	nim_express/middlewares/file_helpers.html#RawFileStatus	object RawFileStatus		64
+nim	fileStatusOrNone	nim_express/middlewares/file_helpers.html#fileStatusOrNone,string	proc fileStatusOrNone(path: string): RawFileStatus		85
+nim	cachedExpandFilenameForTest	nim_express/middlewares/file_helpers.html#cachedExpandFilenameForTest,string	proc cachedExpandFilenameForTest(path: string): string		132
+nim	getMimeType	nim_express/middlewares/file_helpers.html#getMimeType,string	proc getMimeType(filename: string): string		197
+nim	SendFileOutcome	nim_express/middlewares/file_helpers.html#SendFileOutcome	object SendFileOutcome		473
+nim	sendFile	nim_express/middlewares/file_helpers.html#sendFile,Res,Req,string,string	proc sendFile(res: Res; req: Req; filePath: string; trustedRoot: string = ""): Future[\n    void]		583
+nim	sendFileDirect	nim_express/middlewares/file_helpers.html#sendFileDirect,Res,Req,string,string	proc sendFileDirect(res: Res; req: Req; filePath: string; trustedRoot: string = "")		592

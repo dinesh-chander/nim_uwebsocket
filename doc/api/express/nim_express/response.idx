@@ -30,105 +30,105 @@ nim	sendHtmlBody	nim_express/response.html#sendHtmlBody,Response,sinkstring	proc
 nim	status	nim_express/response.html#status,Response,int	proc status(res: Response; code: int): Response		640
 nim	set	nim_express/response.html#set,Response,string,string	proc set(res: Response; header: string; value: string): Response		668
 nim	setTrusted	nim_express/response.html#setTrusted,Response,string,string	proc setTrusted(res: Response; key: string; value: string): Response		688
-nim	get	nim_express/response.html#get,Response,string	proc get(res: Response; header: string): string		706
-nim	getView	nim_express/response.html#getView,Response,string	proc getView(res: Response; header: string): fast_map.FastStringView		719
-nim	append	nim_express/response.html#append,Response,string,string	proc append(res: Response; header: string; value: string): Response		730
-nim	links	nim_express/response.html#links,Response,openArray[]	proc links(res: Response; entries: openArray[(string, string)]): Response		755
-nim	format	nim_express/response.html#format,Response,Request,openArray[],proc)	proc format(res: Response; req: Request;\n       handlers: openArray[(string, proc () {.closure.})];\n       defaultHandler: proc () {.closure.} = nil): bool		783
-nim	removeHeader	nim_express/response.html#removeHeader,Response,string	proc removeHeader(res: Response; header: string): Response		820
-nim	contentType	nim_express/response.html#contentType,Response,string	proc contentType(res: Response; ct: string): Response		834
-nim	cookie	nim_express/response.html#cookie,Response,string,string,int,string,string,bool,bool,string	proc cookie(res: Response; name: string; value: string; maxAge: int = 0;\n       path: string = "/"; domain: string = ""; secure: bool = false;\n       httpOnly: bool = true; sameSite: string = "Lax"): Response		841
-nim	clearCookie	nim_express/response.html#clearCookie,Response,string,string,string	proc clearCookie(res: Response; name: string; path: string = "/"; domain: string = ""): Response		890
-nim	initJsonBuilder	nim_express/response.html#initJsonBuilder,int	proc initJsonBuilder(capacity: int = 256): JsonBuilder		1181
-nim	add	nim_express/response.html#add,JsonBuilder,string	proc add(b: var JsonBuilder; s: string)		1185
-nim	addEscaped	nim_express/response.html#addEscaped,JsonBuilder,string	proc addEscaped(b: var JsonBuilder; s: string)		1207
-nim	addKey	nim_express/response.html#addKey,JsonBuilder,string	proc addKey(b: var JsonBuilder; key: string)		1261
-nim	addInt	nim_express/response.html#addInt,JsonBuilder,int	proc addInt(b: var JsonBuilder; v: int)		1266
-nim	addFloat	nim_express/response.html#addFloat,JsonBuilder,float	proc addFloat(b: var JsonBuilder; v: float)		1270
-nim	addBool	nim_express/response.html#addBool,JsonBuilder,bool	proc addBool(b: var JsonBuilder; v: bool)		1274
-nim	addNull	nim_express/response.html#addNull,JsonBuilder	proc addNull(b: var JsonBuilder)		1278
-nim	finish	nim_express/response.html#finish,sinkJsonBuilder	proc finish(b: sink JsonBuilder): string		1282
-nim	buildProblemDetailsBody	nim_express/response.html#buildProblemDetailsBody,int,string,string	proc buildProblemDetailsBody(statusCode: int; code: string; detail: string): string		1286
-nim	buildRfc7807ProblemBody	nim_express/response.html#buildRfc7807ProblemBody,int,string,string,string,string,seq[ProblemDetailExtension]	proc buildRfc7807ProblemBody(statusCode: int; detail: string;\n                        typeUri: string = "about:blank"; title: string = "";\n                        instance: string = "";\n                        extensions: seq[ProblemDetailExtension] = @[]): string		1305
-nim	jsonRaw	nim_express/response.html#jsonRaw,Response,sinkstring	proc jsonRaw(res: Response; jsonStr: sink string)		1348
-nim	json	nim_express/response.html#json,Response,JsonNode	proc json(res: Response; data: JsonNode)		1431
-nim	json	nim_express/response.html#json,Response,sinkstring	proc json(res: Response; data: sink string)		1439
-nim	json	nim_express/response.html#json,Response,T,int	proc json[T](res: Response; data: T; sizeHint: int = 128)		1445
-nim	jsonify	nim_express/response.html#jsonify,Response,JsonNode	proc jsonify(res: Response; data: JsonNode)		1534
-nim	jsonify	nim_express/response.html#jsonify,Response,sinkstring	proc jsonify(res: Response; data: sink string)		1539
-nim	jsonify	nim_express/response.html#jsonify,Response,T,int	proc jsonify[T](res: Response; data: T; sizeHint: int = 128)		1544
-nim	problem	nim_express/response.html#problem,Response,int,string,string	proc problem(res: Response; statusCode: int; code: string; detail: string): Response		1549
-nim	problemDetails	nim_express/response.html#problemDetails,Response,int,string,string,string,string,seq[ProblemDetailExtension]	proc problemDetails(res: Response; statusCode: int; detail: string;\n               typeUri: string = "about:blank"; title: string = "";\n               instance: string = "";\n               extensions: seq[ProblemDetailExtension] = @[]): Response		1558
-nim	CompiledTemplate	nim_express/response.html#CompiledTemplate	type CompiledTemplate		1677
-nim	RenderValueLookup	nim_express/response.html#RenderValueLookup	type RenderValueLookup		1685
-nim	RowEmitProc	nim_express/response.html#RowEmitProc	type RowEmitProc		1687
-nim	RowStreamAdapter	nim_express/response.html#RowStreamAdapter	type RowStreamAdapter		1689
-nim	CompiledRenderPlan	nim_express/response.html#CompiledRenderPlan	type CompiledRenderPlan		1692
-nim	setTemplateViewCachePolicy	nim_express/response.html#setTemplateViewCachePolicy,int,int64,int,int64	proc setTemplateViewCachePolicy(templateMaxEntries: int = DefaultTemplateCacheMaxEntries;\n                           templateMaxBytes: int64 = 8388608.int64;\n                           viewMaxEntries: int = DefaultViewCacheMaxEntries;\n                           viewMaxBytes: int64 = 16777216.int64)		1759
-nim	resetTemplateViewCacheStats	nim_express/response.html#resetTemplateViewCacheStats	proc resetTemplateViewCacheStats()		1771
-nim	templateViewCacheStats	nim_express/response.html#templateViewCacheStats	proc templateViewCacheStats(): FastMap[int64]		1780
-nim	clearTemplateCaches	nim_express/response.html#clearTemplateCaches	proc clearTemplateCaches()		1795
-nim	invalidateViewCache	nim_express/response.html#invalidateViewCache,string	proc invalidateViewCache(resolvedPath: string = "")		1801
-nim	compileTemplate	nim_express/response.html#compileTemplate,string	proc compileTemplate(content: string): CompiledTemplate		2009
-nim	compileTemplateFile	nim_express/response.html#compileTemplateFile,string	proc compileTemplateFile(templatePath: string): tuple[ok: bool,\n    compiled: CompiledTemplate, error: string]		2015
-nim	renderTemplate	nim_express/response.html#renderTemplate,CompiledTemplate,FastMap[string]	proc renderTemplate(compiled: CompiledTemplate; locals: FastMap[string]): string		2026
-nim	renderTemplateWithPairs	nim_express/response.html#renderTemplateWithPairs,CompiledTemplate,openArray[]	proc renderTemplateWithPairs(compiled: CompiledTemplate;\n                        pairs: openArray[(string, string)]): string		2032
-nim	compileRenderPlan	nim_express/response.html#compileRenderPlan,string	proc compileRenderPlan(templateRow: string): CompiledRenderPlan		2112
-nim	renderRenderPlan	nim_express/response.html#renderRenderPlan,CompiledRenderPlan,FastMap[string]	proc renderRenderPlan(plan: CompiledRenderPlan; locals: FastMap[string]): string		2117
-nim	appendRenderPlan	nim_express/response.html#appendRenderPlan,PageBuffer,CompiledRenderPlan,RenderValueLookup	proc appendRenderPlan(buf: var PageBuffer; plan: CompiledRenderPlan;\n                 lookup: RenderValueLookup)		2123
-nim	appendRenderPlan	nim_express/response.html#appendRenderPlan,PageBuffer,CompiledRenderPlan,FastMap[string]	proc appendRenderPlan(buf: var PageBuffer; plan: CompiledRenderPlan;\n                 locals: FastMap[string])		2150
-nim	appendRenderPlanRows	nim_express/response.html#appendRenderPlanRows,PageBuffer,CompiledRenderPlan,openArray[FastMap[string]]	proc appendRenderPlanRows(buf: var PageBuffer; plan: CompiledRenderPlan;\n                     rows: openArray[FastMap[string]])		2164
-nim	streamRenderPlanRows	nim_express/response.html#streamRenderPlanRows,PageBuffer,CompiledRenderPlan,RowStreamAdapter	proc streamRenderPlanRows(buf: var PageBuffer; plan: CompiledRenderPlan;\n                     adapter: RowStreamAdapter): int		2173
-nim	precompileViewTemplate	nim_express/response.html#precompileViewTemplate,string,string,string	proc precompileViewTemplate(viewsDir: string; viewExt: string; viewName: string): bool		2213
-nim	precompileViewTemplates	nim_express/response.html#precompileViewTemplates,string,string,openArray[string]	proc precompileViewTemplates(viewsDir: string; viewExt: string;\n                        viewNames: openArray[string]): int		2232
-nim	loadView	nim_express/response.html#loadView,Response,string	proc loadView(res: Response; viewName: string): tuple[ok: bool, path: string,\n    content: string, error: string]		2242
-nim	render	nim_express/response.html#render,Response,string,FastMap[string]	proc render(res: Response; viewName: string; locals: FastMap[string])		2272
-nim	render	nim_express/response.html#render,Response,string	proc render(res: Response; viewName: string)		2299
-nim	render	nim_express/response.html#render,Response,string,openArray[]	proc render(res: Response; viewName: string; pairs: openArray[(string, string)])		2563
-nim	renderOffload	nim_express/response.html#renderOffload.t,Response,string,openArray[]	template renderOffload(res: Response; viewName: string;\n              pairs: openArray[(string, string)]): untyped		2632
-nim	html	nim_express/response.html#html,Response,sinkstring	proc html(res: Response; content: sink string)		2640
-nim	startChunked	nim_express/response.html#startChunked,Response,string	proc startChunked(res: Response; contentType: string = MimeTextUtf8): bool		2670
-nim	startChunkedHtml	nim_express/response.html#startChunkedHtml,Response	proc startChunkedHtml(res: Response): bool		2685
-nim	writeChunk	nim_express/response.html#writeChunk,Response,sinkstring	proc writeChunk(res: Response; chunk: sink string): bool		2689
-nim	endChunked	nim_express/response.html#endChunked,Response,bool	proc endChunked(res: Response; closeAfterWrite: bool = false): bool		2697
-nim	sseStart	nim_express/response.html#sseStart,Response,int	proc sseStart(res: Response; retryMs: int = -1): bool		2705
-nim	sseComment	nim_express/response.html#sseComment,Response,string	proc sseComment(res: Response; comment: string): bool		2725
-nim	sseEvent	nim_express/response.html#sseEvent,Response,string,string,string,int	proc sseEvent(res: Response; data: string; event: string = ""; id: string = "";\n         retryMs: int = -1): bool		2811
-nim	sseBatchStart	nim_express/response.html#sseBatchStart,Response	proc sseBatchStart(res: Response): var string		2836
-nim	sseBatchEvent	nim_express/response.html#sseBatchEvent,string,string,string,string,int	proc sseBatchEvent(buf: var string; data: string; event: string = "";\n              id: string = ""; retryMs: int = -1)		2841
-nim	sseBatchFlush	nim_express/response.html#sseBatchFlush,Response,string	proc sseBatchFlush(res: Response; buf: var string): bool		2860
-nim	sseEnd	nim_express/response.html#sseEnd,Response,bool	proc sseEnd(res: Response; closeAfterWrite: bool = true): bool		2872
-nim	defaultPageBufferSendPolicy	nim_express/response.html#defaultPageBufferSendPolicy	proc defaultPageBufferSendPolicy(): PageBufferSendPolicy		2880
-nim	throughputPageBufferSendPolicy	nim_express/response.html#throughputPageBufferSendPolicy,int,int	proc throughputPageBufferSendPolicy(contiguousThresholdBytes: int = DefaultThroughputContiguousPageBufferThreshold;\n    chunkedThresholdBytes: int = DefaultThroughputChunkedPageBufferThreshold): PageBufferSendPolicy		2888
-nim	sendPageBuffer	nim_express/response.html#sendPageBuffer,Response,PageBuffer,string,PageBufferSendPolicy	proc sendPageBuffer(res: Response; content: var PageBuffer;\n               contentType: string = MimeTextUtf8;\n               policy: PageBufferSendPolicy = defaultPageBufferSendPolicy()): bool		3037
-nim	htmlFromPageBuffer	nim_express/response.html#htmlFromPageBuffer,Response,PageBuffer,int	proc htmlFromPageBuffer(res: Response; content: var PageBuffer;\n                   chunkedThreshold: int = DefaultChunkedPageBufferThreshold): bool		3119
-nim	text	nim_express/response.html#text,Response,sinkstring	proc text(res: Response; content: sink string)		3130
-nim	xml	nim_express/response.html#xml,Response,sinkstring	proc xml(res: Response; content: sink string)		3220
-nim	sendStatus	nim_express/response.html#sendStatus,Response,int	proc sendStatus(res: Response; code: int)		3225
-nim	redirect	nim_express/response.html#redirect,Response,string,int	proc redirect(res: Response; url: string; statusCode: int = 302)		3245
-nim	notFound	nim_express/response.html#notFound,Response	proc notFound(res: Response)		3253
-nim	badRequest	nim_express/response.html#badRequest,Response,string	proc badRequest(res: Response; message: string = "Bad Request")		3258
-nim	badRequest	nim_express/response.html#badRequest,Response,RequestCoercionError	proc badRequest(res: Response; coercion: RequestCoercionError)		3276
-nim	unauthorized	nim_express/response.html#unauthorized,Response,string	proc unauthorized(res: Response; message: string = "Unauthorized")		3293
-nim	forbidden	nim_express/response.html#forbidden,Response,string	proc forbidden(res: Response; message: string = "Forbidden")		3302
-nim	serverError	nim_express/response.html#serverError,Response,string	proc serverError(res: Response; message: string = "Internal Server Error")		3311
-nim	htmxTrigger	nim_express/response.html#htmxTrigger,Response,string	proc htmxTrigger(res: Response; event: string): Response		3321
-nim	htmxRedirect	nim_express/response.html#htmxRedirect,Response,string	proc htmxRedirect(res: Response; url: string): Response		3325
-nim	htmxRefresh	nim_express/response.html#htmxRefresh,Response	proc htmxRefresh(res: Response): Response		3329
-nim	fragment	nim_express/response.html#fragment,Response,sinkstring	proc fragment(res: Response; html: sink string)		3333
-nim	vary	nim_express/response.html#vary,Response,string	proc vary(res: Response; field: string): Response		3338
-nim	acceptRanges	nim_express/response.html#acceptRanges,Response,string	proc acceptRanges(res: Response; unit: string = "bytes"): Response		3342
-nim	contentRange	nim_express/response.html#contentRange,Response,string,int,int,int	proc contentRange(res: Response; unit: string; startPos: int; endPos: int; total: int): Response		3346
-nim	contentRangeUnsatisfied	nim_express/response.html#contentRangeUnsatisfied,Response,string,int	proc contentRangeUnsatisfied(res: Response; unit: string; total: int): Response		3358
-nim	applyWindowedItemsDecision	nim_express/response.html#applyWindowedItemsDecision,Response,WindowedItemsDecision,string,bool	proc applyWindowedItemsDecision(res: Response; decision: WindowedItemsDecision;\n                           unit: string = "items"; includeVaryRange: bool = true): Response		3362
-nim	onWritable	nim_express/response.html#onWritable,Response,HttpWritableHandler	proc onWritable(res: Response; handler: HttpWritableHandler): Response		3386
-nim	getWriteOffset	nim_express/response.html#getWriteOffset,Response	proc getWriteOffset(res: Response): uint64		3393
-nim	tryEnd	nim_express/response.html#tryEnd,Response,string,uint64,bool	proc tryEnd(res: Response; chunk: string; totalSize: uint64;\n       closeAfterWrite: bool = false): tuple[ok: bool, hasResponded: bool]		3400
-nim	pauseRead	nim_express/response.html#pauseRead,Response	proc pauseRead(res: Response): Response		3415
-nim	resumeRead	nim_express/response.html#resumeRead,Response	proc resumeRead(res: Response): Response		3422
-nim	isReadPaused	nim_express/response.html#isReadPaused,Response	proc isReadPaused(res: Response): bool		3429
-nimgrp	jsonify	nim_express/response.html#jsonify-procs-all	proc		1534
-nimgrp	badrequest	nim_express/response.html#badRequest-procs-all	proc		3258
-nimgrp	render	nim_express/response.html#render-procs-all	proc		2272
-nimgrp	appendrenderplan	nim_express/response.html#appendRenderPlan-procs-all	proc		2123
-nimgrp	json	nim_express/response.html#json-procs-all	proc		1431
+nim	get	nim_express/response.html#get,Response,string	proc get(res: Response; header: string): string		711
+nim	getView	nim_express/response.html#getView,Response,string	proc getView(res: Response; header: string): fast_map.FastStringView		726
+nim	append	nim_express/response.html#append,Response,string,string	proc append(res: Response; header: string; value: string): Response		741
+nim	links	nim_express/response.html#links,Response,openArray[]	proc links(res: Response; entries: openArray[(string, string)]): Response		766
+nim	format	nim_express/response.html#format,Response,Request,openArray[],proc)	proc format(res: Response; req: Request;\n       handlers: openArray[(string, proc () {.closure.})];\n       defaultHandler: proc () {.closure.} = nil): bool		794
+nim	removeHeader	nim_express/response.html#removeHeader,Response,string	proc removeHeader(res: Response; header: string): Response		831
+nim	contentType	nim_express/response.html#contentType,Response,string	proc contentType(res: Response; ct: string): Response		847
+nim	cookie	nim_express/response.html#cookie,Response,string,string,int,string,string,bool,bool,string	proc cookie(res: Response; name: string; value: string; maxAge: int = 0;\n       path: string = "/"; domain: string = ""; secure: bool = false;\n       httpOnly: bool = true; sameSite: string = "Lax"): Response		854
+nim	clearCookie	nim_express/response.html#clearCookie,Response,string,string,string	proc clearCookie(res: Response; name: string; path: string = "/"; domain: string = ""): Response		903
+nim	initJsonBuilder	nim_express/response.html#initJsonBuilder,int	proc initJsonBuilder(capacity: int = 256): JsonBuilder		1194
+nim	add	nim_express/response.html#add,JsonBuilder,string	proc add(b: var JsonBuilder; s: string)		1198
+nim	addEscaped	nim_express/response.html#addEscaped,JsonBuilder,string	proc addEscaped(b: var JsonBuilder; s: string)		1220
+nim	addKey	nim_express/response.html#addKey,JsonBuilder,string	proc addKey(b: var JsonBuilder; key: string)		1274
+nim	addInt	nim_express/response.html#addInt,JsonBuilder,int	proc addInt(b: var JsonBuilder; v: int)		1279
+nim	addFloat	nim_express/response.html#addFloat,JsonBuilder,float	proc addFloat(b: var JsonBuilder; v: float)		1283
+nim	addBool	nim_express/response.html#addBool,JsonBuilder,bool	proc addBool(b: var JsonBuilder; v: bool)		1287
+nim	addNull	nim_express/response.html#addNull,JsonBuilder	proc addNull(b: var JsonBuilder)		1291
+nim	finish	nim_express/response.html#finish,sinkJsonBuilder	proc finish(b: sink JsonBuilder): string		1295
+nim	buildProblemDetailsBody	nim_express/response.html#buildProblemDetailsBody,int,string,string	proc buildProblemDetailsBody(statusCode: int; code: string; detail: string): string		1299
+nim	buildRfc7807ProblemBody	nim_express/response.html#buildRfc7807ProblemBody,int,string,string,string,string,seq[ProblemDetailExtension]	proc buildRfc7807ProblemBody(statusCode: int; detail: string;\n                        typeUri: string = "about:blank"; title: string = "";\n                        instance: string = "";\n                        extensions: seq[ProblemDetailExtension] = @[]): string		1318
+nim	jsonRaw	nim_express/response.html#jsonRaw,Response,sinkstring	proc jsonRaw(res: Response; jsonStr: sink string)		1361
+nim	json	nim_express/response.html#json,Response,JsonNode	proc json(res: Response; data: JsonNode)		1449
+nim	json	nim_express/response.html#json,Response,sinkstring	proc json(res: Response; data: sink string)		1456
+nim	json	nim_express/response.html#json,Response,T,int	proc json[T](res: Response; data: T; sizeHint: int = 128)		1461
+nim	jsonify	nim_express/response.html#jsonify,Response,JsonNode	proc jsonify(res: Response; data: JsonNode)		1550
+nim	jsonify	nim_express/response.html#jsonify,Response,sinkstring	proc jsonify(res: Response; data: sink string)		1555
+nim	jsonify	nim_express/response.html#jsonify,Response,T,int	proc jsonify[T](res: Response; data: T; sizeHint: int = 128)		1560
+nim	problem	nim_express/response.html#problem,Response,int,string,string	proc problem(res: Response; statusCode: int; code: string; detail: string): Response		1565
+nim	problemDetails	nim_express/response.html#problemDetails,Response,int,string,string,string,string,seq[ProblemDetailExtension]	proc problemDetails(res: Response; statusCode: int; detail: string;\n               typeUri: string = "about:blank"; title: string = "";\n               instance: string = "";\n               extensions: seq[ProblemDetailExtension] = @[]): Response		1574
+nim	CompiledTemplate	nim_express/response.html#CompiledTemplate	type CompiledTemplate		1693
+nim	RenderValueLookup	nim_express/response.html#RenderValueLookup	type RenderValueLookup		1701
+nim	RowEmitProc	nim_express/response.html#RowEmitProc	type RowEmitProc		1703
+nim	RowStreamAdapter	nim_express/response.html#RowStreamAdapter	type RowStreamAdapter		1705
+nim	CompiledRenderPlan	nim_express/response.html#CompiledRenderPlan	type CompiledRenderPlan		1708
+nim	setTemplateViewCachePolicy	nim_express/response.html#setTemplateViewCachePolicy,int,int64,int,int64	proc setTemplateViewCachePolicy(templateMaxEntries: int = DefaultTemplateCacheMaxEntries;\n                           templateMaxBytes: int64 = 8388608.int64;\n                           viewMaxEntries: int = DefaultViewCacheMaxEntries;\n                           viewMaxBytes: int64 = 16777216.int64)		1775
+nim	resetTemplateViewCacheStats	nim_express/response.html#resetTemplateViewCacheStats	proc resetTemplateViewCacheStats()		1787
+nim	templateViewCacheStats	nim_express/response.html#templateViewCacheStats	proc templateViewCacheStats(): FastMap[int64]		1796
+nim	clearTemplateCaches	nim_express/response.html#clearTemplateCaches	proc clearTemplateCaches()		1811
+nim	invalidateViewCache	nim_express/response.html#invalidateViewCache,string	proc invalidateViewCache(resolvedPath: string = "")		1817
+nim	compileTemplate	nim_express/response.html#compileTemplate,string	proc compileTemplate(content: string): CompiledTemplate		2025
+nim	compileTemplateFile	nim_express/response.html#compileTemplateFile,string	proc compileTemplateFile(templatePath: string): tuple[ok: bool,\n    compiled: CompiledTemplate, error: string]		2031
+nim	renderTemplate	nim_express/response.html#renderTemplate,CompiledTemplate,FastMap[string]	proc renderTemplate(compiled: CompiledTemplate; locals: FastMap[string]): string		2042
+nim	renderTemplateWithPairs	nim_express/response.html#renderTemplateWithPairs,CompiledTemplate,openArray[]	proc renderTemplateWithPairs(compiled: CompiledTemplate;\n                        pairs: openArray[(string, string)]): string		2048
+nim	compileRenderPlan	nim_express/response.html#compileRenderPlan,string	proc compileRenderPlan(templateRow: string): CompiledRenderPlan		2128
+nim	renderRenderPlan	nim_express/response.html#renderRenderPlan,CompiledRenderPlan,FastMap[string]	proc renderRenderPlan(plan: CompiledRenderPlan; locals: FastMap[string]): string		2133
+nim	appendRenderPlan	nim_express/response.html#appendRenderPlan,PageBuffer,CompiledRenderPlan,RenderValueLookup	proc appendRenderPlan(buf: var PageBuffer; plan: CompiledRenderPlan;\n                 lookup: RenderValueLookup)		2139
+nim	appendRenderPlan	nim_express/response.html#appendRenderPlan,PageBuffer,CompiledRenderPlan,FastMap[string]	proc appendRenderPlan(buf: var PageBuffer; plan: CompiledRenderPlan;\n                 locals: FastMap[string])		2166
+nim	appendRenderPlanRows	nim_express/response.html#appendRenderPlanRows,PageBuffer,CompiledRenderPlan,openArray[FastMap[string]]	proc appendRenderPlanRows(buf: var PageBuffer; plan: CompiledRenderPlan;\n                     rows: openArray[FastMap[string]])		2180
+nim	streamRenderPlanRows	nim_express/response.html#streamRenderPlanRows,PageBuffer,CompiledRenderPlan,RowStreamAdapter	proc streamRenderPlanRows(buf: var PageBuffer; plan: CompiledRenderPlan;\n                     adapter: RowStreamAdapter): int		2189
+nim	precompileViewTemplate	nim_express/response.html#precompileViewTemplate,string,string,string	proc precompileViewTemplate(viewsDir: string; viewExt: string; viewName: string): bool		2229
+nim	precompileViewTemplates	nim_express/response.html#precompileViewTemplates,string,string,openArray[string]	proc precompileViewTemplates(viewsDir: string; viewExt: string;\n                        viewNames: openArray[string]): int		2248
+nim	loadView	nim_express/response.html#loadView,Response,string	proc loadView(res: Response; viewName: string): tuple[ok: bool, path: string,\n    content: string, error: string]		2258
+nim	render	nim_express/response.html#render,Response,string,FastMap[string]	proc render(res: Response; viewName: string; locals: FastMap[string])		2288
+nim	render	nim_express/response.html#render,Response,string	proc render(res: Response; viewName: string)		2315
+nim	render	nim_express/response.html#render,Response,string,openArray[]	proc render(res: Response; viewName: string; pairs: openArray[(string, string)])		2579
+nim	renderOffload	nim_express/response.html#renderOffload.t,Response,string,openArray[]	template renderOffload(res: Response; viewName: string;\n              pairs: openArray[(string, string)]): untyped		2648
+nim	html	nim_express/response.html#html,Response,sinkstring	proc html(res: Response; content: sink string)		2656
+nim	startChunked	nim_express/response.html#startChunked,Response,string	proc startChunked(res: Response; contentType: string = MimeTextUtf8): bool		2686
+nim	startChunkedHtml	nim_express/response.html#startChunkedHtml,Response	proc startChunkedHtml(res: Response): bool		2701
+nim	writeChunk	nim_express/response.html#writeChunk,Response,sinkstring	proc writeChunk(res: Response; chunk: sink string): bool		2705
+nim	endChunked	nim_express/response.html#endChunked,Response,bool	proc endChunked(res: Response; closeAfterWrite: bool = false): bool		2713
+nim	sseStart	nim_express/response.html#sseStart,Response,int	proc sseStart(res: Response; retryMs: int = -1): bool		2721
+nim	sseComment	nim_express/response.html#sseComment,Response,string	proc sseComment(res: Response; comment: string): bool		2741
+nim	sseEvent	nim_express/response.html#sseEvent,Response,string,string,string,int	proc sseEvent(res: Response; data: string; event: string = ""; id: string = "";\n         retryMs: int = -1): bool		2827
+nim	sseBatchStart	nim_express/response.html#sseBatchStart,Response	proc sseBatchStart(res: Response): var string		2852
+nim	sseBatchEvent	nim_express/response.html#sseBatchEvent,string,string,string,string,int	proc sseBatchEvent(buf: var string; data: string; event: string = "";\n              id: string = ""; retryMs: int = -1)		2857
+nim	sseBatchFlush	nim_express/response.html#sseBatchFlush,Response,string	proc sseBatchFlush(res: Response; buf: var string): bool		2876
+nim	sseEnd	nim_express/response.html#sseEnd,Response,bool	proc sseEnd(res: Response; closeAfterWrite: bool = true): bool		2888
+nim	defaultPageBufferSendPolicy	nim_express/response.html#defaultPageBufferSendPolicy	proc defaultPageBufferSendPolicy(): PageBufferSendPolicy		2896
+nim	throughputPageBufferSendPolicy	nim_express/response.html#throughputPageBufferSendPolicy,int,int	proc throughputPageBufferSendPolicy(contiguousThresholdBytes: int = DefaultThroughputContiguousPageBufferThreshold;\n    chunkedThresholdBytes: int = DefaultThroughputChunkedPageBufferThreshold): PageBufferSendPolicy		2904
+nim	sendPageBuffer	nim_express/response.html#sendPageBuffer,Response,PageBuffer,string,PageBufferSendPolicy	proc sendPageBuffer(res: Response; content: var PageBuffer;\n               contentType: string = MimeTextUtf8;\n               policy: PageBufferSendPolicy = defaultPageBufferSendPolicy()): bool		3053
+nim	htmlFromPageBuffer	nim_express/response.html#htmlFromPageBuffer,Response,PageBuffer,int	proc htmlFromPageBuffer(res: Response; content: var PageBuffer;\n                   chunkedThreshold: int = DefaultChunkedPageBufferThreshold): bool		3135
+nim	text	nim_express/response.html#text,Response,sinkstring	proc text(res: Response; content: sink string)		3146
+nim	xml	nim_express/response.html#xml,Response,sinkstring	proc xml(res: Response; content: sink string)		3236
+nim	sendStatus	nim_express/response.html#sendStatus,Response,int	proc sendStatus(res: Response; code: int)		3241
+nim	redirect	nim_express/response.html#redirect,Response,string,int	proc redirect(res: Response; url: string; statusCode: int = 302)		3261
+nim	notFound	nim_express/response.html#notFound,Response	proc notFound(res: Response)		3269
+nim	badRequest	nim_express/response.html#badRequest,Response,string	proc badRequest(res: Response; message: string = "Bad Request")		3274
+nim	badRequest	nim_express/response.html#badRequest,Response,RequestCoercionError	proc badRequest(res: Response; coercion: RequestCoercionError)		3292
+nim	unauthorized	nim_express/response.html#unauthorized,Response,string	proc unauthorized(res: Response; message: string = "Unauthorized")		3309
+nim	forbidden	nim_express/response.html#forbidden,Response,string	proc forbidden(res: Response; message: string = "Forbidden")		3318
+nim	serverError	nim_express/response.html#serverError,Response,string	proc serverError(res: Response; message: string = "Internal Server Error")		3327
+nim	htmxTrigger	nim_express/response.html#htmxTrigger,Response,string	proc htmxTrigger(res: Response; event: string): Response		3337
+nim	htmxRedirect	nim_express/response.html#htmxRedirect,Response,string	proc htmxRedirect(res: Response; url: string): Response		3341
+nim	htmxRefresh	nim_express/response.html#htmxRefresh,Response	proc htmxRefresh(res: Response): Response		3345
+nim	fragment	nim_express/response.html#fragment,Response,sinkstring	proc fragment(res: Response; html: sink string)		3349
+nim	vary	nim_express/response.html#vary,Response,string	proc vary(res: Response; field: string): Response		3354
+nim	acceptRanges	nim_express/response.html#acceptRanges,Response,string	proc acceptRanges(res: Response; unit: string = "bytes"): Response		3358
+nim	contentRange	nim_express/response.html#contentRange,Response,string,int,int,int	proc contentRange(res: Response; unit: string; startPos: int; endPos: int; total: int): Response		3362
+nim	contentRangeUnsatisfied	nim_express/response.html#contentRangeUnsatisfied,Response,string,int	proc contentRangeUnsatisfied(res: Response; unit: string; total: int): Response		3374
+nim	applyWindowedItemsDecision	nim_express/response.html#applyWindowedItemsDecision,Response,WindowedItemsDecision,string,bool	proc applyWindowedItemsDecision(res: Response; decision: WindowedItemsDecision;\n                           unit: string = "items"; includeVaryRange: bool = true): Response		3378
+nim	onWritable	nim_express/response.html#onWritable,Response,HttpWritableHandler	proc onWritable(res: Response; handler: HttpWritableHandler): Response		3402
+nim	getWriteOffset	nim_express/response.html#getWriteOffset,Response	proc getWriteOffset(res: Response): uint64		3409
+nim	tryEnd	nim_express/response.html#tryEnd,Response,string,uint64,bool	proc tryEnd(res: Response; chunk: string; totalSize: uint64;\n       closeAfterWrite: bool = false): tuple[ok: bool, hasResponded: bool]		3416
+nim	pauseRead	nim_express/response.html#pauseRead,Response	proc pauseRead(res: Response): Response		3431
+nim	resumeRead	nim_express/response.html#resumeRead,Response	proc resumeRead(res: Response): Response		3438
+nim	isReadPaused	nim_express/response.html#isReadPaused,Response	proc isReadPaused(res: Response): bool		3445
+nimgrp	jsonify	nim_express/response.html#jsonify-procs-all	proc		1550
+nimgrp	badrequest	nim_express/response.html#badRequest-procs-all	proc		3274
+nimgrp	render	nim_express/response.html#render-procs-all	proc		2288
+nimgrp	appendrenderplan	nim_express/response.html#appendRenderPlan-procs-all	proc		2139
+nimgrp	json	nim_express/response.html#json-procs-all	proc		1449

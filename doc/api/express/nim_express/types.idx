@@ -24,154 +24,157 @@ nim	rcrDisconnect	nim_express/types.html#rcrDisconnect	RequestCancelReason.rcrDi
 nim	rcrShutdown	nim_express/types.html#rcrShutdown	RequestCancelReason.rcrShutdown		150
 nim	RequestCancelReason	nim_express/types.html#RequestCancelReason	enum RequestCancelReason		150
 nim	Request	nim_express/types.html#Request	type Request		158
-nim	Response	nim_express/types.html#Response	type Response		214
-nim	RequestSnapshot	nim_express/types.html#RequestSnapshot	object RequestSnapshot		253
-nim	SyncHandler	nim_express/types.html#SyncHandler	type SyncHandler		281
-nim	AsyncHandler	nim_express/types.html#AsyncHandler	type AsyncHandler		283
-nim	NextProc	nim_express/types.html#NextProc	type NextProc		287
-nim	AsyncMiddleware	nim_express/types.html#AsyncMiddleware	type AsyncMiddleware		289
-nim	AsyncErrorHandler	nim_express/types.html#AsyncErrorHandler	type AsyncErrorHandler		291
-nim	SyncNextMiddleware	nim_express/types.html#SyncNextMiddleware	type SyncNextMiddleware		293
-nim	StartupWarmupHook	nim_express/types.html#StartupWarmupHook	type StartupWarmupHook		297
-nim	ConnectionOpenHook	nim_express/types.html#ConnectionOpenHook	type ConnectionOpenHook		299
-nim	ConnectionCloseHook	nim_express/types.html#ConnectionCloseHook	type ConnectionCloseHook		301
-nim	RequestStartHook	nim_express/types.html#RequestStartHook	type RequestStartHook		303
-nim	RequestEndHook	nim_express/types.html#RequestEndHook	type RequestEndHook		305
-nim	RouteMatchedHook	nim_express/types.html#RouteMatchedHook	type RouteMatchedHook		307
-nim	TimeoutHook	nim_express/types.html#TimeoutHook	type TimeoutHook		309
-nim	TimeoutMetadataHook	nim_express/types.html#TimeoutMetadataHook	type TimeoutMetadataHook		311
-nim	ProtocolErrorHook	nim_express/types.html#ProtocolErrorHook	type ProtocolErrorHook		319
-nim	ErrorHook	nim_express/types.html#ErrorHook	type ErrorHook		324
-nim	PanicHook	nim_express/types.html#PanicHook	type PanicHook		326
-nim	BeforeHeadersHook	nim_express/types.html#BeforeHeadersHook	type BeforeHeadersHook		328
-nim	BeforeWriteHook	nim_express/types.html#BeforeWriteHook	type BeforeWriteHook		330
-nim	AfterWriteHook	nim_express/types.html#AfterWriteHook	type AfterWriteHook		332
-nim	BackpressureHook	nim_express/types.html#BackpressureHook	type BackpressureHook		334
-nim	ShouldCompressHook	nim_express/types.html#ShouldCompressHook	type ShouldCompressHook		337
-nim	SelectCompressionProfileHook	nim_express/types.html#SelectCompressionProfileHook	type SelectCompressionProfileHook		339
-nim	CompressionResultHook	nim_express/types.html#CompressionResultHook	type CompressionResultHook		341
-nim	CompressionBypassHook	nim_express/types.html#CompressionBypassHook	type CompressionBypassHook		343
-nim	BeforeRouteMatchAdviceHook	nim_express/types.html#BeforeRouteMatchAdviceHook	type BeforeRouteMatchAdviceHook		346
-nim	BeforeHandlerAdviceHook	nim_express/types.html#BeforeHandlerAdviceHook	type BeforeHandlerAdviceHook		348
-nim	AfterHandlerAdviceHook	nim_express/types.html#AfterHandlerAdviceHook	type AfterHandlerAdviceHook		350
-nim	ErrorAdviceHook	nim_express/types.html#ErrorAdviceHook	type ErrorAdviceHook		352
-nim	iekParseError	nim_express/types.html#iekParseError	InspectorEventKind.iekParseError		355
-nim	iekProtocolError	nim_express/types.html#iekProtocolError	InspectorEventKind.iekProtocolError		355
-nim	iekHandlerError	nim_express/types.html#iekHandlerError	InspectorEventKind.iekHandlerError		355
-nim	iekBackpressureStall	nim_express/types.html#iekBackpressureStall	InspectorEventKind.iekBackpressureStall		355
-nim	iekTimeout	nim_express/types.html#iekTimeout	InspectorEventKind.iekTimeout		355
-nim	InspectorEventKind	nim_express/types.html#InspectorEventKind	enum InspectorEventKind		355
-nim	InspectorEvent	nim_express/types.html#InspectorEvent	object InspectorEvent		363
-nim	InspectorHook	nim_express/types.html#InspectorHook	type InspectorHook		380
-nim	PluginInitHook	nim_express/types.html#PluginInitHook	type PluginInitHook		383
-nim	PluginShutdownHook	nim_express/types.html#PluginShutdownHook	type PluginShutdownHook		385
-nim	PluginDefinition	nim_express/types.html#PluginDefinition	object PluginDefinition		388
-nim	RouteManifestEntry	nim_express/types.html#RouteManifestEntry	object RouteManifestEntry		401
-nim	CompressionPolicyConfig	nim_express/types.html#CompressionPolicyConfig	object CompressionPolicyConfig		418
-nim	rfsQuery	nim_express/types.html#rfsQuery	RequestFieldSource.rfsQuery		449
-nim	rfsParam	nim_express/types.html#rfsParam	RequestFieldSource.rfsParam		449
-nim	rfsHeader	nim_express/types.html#rfsHeader	RequestFieldSource.rfsHeader		449
-nim	rfsCookie	nim_express/types.html#rfsCookie	RequestFieldSource.rfsCookie		449
-nim	rfsLocal	nim_express/types.html#rfsLocal	RequestFieldSource.rfsLocal		449
-nim	rfsBody	nim_express/types.html#rfsBody	RequestFieldSource.rfsBody		449
-nim	RequestFieldSource	nim_express/types.html#RequestFieldSource	enum RequestFieldSource		449
-nim	RequestCoercionError	nim_express/types.html#RequestCoercionError	object RequestCoercionError		458
-nim	CoercionResult	nim_express/types.html#CoercionResult	object CoercionResult		469
-nim	ookOk	nim_express/types.html#ookOk	OffloadOutcomeKind.ookOk		478
-nim	ookOffloadTimeout	nim_express/types.html#ookOffloadTimeout	OffloadOutcomeKind.ookOffloadTimeout		478
-nim	ookOffloadError	nim_express/types.html#ookOffloadError	OffloadOutcomeKind.ookOffloadError		478
-nim	OffloadOutcomeKind	nim_express/types.html#OffloadOutcomeKind	enum OffloadOutcomeKind		478
-nim	OffloadOutcome	nim_express/types.html#OffloadOutcome	object OffloadOutcome		484
-nim	WsHandler	nim_express/types.html#WsHandler	type WsHandler		500
-nim	WsRawHandler	nim_express/types.html#WsRawHandler	type WsRawHandler		502
-nim	WsUpgradeValidator	nim_express/types.html#WsUpgradeValidator	type WsUpgradeValidator		504
-nim	WsOpenHandler	nim_express/types.html#WsOpenHandler	type WsOpenHandler		506
-nim	WsCloseHandler	nim_express/types.html#WsCloseHandler	type WsCloseHandler		508
-nim	WsDrainHandler	nim_express/types.html#WsDrainHandler	type WsDrainHandler		510
-nim	WsDroppedHandler	nim_express/types.html#WsDroppedHandler	type WsDroppedHandler		512
-nim	WsHighWaterHandler	nim_express/types.html#WsHighWaterHandler	type WsHighWaterHandler		514
-nim	rkSync	nim_express/types.html#rkSync	RouteKind.rkSync		522
-nim	rkAsync	nim_express/types.html#rkAsync	RouteKind.rkAsync		522
-nim	RouteKind	nim_express/types.html#RouteKind	enum RouteKind		522
-nim	Route	nim_express/types.html#Route	object Route		527
-nim	DynamicRouteBuckets	nim_express/types.html#DynamicRouteBuckets	object DynamicRouteBuckets		566
-nim	Router	nim_express/types.html#Router	type Router		573
-nim	lfDev	nim_express/types.html#lfDev	LogFormat.lfDev		654
-nim	lfCombined	nim_express/types.html#lfCombined	LogFormat.lfCombined		654
-nim	lfCommon	nim_express/types.html#lfCommon	LogFormat.lfCommon		654
-nim	lfShort	nim_express/types.html#lfShort	LogFormat.lfShort		654
-nim	lfTiny	nim_express/types.html#lfTiny	LogFormat.lfTiny		654
-nim	LogFormat	nim_express/types.html#LogFormat	enum LogFormat		654
-nim	llDebug	nim_express/types.html#llDebug	LogLevel.llDebug		662
-nim	llInfo	nim_express/types.html#llInfo	LogLevel.llInfo		662
-nim	llWarn	nim_express/types.html#llWarn	LogLevel.llWarn		662
-nim	llError	nim_express/types.html#llError	LogLevel.llError		662
-nim	LogLevel	nim_express/types.html#LogLevel	enum LogLevel		662
-nim	AppEnvConfig	nim_express/types.html#AppEnvConfig	object AppEnvConfig		669
-nim	ExpressApp	nim_express/types.html#ExpressApp	type ExpressApp		830
-nim	RouteGroup	nim_express/types.html#RouteGroup	type RouteGroup		984
-nim	GET	nim_express/types.html#GET	const GET		993
-nim	POST	nim_express/types.html#POST	const POST		995
-nim	PUT	nim_express/types.html#PUT	const PUT		997
-nim	DELETE	nim_express/types.html#DELETE	const DELETE		999
-nim	PATCH	nim_express/types.html#PATCH	const PATCH		1001
-nim	HEAD	nim_express/types.html#HEAD	const HEAD		1003
-nim	OPTIONS	nim_express/types.html#OPTIONS	const OPTIONS		1005
-nim	newRouter	nim_express/types.html#newRouter,string	proc newRouter(basePath: string = ""): Router		1008
-nim	routesForMethod	nim_express/types.html#routesForMethod,Router,	proc routesForMethod(router: Router; m: nim_usockets.HttpMethod): ptr seq[Route]		1046
-nim	path	nim_express/types.html#path,Request	proc path(req: Request): lent string		1058
-nim	newRequest	nim_express/types.html#newRequest,HttpRequest	proc newRequest(native: HttpRequest): Request		1065
-nim	onCancel	nim_express/types.html#onCancel,Request,proc(Request,RequestCancelReason)	proc onCancel(req: Request;\n         hook: proc (req: Request; reason: RequestCancelReason) {.closure.})		1097
-nim	markRequestCancelled	nim_express/types.html#markRequestCancelled,Request,RequestCancelReason	proc markRequestCancelled(req: Request; reason: RequestCancelReason): bool		1102
-nim	markRequestReleased	nim_express/types.html#markRequestReleased,Request	proc markRequestReleased(req: Request)		1115
-nim	correlationId	nim_express/types.html#correlationId,Request	proc correlationId(req: Request): lent string		1139
-nim	correlationId=	nim_express/types.html#correlationId=,Request,string	proc correlationId=(req: Request; value: string)		1146
-nim	setRequestTimeoutBudget	nim_express/types.html#setRequestTimeoutBudget,Request,int	proc setRequestTimeoutBudget(req: Request; budgetMs: int)		1158
-nim	clearRequestTimeoutBudget	nim_express/types.html#clearRequestTimeoutBudget,Request	proc clearRequestTimeoutBudget(req: Request)		1165
-nim	requestTimeoutRemainingMs	nim_express/types.html#requestTimeoutRemainingMs,Request	proc requestTimeoutRemainingMs(req: Request): int		1172
-nim	notifyRequestTimeout	nim_express/types.html#notifyRequestTimeout,Request	proc notifyRequestTimeout(req: Request): bool		1181
-nim	notifyRequestDisconnect	nim_express/types.html#notifyRequestDisconnect,Request	proc notifyRequestDisconnect(req: Request): bool		1185
-nim	notifyRequestShutdown	nim_express/types.html#notifyRequestShutdown,Request	proc notifyRequestShutdown(req: Request): bool		1190
-nim	requestCancelled	nim_express/types.html#requestCancelled,Request	proc requestCancelled(req: Request): bool		1195
-nim	requestReleased	nim_express/types.html#requestReleased,Request	proc requestReleased(req: Request): bool		1200
-nim	lockRouterMutations	nim_express/types.html#lockRouterMutations,Router,string	proc lockRouterMutations(router: Router; reason: string = "listen_started")		1205
-nim	ensureRouterMutable	nim_express/types.html#ensureRouterMutable,Router	proc ensureRouterMutable(router: Router)		1212
-nim	bindHeaders	nim_express/types.html#bindHeaders,Request	proc bindHeaders(req: Request)		1218
-nim	bindQuery	nim_express/types.html#bindQuery,Request	proc bindQuery(req: Request)		1244
-nim	bindBody	nim_express/types.html#bindBody,Request	proc bindBody(req: Request)		1297
-nim	bodyReadFailed	nim_express/types.html#bodyReadFailed,Request	proc bodyReadFailed(req: Request): bool		1314
-nim	rawBodySizeHint	nim_express/types.html#rawBodySizeHint,Request	proc rawBodySizeHint(req: Request): int		1320
-nim	rawBody	nim_express/types.html#rawBody,Request	proc rawBody(req: Request): lent string		1336
-nim	cacheJsonBody	nim_express/types.html#cacheJsonBody,Request,JsonNode	proc cacheJsonBody(req: Request; node: JsonNode)		1341
-nim	getJsonBody	nim_express/types.html#getJsonBody,Request,int	proc getJsonBody(req: Request; maxBytes: int = DefaultMaxJsonBodyBytes): JsonNode		1346
-nim	parseBody	nim_express/types.html#parseBody,Request	proc parseBody[T](req: Request): T		1363
-nim	tryParseBody	nim_express/types.html#tryParseBody,Request	proc tryParseBody[T](req: Request): tuple[ok: bool, value: T]		1368
-nim	parseCookieHeaderBounded	nim_express/types.html#parseCookieHeaderBounded,,FastMap[string],int,int,int	proc parseCookieHeaderBounded(cookieHeader: fast_map.FastStringView;\n                         cookies: var FastMap[string];\n                         maxPairs: int = DefaultMaxCookiePairs;\n                         maxKeyBytes: int = DefaultMaxCookieKeyBytes;\n                         maxValueBytes: int = DefaultMaxCookieValueBytes): bool		1398
-nim	parseCookieHeaderBounded	nim_express/types.html#parseCookieHeaderBounded,string,FastMap[string],int,int,int	proc parseCookieHeaderBounded(cookieHeader: string; cookies: var FastMap[string];\n                         maxPairs: int = DefaultMaxCookiePairs;\n                         maxKeyBytes: int = DefaultMaxCookieKeyBytes;\n                         maxValueBytes: int = DefaultMaxCookieValueBytes): bool		1463
-nim	markCookiesParsed	nim_express/types.html#markCookiesParsed,Request	proc markCookiesParsed(req: Request)		1473
-nim	cookieParseRejected	nim_express/types.html#cookieParseRejected,Request	proc cookieParseRejected(req: Request): bool		1478
-nim	getCookie	nim_express/types.html#getCookie,Request,string	proc getCookie(req: Request; name: string): string		1494
-nim	newResponse	nim_express/types.html#newResponse,HttpResponse,string,string	proc newResponse(native: HttpResponse; viewsDir: string = "views";\n            viewExt: string = ""): Response		1499
-nim	responseLifecycleToken	nim_express/types.html#responseLifecycleToken,Response	proc responseLifecycleToken(res: Response): uint64		1530
-nim	responseLifecycleTokenMatches	nim_express/types.html#responseLifecycleTokenMatches,Response,uint64	proc responseLifecycleTokenMatches(res: Response; token: uint64): bool		1534
-nim	DefaultContextPoolMax	nim_express/types.html#DefaultContextPoolMax	const DefaultContextPoolMax		1539
-nim	contextPoolMax	nim_express/types.html#contextPoolMax	var contextPoolMax		1543
-nim	requestResponsePoolingEnabled	nim_express/types.html#requestResponsePoolingEnabled	var requestResponsePoolingEnabled		1545
-nim	skippedBodyFileDeleteCount	nim_express/types.html#skippedBodyFileDeleteCount	proc skippedBodyFileDeleteCount(): int64		1596
-nim	resetSkippedBodyFileDeleteCount	nim_express/types.html#resetSkippedBodyFileDeleteCount	proc resetSkippedBodyFileDeleteCount()		1600
-nim	setContextPoolMax	nim_express/types.html#setContextPoolMax,int	proc setContextPoolMax(maxEntries: int)		1604
-nim	getContextPoolMax	nim_express/types.html#getContextPoolMax	proc getContextPoolMax(): int		1608
-nim	setRequestResponsePoolingEnabled	nim_express/types.html#setRequestResponsePoolingEnabled,bool	proc setRequestResponsePoolingEnabled(enabled: bool)		1612
-nim	getRequestResponsePoolingEnabled	nim_express/types.html#getRequestResponsePoolingEnabled	proc getRequestResponsePoolingEnabled(): bool		1619
-nim	requestPoolSize	nim_express/types.html#requestPoolSize	proc requestPoolSize(): int		1623
-nim	responsePoolSize	nim_express/types.html#responsePoolSize	proc responsePoolSize(): int		1627
-nim	prewarmContextPools	nim_express/types.html#prewarmContextPools,int,int	proc prewarmContextPools(requestCount: int = 256; responseCount: int = 256)		1632
-nim	rebindRequest	nim_express/types.html#rebindRequest,Request,HttpRequest	proc rebindRequest(req: Request; native: HttpRequest)		1705
-nim	acquireRequest	nim_express/types.html#acquireRequest,HttpRequest	proc acquireRequest(native: HttpRequest): Request		1739
-nim	acquireBorrowedRequest	nim_express/types.html#acquireBorrowedRequest,HttpRequest	proc acquireBorrowedRequest(native: HttpRequest): Request		1743
-nim	releaseRequest	nim_express/types.html#releaseRequest,Request	proc releaseRequest(req: Request)		1749
-nim	rebindResponse	nim_express/types.html#rebindResponse,Response,HttpResponse,ExpressApp,string,string	proc rebindResponse(res: Response; native: HttpResponse; app: ExpressApp;\n               viewsDir: string; viewExt: string)		1812
-nim	acquireResponse	nim_express/types.html#acquireResponse,HttpResponse,ExpressApp,string,string	proc acquireResponse(native: HttpResponse; app: ExpressApp = nil;\n                viewsDir: string = "views"; viewExt: string = ""): Response		1823
-nim	releaseResponse	nim_express/types.html#releaseResponse,Response	proc releaseResponse(res: Response)		1850
-nimgrp	parsecookieheaderbounded	nim_express/types.html#parseCookieHeaderBounded-procs-all	proc		1398
+nim	fctNone	nim_express/types.html#fctNone	FastContentType.fctNone		215
+nim	fctJson	nim_express/types.html#fctJson	FastContentType.fctJson		215
+nim	FastContentType	nim_express/types.html#FastContentType	enum FastContentType		215
+nim	Response	nim_express/types.html#Response	type Response		220
+nim	RequestSnapshot	nim_express/types.html#RequestSnapshot	object RequestSnapshot		263
+nim	SyncHandler	nim_express/types.html#SyncHandler	type SyncHandler		291
+nim	AsyncHandler	nim_express/types.html#AsyncHandler	type AsyncHandler		293
+nim	NextProc	nim_express/types.html#NextProc	type NextProc		297
+nim	AsyncMiddleware	nim_express/types.html#AsyncMiddleware	type AsyncMiddleware		299
+nim	AsyncErrorHandler	nim_express/types.html#AsyncErrorHandler	type AsyncErrorHandler		301
+nim	SyncNextMiddleware	nim_express/types.html#SyncNextMiddleware	type SyncNextMiddleware		303
+nim	StartupWarmupHook	nim_express/types.html#StartupWarmupHook	type StartupWarmupHook		307
+nim	ConnectionOpenHook	nim_express/types.html#ConnectionOpenHook	type ConnectionOpenHook		309
+nim	ConnectionCloseHook	nim_express/types.html#ConnectionCloseHook	type ConnectionCloseHook		311
+nim	RequestStartHook	nim_express/types.html#RequestStartHook	type RequestStartHook		313
+nim	RequestEndHook	nim_express/types.html#RequestEndHook	type RequestEndHook		315
+nim	RouteMatchedHook	nim_express/types.html#RouteMatchedHook	type RouteMatchedHook		317
+nim	TimeoutHook	nim_express/types.html#TimeoutHook	type TimeoutHook		319
+nim	TimeoutMetadataHook	nim_express/types.html#TimeoutMetadataHook	type TimeoutMetadataHook		321
+nim	ProtocolErrorHook	nim_express/types.html#ProtocolErrorHook	type ProtocolErrorHook		329
+nim	ErrorHook	nim_express/types.html#ErrorHook	type ErrorHook		334
+nim	PanicHook	nim_express/types.html#PanicHook	type PanicHook		336
+nim	BeforeHeadersHook	nim_express/types.html#BeforeHeadersHook	type BeforeHeadersHook		338
+nim	BeforeWriteHook	nim_express/types.html#BeforeWriteHook	type BeforeWriteHook		340
+nim	AfterWriteHook	nim_express/types.html#AfterWriteHook	type AfterWriteHook		342
+nim	BackpressureHook	nim_express/types.html#BackpressureHook	type BackpressureHook		344
+nim	ShouldCompressHook	nim_express/types.html#ShouldCompressHook	type ShouldCompressHook		347
+nim	SelectCompressionProfileHook	nim_express/types.html#SelectCompressionProfileHook	type SelectCompressionProfileHook		349
+nim	CompressionResultHook	nim_express/types.html#CompressionResultHook	type CompressionResultHook		351
+nim	CompressionBypassHook	nim_express/types.html#CompressionBypassHook	type CompressionBypassHook		353
+nim	BeforeRouteMatchAdviceHook	nim_express/types.html#BeforeRouteMatchAdviceHook	type BeforeRouteMatchAdviceHook		356
+nim	BeforeHandlerAdviceHook	nim_express/types.html#BeforeHandlerAdviceHook	type BeforeHandlerAdviceHook		358
+nim	AfterHandlerAdviceHook	nim_express/types.html#AfterHandlerAdviceHook	type AfterHandlerAdviceHook		360
+nim	ErrorAdviceHook	nim_express/types.html#ErrorAdviceHook	type ErrorAdviceHook		362
+nim	iekParseError	nim_express/types.html#iekParseError	InspectorEventKind.iekParseError		365
+nim	iekProtocolError	nim_express/types.html#iekProtocolError	InspectorEventKind.iekProtocolError		365
+nim	iekHandlerError	nim_express/types.html#iekHandlerError	InspectorEventKind.iekHandlerError		365
+nim	iekBackpressureStall	nim_express/types.html#iekBackpressureStall	InspectorEventKind.iekBackpressureStall		365
+nim	iekTimeout	nim_express/types.html#iekTimeout	InspectorEventKind.iekTimeout		365
+nim	InspectorEventKind	nim_express/types.html#InspectorEventKind	enum InspectorEventKind		365
+nim	InspectorEvent	nim_express/types.html#InspectorEvent	object InspectorEvent		373
+nim	InspectorHook	nim_express/types.html#InspectorHook	type InspectorHook		390
+nim	PluginInitHook	nim_express/types.html#PluginInitHook	type PluginInitHook		393
+nim	PluginShutdownHook	nim_express/types.html#PluginShutdownHook	type PluginShutdownHook		395
+nim	PluginDefinition	nim_express/types.html#PluginDefinition	object PluginDefinition		398
+nim	RouteManifestEntry	nim_express/types.html#RouteManifestEntry	object RouteManifestEntry		411
+nim	CompressionPolicyConfig	nim_express/types.html#CompressionPolicyConfig	object CompressionPolicyConfig		428
+nim	rfsQuery	nim_express/types.html#rfsQuery	RequestFieldSource.rfsQuery		459
+nim	rfsParam	nim_express/types.html#rfsParam	RequestFieldSource.rfsParam		459
+nim	rfsHeader	nim_express/types.html#rfsHeader	RequestFieldSource.rfsHeader		459
+nim	rfsCookie	nim_express/types.html#rfsCookie	RequestFieldSource.rfsCookie		459
+nim	rfsLocal	nim_express/types.html#rfsLocal	RequestFieldSource.rfsLocal		459
+nim	rfsBody	nim_express/types.html#rfsBody	RequestFieldSource.rfsBody		459
+nim	RequestFieldSource	nim_express/types.html#RequestFieldSource	enum RequestFieldSource		459
+nim	RequestCoercionError	nim_express/types.html#RequestCoercionError	object RequestCoercionError		468
+nim	CoercionResult	nim_express/types.html#CoercionResult	object CoercionResult		479
+nim	ookOk	nim_express/types.html#ookOk	OffloadOutcomeKind.ookOk		488
+nim	ookOffloadTimeout	nim_express/types.html#ookOffloadTimeout	OffloadOutcomeKind.ookOffloadTimeout		488
+nim	ookOffloadError	nim_express/types.html#ookOffloadError	OffloadOutcomeKind.ookOffloadError		488
+nim	OffloadOutcomeKind	nim_express/types.html#OffloadOutcomeKind	enum OffloadOutcomeKind		488
+nim	OffloadOutcome	nim_express/types.html#OffloadOutcome	object OffloadOutcome		494
+nim	WsHandler	nim_express/types.html#WsHandler	type WsHandler		510
+nim	WsRawHandler	nim_express/types.html#WsRawHandler	type WsRawHandler		512
+nim	WsUpgradeValidator	nim_express/types.html#WsUpgradeValidator	type WsUpgradeValidator		514
+nim	WsOpenHandler	nim_express/types.html#WsOpenHandler	type WsOpenHandler		516
+nim	WsCloseHandler	nim_express/types.html#WsCloseHandler	type WsCloseHandler		518
+nim	WsDrainHandler	nim_express/types.html#WsDrainHandler	type WsDrainHandler		520
+nim	WsDroppedHandler	nim_express/types.html#WsDroppedHandler	type WsDroppedHandler		522
+nim	WsHighWaterHandler	nim_express/types.html#WsHighWaterHandler	type WsHighWaterHandler		524
+nim	rkSync	nim_express/types.html#rkSync	RouteKind.rkSync		532
+nim	rkAsync	nim_express/types.html#rkAsync	RouteKind.rkAsync		532
+nim	RouteKind	nim_express/types.html#RouteKind	enum RouteKind		532
+nim	Route	nim_express/types.html#Route	object Route		537
+nim	DynamicRouteBuckets	nim_express/types.html#DynamicRouteBuckets	object DynamicRouteBuckets		576
+nim	Router	nim_express/types.html#Router	type Router		583
+nim	lfDev	nim_express/types.html#lfDev	LogFormat.lfDev		664
+nim	lfCombined	nim_express/types.html#lfCombined	LogFormat.lfCombined		664
+nim	lfCommon	nim_express/types.html#lfCommon	LogFormat.lfCommon		664
+nim	lfShort	nim_express/types.html#lfShort	LogFormat.lfShort		664
+nim	lfTiny	nim_express/types.html#lfTiny	LogFormat.lfTiny		664
+nim	LogFormat	nim_express/types.html#LogFormat	enum LogFormat		664
+nim	llDebug	nim_express/types.html#llDebug	LogLevel.llDebug		672
+nim	llInfo	nim_express/types.html#llInfo	LogLevel.llInfo		672
+nim	llWarn	nim_express/types.html#llWarn	LogLevel.llWarn		672
+nim	llError	nim_express/types.html#llError	LogLevel.llError		672
+nim	LogLevel	nim_express/types.html#LogLevel	enum LogLevel		672
+nim	AppEnvConfig	nim_express/types.html#AppEnvConfig	object AppEnvConfig		679
+nim	ExpressApp	nim_express/types.html#ExpressApp	type ExpressApp		840
+nim	RouteGroup	nim_express/types.html#RouteGroup	type RouteGroup		994
+nim	GET	nim_express/types.html#GET	const GET		1003
+nim	POST	nim_express/types.html#POST	const POST		1005
+nim	PUT	nim_express/types.html#PUT	const PUT		1007
+nim	DELETE	nim_express/types.html#DELETE	const DELETE		1009
+nim	PATCH	nim_express/types.html#PATCH	const PATCH		1011
+nim	HEAD	nim_express/types.html#HEAD	const HEAD		1013
+nim	OPTIONS	nim_express/types.html#OPTIONS	const OPTIONS		1015
+nim	newRouter	nim_express/types.html#newRouter,string	proc newRouter(basePath: string = ""): Router		1018
+nim	routesForMethod	nim_express/types.html#routesForMethod,Router,	proc routesForMethod(router: Router; m: nim_usockets.HttpMethod): ptr seq[Route]		1056
+nim	path	nim_express/types.html#path,Request	proc path(req: Request): lent string		1068
+nim	newRequest	nim_express/types.html#newRequest,HttpRequest	proc newRequest(native: HttpRequest): Request		1075
+nim	onCancel	nim_express/types.html#onCancel,Request,proc(Request,RequestCancelReason)	proc onCancel(req: Request;\n         hook: proc (req: Request; reason: RequestCancelReason) {.closure.})		1107
+nim	markRequestCancelled	nim_express/types.html#markRequestCancelled,Request,RequestCancelReason	proc markRequestCancelled(req: Request; reason: RequestCancelReason): bool		1112
+nim	markRequestReleased	nim_express/types.html#markRequestReleased,Request	proc markRequestReleased(req: Request)		1125
+nim	correlationId	nim_express/types.html#correlationId,Request	proc correlationId(req: Request): lent string		1149
+nim	correlationId=	nim_express/types.html#correlationId=,Request,string	proc correlationId=(req: Request; value: string)		1156
+nim	setRequestTimeoutBudget	nim_express/types.html#setRequestTimeoutBudget,Request,int	proc setRequestTimeoutBudget(req: Request; budgetMs: int)		1168
+nim	clearRequestTimeoutBudget	nim_express/types.html#clearRequestTimeoutBudget,Request	proc clearRequestTimeoutBudget(req: Request)		1175
+nim	requestTimeoutRemainingMs	nim_express/types.html#requestTimeoutRemainingMs,Request	proc requestTimeoutRemainingMs(req: Request): int		1182
+nim	notifyRequestTimeout	nim_express/types.html#notifyRequestTimeout,Request	proc notifyRequestTimeout(req: Request): bool		1191
+nim	notifyRequestDisconnect	nim_express/types.html#notifyRequestDisconnect,Request	proc notifyRequestDisconnect(req: Request): bool		1195
+nim	notifyRequestShutdown	nim_express/types.html#notifyRequestShutdown,Request	proc notifyRequestShutdown(req: Request): bool		1200
+nim	requestCancelled	nim_express/types.html#requestCancelled,Request	proc requestCancelled(req: Request): bool		1205
+nim	requestReleased	nim_express/types.html#requestReleased,Request	proc requestReleased(req: Request): bool		1210
+nim	lockRouterMutations	nim_express/types.html#lockRouterMutations,Router,string	proc lockRouterMutations(router: Router; reason: string = "listen_started")		1215
+nim	ensureRouterMutable	nim_express/types.html#ensureRouterMutable,Router	proc ensureRouterMutable(router: Router)		1222
+nim	bindHeaders	nim_express/types.html#bindHeaders,Request	proc bindHeaders(req: Request)		1228
+nim	bindQuery	nim_express/types.html#bindQuery,Request	proc bindQuery(req: Request)		1254
+nim	bindBody	nim_express/types.html#bindBody,Request	proc bindBody(req: Request)		1307
+nim	bodyReadFailed	nim_express/types.html#bodyReadFailed,Request	proc bodyReadFailed(req: Request): bool		1324
+nim	rawBodySizeHint	nim_express/types.html#rawBodySizeHint,Request	proc rawBodySizeHint(req: Request): int		1330
+nim	rawBody	nim_express/types.html#rawBody,Request	proc rawBody(req: Request): lent string		1346
+nim	cacheJsonBody	nim_express/types.html#cacheJsonBody,Request,JsonNode	proc cacheJsonBody(req: Request; node: JsonNode)		1351
+nim	getJsonBody	nim_express/types.html#getJsonBody,Request,int	proc getJsonBody(req: Request; maxBytes: int = DefaultMaxJsonBodyBytes): JsonNode		1356
+nim	parseBody	nim_express/types.html#parseBody,Request	proc parseBody[T](req: Request): T		1373
+nim	tryParseBody	nim_express/types.html#tryParseBody,Request	proc tryParseBody[T](req: Request): tuple[ok: bool, value: T]		1378
+nim	parseCookieHeaderBounded	nim_express/types.html#parseCookieHeaderBounded,,FastMap[string],int,int,int	proc parseCookieHeaderBounded(cookieHeader: fast_map.FastStringView;\n                         cookies: var FastMap[string];\n                         maxPairs: int = DefaultMaxCookiePairs;\n                         maxKeyBytes: int = DefaultMaxCookieKeyBytes;\n                         maxValueBytes: int = DefaultMaxCookieValueBytes): bool		1408
+nim	parseCookieHeaderBounded	nim_express/types.html#parseCookieHeaderBounded,string,FastMap[string],int,int,int	proc parseCookieHeaderBounded(cookieHeader: string; cookies: var FastMap[string];\n                         maxPairs: int = DefaultMaxCookiePairs;\n                         maxKeyBytes: int = DefaultMaxCookieKeyBytes;\n                         maxValueBytes: int = DefaultMaxCookieValueBytes): bool		1473
+nim	markCookiesParsed	nim_express/types.html#markCookiesParsed,Request	proc markCookiesParsed(req: Request)		1483
+nim	cookieParseRejected	nim_express/types.html#cookieParseRejected,Request	proc cookieParseRejected(req: Request): bool		1488
+nim	getCookie	nim_express/types.html#getCookie,Request,string	proc getCookie(req: Request; name: string): string		1504
+nim	newResponse	nim_express/types.html#newResponse,HttpResponse,string,string	proc newResponse(native: HttpResponse; viewsDir: string = "views";\n            viewExt: string = ""): Response		1509
+nim	responseLifecycleToken	nim_express/types.html#responseLifecycleToken,Response	proc responseLifecycleToken(res: Response): uint64		1541
+nim	responseLifecycleTokenMatches	nim_express/types.html#responseLifecycleTokenMatches,Response,uint64	proc responseLifecycleTokenMatches(res: Response; token: uint64): bool		1545
+nim	DefaultContextPoolMax	nim_express/types.html#DefaultContextPoolMax	const DefaultContextPoolMax		1550
+nim	contextPoolMax	nim_express/types.html#contextPoolMax	var contextPoolMax		1554
+nim	requestResponsePoolingEnabled	nim_express/types.html#requestResponsePoolingEnabled	var requestResponsePoolingEnabled		1556
+nim	skippedBodyFileDeleteCount	nim_express/types.html#skippedBodyFileDeleteCount	proc skippedBodyFileDeleteCount(): int64		1607
+nim	resetSkippedBodyFileDeleteCount	nim_express/types.html#resetSkippedBodyFileDeleteCount	proc resetSkippedBodyFileDeleteCount()		1611
+nim	setContextPoolMax	nim_express/types.html#setContextPoolMax,int	proc setContextPoolMax(maxEntries: int)		1615
+nim	getContextPoolMax	nim_express/types.html#getContextPoolMax	proc getContextPoolMax(): int		1619
+nim	setRequestResponsePoolingEnabled	nim_express/types.html#setRequestResponsePoolingEnabled,bool	proc setRequestResponsePoolingEnabled(enabled: bool)		1623
+nim	getRequestResponsePoolingEnabled	nim_express/types.html#getRequestResponsePoolingEnabled	proc getRequestResponsePoolingEnabled(): bool		1630
+nim	requestPoolSize	nim_express/types.html#requestPoolSize	proc requestPoolSize(): int		1634
+nim	responsePoolSize	nim_express/types.html#responsePoolSize	proc responsePoolSize(): int		1638
+nim	prewarmContextPools	nim_express/types.html#prewarmContextPools,int,int	proc prewarmContextPools(requestCount: int = 256; responseCount: int = 256)		1643
+nim	rebindRequest	nim_express/types.html#rebindRequest,Request,HttpRequest	proc rebindRequest(req: Request; native: HttpRequest)		1716
+nim	acquireRequest	nim_express/types.html#acquireRequest,HttpRequest	proc acquireRequest(native: HttpRequest): Request		1750
+nim	acquireBorrowedRequest	nim_express/types.html#acquireBorrowedRequest,HttpRequest	proc acquireBorrowedRequest(native: HttpRequest): Request		1754
+nim	releaseRequest	nim_express/types.html#releaseRequest,Request	proc releaseRequest(req: Request)		1760
+nim	rebindResponse	nim_express/types.html#rebindResponse,Response,HttpResponse,ExpressApp,string,string	proc rebindResponse(res: Response; native: HttpResponse; app: ExpressApp;\n               viewsDir: string; viewExt: string)		1824
+nim	acquireResponse	nim_express/types.html#acquireResponse,HttpResponse,ExpressApp,string,string	proc acquireResponse(native: HttpResponse; app: ExpressApp = nil;\n                viewsDir: string = "views"; viewExt: string = ""): Response		1835
+nim	releaseResponse	nim_express/types.html#releaseResponse,Response	proc releaseResponse(res: Response)		1862
+nimgrp	parsecookieheaderbounded	nim_express/types.html#parseCookieHeaderBounded-procs-all	proc		1408
 nimgrp	isjsoncontenttype	nim_express/types.html#isJsonContentType-procs-all	proc		90
