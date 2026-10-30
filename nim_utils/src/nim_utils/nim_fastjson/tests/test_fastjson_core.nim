@@ -470,3 +470,24 @@ suite "unsigned overflow guard and borrowed utf8 span regression":
     let fj = initFastJson()
     expect nim_fastjson.JsonError:
       discard fj.deserialize("{\"s\":\"bad \xC3\x28 tail\"}", StrWrap)
+
+  test "float fast-path boundaries match dragonbox byte-for-byte":
+    # Integral fast path: |x| < 2^53 and x == trunc(x), trailing ".0".
+    check serializeDirect(1.0) == "1.0"
+    check serializeDirect(-1.0) == "-1.0"
+    check serializeDirect(0.0) == "0.0"
+    check serializeDirect(-0.0) == "-0.0"      # sign must survive
+    check serializeDirect(123456.0) == "123456.0"
+    # 2^53-1 is the largest integral in the fast path.
+    check serializeDirect(9007199254740991.0) == "9007199254740991.0"
+    # 2^53 is just outside the integral fast path -> dragonbox, still exact.
+    check serializeDirect(9007199254740992.0) == "9007199254740992.0"
+    # Short-decimal exactness gate (float64(m)/10^k == x) picks the shortest form.
+    check serializeDirect(0.5) == "0.5"
+    check serializeDirect(0.25) == "0.25"
+    check serializeDirect(0.1) == "0.1"
+    check serializeDirect(1.5) == "1.5"
+    check serializeDirect(0.001) == "0.001"
+    # Values that fail the exactness gate fall through to dragonbox unchanged.
+    check serializeDirect(1.0 / 3.0) == "0.3333333333333333"
+    check serializeDirect(0.123456789012345678) == "0.12345678901234568"
