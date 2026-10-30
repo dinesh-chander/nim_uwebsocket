@@ -1,4 +1,4 @@
-import std/[sequtils, streams, strutils, tables, unittest, unicode]
+import std/[parseutils, sequtils, streams, strutils, tables, unittest, unicode]
 import jsony
 
 import ../../nim_fastjson
@@ -470,3 +470,31 @@ suite "unsigned overflow guard and borrowed utf8 span regression":
     let fj = initFastJson()
     expect nim_fastjson.JsonError:
       discard fj.deserialize("{\"s\":\"bad \xC3\x28 tail\"}", StrWrap)
+
+  # --- Float parse-accuracy regression tests ---
+
+  proc parseF(t: string): float64 =
+    var f: float64
+    var i = 0
+    parseValue(t, i, f)
+    f
+
+  test "float parse matches stdlib for trailing-zero decimal (a)":
+    # "1.980020" used to double-round via intPart + fracPart/fracScale
+    var expected: float64
+    discard parseutils.parseFloat("1.980020", expected, 0)
+    check parseF("1.980020") == expected
+
+  test "float parse round-trip stability for exponent forms (b)":
+    # These values were unstable: parse -> $ -> reparse gave different bits.
+    for t in @["65722e-4", "-5565e-3", "14534264322e-10"]:
+      let a = parseF(t)
+      let b = parseF($a)
+      check a == b
+
+  test "float parse round-trip stability for plain decimal forms (b)":
+    # Same numbers written without exponent must give identical bits.
+    for t in @["6.5722", "-5.565", "1.4534264322"]:
+      let a = parseF(t)
+      let b = parseF($a)
+      check a == b

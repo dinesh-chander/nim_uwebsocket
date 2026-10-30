@@ -28,6 +28,7 @@ template jsonSafe*() {.pragma.}
 
 const ObjectFieldPlanCache = CacheTable"nimFastjson.objectFieldPlans"
 const DecodeFieldPlanCache = CacheTable"nimFastjson.decodeFieldPlans"
+
 const StaticOverheadCache = CacheTable"nimFastjson.staticOverhead"
 const FloatFieldCountCache = CacheTable"nimFastjson.floatFieldCount"
 const IntFieldCountCache = CacheTable"nimFastjson.intFieldCount"
@@ -933,7 +934,7 @@ proc parseValue*(s: string, i: var int, value: var SomeFloat) =
     value = type(value)(parsed)
     return
 
-  if fallbackToParseFloat or intDigits > 15 or fracDigits > 15:
+  if fallbackToParseFloat or intDigits + fracDigits > 15:
     var parsed: float
     let consumed = parseFloat(s, parsed, start)
     if consumed == 0 or start + consumed != j:
@@ -944,9 +945,13 @@ proc parseValue*(s: string, i: var int, value: var SomeFloat) =
     value = type(value)(parsed)
     return
 
-  var parsed = float64(intPart)
-  if fracDigits > 0:
-    parsed += float64(fracPart) / fracScale
+  # Fold decimal point into a single integer mantissa m < 10^15 (exactly
+  # representable in float64), then perform one correctly-rounded division.
+  var m = intPart
+  for _ in 0 ..< fracDigits:
+    m *= 10'u64
+  m += fracPart
+  var parsed = float64(m) / Pow10Table[fracDigits + 22]
   if negative:
     parsed = -parsed
   i = j
