@@ -787,7 +787,11 @@ suite "HTTP/WS safety regressions":
     check source.contains("bindTimerServer(server.wsKeepaliveTimer, server)")
     check source.contains("runWsKeepalive(resolveServerFromTimer(timer))")
     check source.contains("server.wsKeepaliveCursor")
-    check source.contains("key.len == 0 or server.websocketSet == nil or server.websocketSet.contains(key)")
+    # Regression guard: the per-tick keepalive sweep must NOT reintroduce the
+    # redundant per-connection wsKey() string format + websocketSet.contains
+    # probe (that was the PARENT-VERIFIED allocation hot spot removed from
+    # runWsKeepalive; the seq + isOpen/socket guards are authoritative instead).
+    check not source.contains("key.len == 0 or server.websocketSet == nil or server.websocketSet.contains(key)")
     check resolveServerFromLoop(nil) == nil
     check resolveServerFromTimer(nil) == nil
     check resolveServerFromSocket(nil) == nil

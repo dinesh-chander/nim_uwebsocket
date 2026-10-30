@@ -10088,10 +10088,16 @@ proc runWsKeepalive(server: HttpServer) {.inline.} =
     let ws = server.websockets[idx]
     inc processed
 
+    # The `server.websockets` seq is the authoritative membership list: every
+    # entry is added (accept path) and removed (removeTrackedWebSocket) in lockstep
+    # with `server.websocketSet`, so the old per-connection `wsKey()` string format
+    # + `websocketSet.contains` probe was redundant. Drop it: no allocation or
+    # hashing per connection per tick. The fresh seq read + `ws.isOpen`/`ws.socket`
+    # guards below already prevent pinging a dangling socket; the cursor/swap-delete
+    # logic (see below) is what keeps iteration correct when entries are removed
+    # mid-sweep, independently of the set lookup.
     if ws != nil and ws.isOpen and ws.socket != nil:
-      let key = ws.wsKey()
-      if key.len == 0 or server.websocketSet == nil or server.websocketSet.contains(key):
-        ws.ping()
+      ws.ping()
 
     # removeTrackedWebSocket uses swap-delete. If ping/close handling removed
     # the current socket, keep the cursor at this index so the swapped-in socket
