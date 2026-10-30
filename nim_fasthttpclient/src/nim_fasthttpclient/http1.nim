@@ -93,6 +93,7 @@ proc initHttp1Parser*(): Http1Parser {.inline.} =
   result.state = psStatusLine
   result.contentLength = -1
   result.keepAlive = true
+  result.response.headers = newSeqOfCap[HttpHeader](16)
 
 proc parseStatusLine(parser: var Http1Parser, line: string): bool {.inline.} =
   if line.len < 12:
