@@ -1184,3 +1184,100 @@ suite "HTTP/WS safety regressions":
     check safeRuns == 2
 
     dealloc(fakeTimer)
+
+  # --- RFC 6455 §8.1 strict UTF-8 validation regression tests ---
+
+  test "validateUtf8Strict rejects E0 80 80 (overlong encoding)":
+    let s = "\xE0\x80\x80"
+    check validateUtf8Strict(s) == 0
+
+  test "validateUtf8Strict rejects ED A0 80 (surrogate D800)":
+    let s = "\xED\xA0\x80"
+    check validateUtf8Strict(s) == 0
+
+  test "validateUtf8Strict rejects F4 90 80 80 (cp > 10FFFF)":
+    let s = "\xF4\x90\x80\x80"
+    check validateUtf8Strict(s) == 0
+
+  test "validateUtf8Strict rejects C0 AF (overlong slash)":
+    let s = "\xC0\xAF"
+    check validateUtf8Strict(s) == 0
+
+  test "validateUtf8Strict rejects F5-F7 leads (invalid 4-byte starts)":
+    for lead in '\xF5'..'\xF7':
+      let s = $lead & "\x80\x80\x80"
+      check validateUtf8Strict(s) == 0
+
+  test "validateUtf8Strict rejects bare continuation bytes":
+    for b in '\x80'..'\xBF':
+      let s = $b
+      check validateUtf8Strict(s) == 0
+
+  test "validateUtf8Strict rejects truncated 2-byte sequence":
+    let s = "\xC3"
+    check validateUtf8Strict(s) == 0
+
+  test "validateUtf8Strict rejects truncated 3-byte sequence":
+    let s = "A\xE0\xA0"
+    check validateUtf8Strict(s) == 1
+
+  test "validateUtf8Strict rejects truncated 4-byte sequence":
+    let s = "AB\xF0\x9F\x98"
+    check validateUtf8Strict(s) == 2
+
+  test "validateUtf8Strict accepts valid multi-byte sequences":
+    # U+00E9 (2-byte), U+20AC (3-byte), U+1F600 (4-byte)
+    check validateUtf8Strict("caf\xC3\xA9") == -1
+    check validateUtf8Strict("\xE2\x82\xAC") == -1
+    check validateUtf8Strict("\xF0\x9F\x98\x80") == -1
+    check validateUtf8Strict("") == -1
+    check validateUtf8Strict("pure ascii") == -1
+
+  test "validateUtf8Bytes agrees with validateUtf8Strict for byte arrays":
+    let cases = [
+      "\xE0\x80\x80",
+      "\xED\xA0\x80",
+      "\xF4\x90\x80\x80",
+      "\xC0\xAF",
+      "\xF5\x80\x80\x80",
+      "\x80",
+      "\xC3",
+      "A\xE0\xA0",
+      "\xC3\xA9",
+      "\xF0\x9F\x98\x80"
+    ]
+    for item in cases:
+      var byteArr = newSeq[byte](item.len)
+      for i in 0 ..< item.len:
+        byteArr[i] = byte(item[i])
+      check validateUtf8Bytes(byteArr, 0, byteArr.len) == validateUtf8Strict(item)
+
+  test "validWsCloseReasonPrefixLen rejects overlong in close reason":
+    # E0 80 80 in close reason must yield 0-length prefix (invalid → strip entirely)
+    check validWsCloseReasonPrefixLen("\xE0\x80\x80", 123) == 0
+
+  test "validWsCloseReasonPrefixLen rejects surrogate in close reason":
+    check validWsCloseReasonPrefixLen("\xED\xA0\x80", 123) == 0
+
+  test "validWsCloseReasonPrefixLen rejects cp>10FFFF in close reason":
+    check validWsCloseReasonPrefixLen("\xF4\x90\x80\x80", 123) == 0
+
+  test "validWsCloseReasonPrefixLen truncates valid string at byte boundary safely":
+    # Full string is valid UTF-8 (euro sign = 3 bytes + 'A'), but maxBytes=4
+    # truncates mid-'A'? No, maxBytes=3 cuts exactly at euro boundary, maxBytes=2 breaks euro.
+    let reason = "\xE2\x82\xAC" & "A"  # 3-byte euro + 1-byte A = 4 bytes
+    check validWsCloseReasonPrefixLen(reason, 4) == 4  # fits entirely
+    check validWsCloseReasonPrefixLen(reason, 3) == 3  # cuts at byte boundary after euro
+    check validWsCloseReasonPrefixLen(reason, 2) == 0  # would truncate mid-euro, back to 0
+    # Strict check: truncation that creates an invalid prefix must be rejected
+    # maxBytes=1: just first byte E2 is incomplete → 0
+    check validWsCloseReasonPrefixLen(reason, 1) == 0
+
+  test "text frame strict path: overlong after ASCII prefix detected at correct offset":
+    let payload = "hello\xE0\x80\x80"
+    check isAsciiOnly(payload) == false
+    check validateUtf8Strict(payload) == 5
+
+  test "text frame strict path: surrogate after ASCII prefix":
+    let payload = "ok\xED\xA0\x80"
+    check validateUtf8Strict(payload) == 2

@@ -1,4 +1,4 @@
-import std/[options, parseutils, sets, strutils, tables, unicode]
+import std/[math, options, parseutils, sets, strutils, tables, unicode]
 import std/private/dragonbox
 import macrocache
 import macros
@@ -1716,13 +1716,96 @@ proc copySafeJsonBytesFused(value: string, start: int, buf: var string, pos: var
 proc nextUnsafeJsonByte(value: string, start: int): int {.inline.} =
   scanSafeJsonBytes(value, start)
 
+const pow10F64: array[16, float64] = [
+  1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7,
+  1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15]
+
+proc writeUintDigits(p: ptr array[65, char], pos: var int, u: uint64) {.inline.} =
+  ## Write decimal digits of u into p at pos, advancing pos.
+  var digits: array[20, char]
+  var dpos = digits.len
+  var v = u
+  if v == 0:
+    dec dpos; digits[dpos] = '0'
+  else:
+    while v >= 100:
+      let pair = int(v mod 100)
+      v = v div 100
+      dpos -= 2
+      digits[dpos] = DigitPairs[pair][0]
+      digits[dpos + 1] = DigitPairs[pair][1]
+    if v < 10:
+      dec dpos; digits[dpos] = char(ord('0') + int(v))
+    else:
+      dpos -= 2
+      digits[dpos] = DigitPairs[int(v)][0]
+      digits[dpos + 1] = DigitPairs[int(v)][1]
+  let nd = digits.len - dpos
+  copyMem(addr p[pos], addr digits[dpos], nd)
+  inc pos, nd
+
+proc writeFloatFast(p: ptr array[65, char], value: float64): int {.inline.} =
+  ## Fast path for float64 JSON serialisation.
+  ## Writes bytes into p and returns count, or -1 if dragonbox is required.
+  let signBitSet = (cast[uint64](value) and (1'u64 shl 63)) != 0
+  let ax = abs(value)
+  var pos = 0
+  # Integral fast path: |x| < 2^53 and x == trunc(x)
+  if ax < 9007199254740992.0:
+    let i = ax.int64
+    if float64(i) == ax:
+      if signBitSet: p[pos] = '-'; inc pos
+      writeUintDigits(p, pos, uint64(i))
+      p[pos] = '.'; inc pos
+      p[pos] = '0'; inc pos
+      return pos
+  # Short-decimal fast path: find smallest k where float64(m)/10^k == ax.
+  # Bounded to k<=6: covers 1-6 fractional digits; values needing more are
+  # better served by dragonbox directly (avoids wasted iterations).
+  if ax >= 1e-7 and ax < 9007199254740992.0:
+    for k in 1..4:
+      let scaled = ax * pow10F64[k]
+      if scaled >= 9007199254740992.0: break
+      let m = uint64(round(scaled))
+      if m == 0: continue
+      if float64(m) / pow10F64[k] != ax: continue
+      # Compute number of digits in m
+      var tmpU = m
+      var numDigits = 1
+      while tmpU >= 10: tmpU = tmpU div 10; inc numDigits
+      # Ensure dragonbox would use fixed notation (decimalPoint >= -6)
+      if k - numDigits > 6: break
+      if signBitSet: p[pos] = '-'; inc pos
+      if k >= numDigits:
+        p[pos] = '0'; inc pos
+        p[pos] = '.'; inc pos
+        for _ in 1..(k - numDigits): p[pos] = '0'; inc pos
+        writeUintDigits(p, pos, m)
+      else:
+        let intDigits = numDigits - k
+        var digits: array[20, char]
+        var v = m
+        for di in countdown(numDigits - 1, 0):
+          digits[di] = char(ord('0') + int(v mod 10))
+          v = v div 10
+        copyMem(addr p[pos], addr digits[0], intDigits)
+        inc pos, intDigits
+        p[pos] = '.'; inc pos
+        copyMem(addr p[pos], addr digits[intDigits], k)
+        inc pos, k
+      return pos
+  return -1
+
 proc appendFloatDirect(buf: var string, value: float64) {.inline.} =
   if value != value:
     raise newException(JsonError, "NaN cannot be represented in JSON (RFC 8259 §6)")
   if value == Inf or value == NegInf:
     raise newException(JsonError, "Infinity cannot be represented in JSON (RFC 8259 §6)")
   var fbuf {.noinit.}: array[65, char]
-  let n = toChars(fbuf, value, forceTrailingDotZero = true).int
+  let fast = writeFloatFast(addr fbuf, value)
+  let n: int =
+    if fast >= 0: fast
+    else: toChars(fbuf, value, forceTrailingDotZero = true).int
   let oldLen = buf.len
   buf.setLen(checkedJsonAdd(oldLen, n))
   copyMem(addr buf[oldLen], addr fbuf[0], n)
@@ -1826,7 +1909,10 @@ proc cPutFloat(buf: var string, pos: var int, value: float64) {.inline.} =
   if value == Inf or value == NegInf:
     raise newException(JsonError, "Infinity cannot be represented in JSON (RFC 8259 §6)")
   let p = cast[ptr array[65, char]](addr buf[pos])
-  let n = toChars(p[], value, forceTrailingDotZero = true).int
+  let fast = writeFloatFast(p, value)
+  let n: int =
+    if fast >= 0: fast
+    else: toChars(p[], value, forceTrailingDotZero = true).int
   pos += n
 
 proc cPutInt[T: SomeInteger](buf: var string, pos: var int, value: T) {.inline.} =

@@ -62,6 +62,8 @@ type
     psHeaders
     psBody
     psChunkedBody
+    psChunkedData
+    psChunkedDataCrlf
     psChunkedTrailers
     psDone
     psError
@@ -73,6 +75,7 @@ type
     chunked*: bool
     transferEncodingSeen*: bool
     bodyRead*: int
+    chunkRemaining*: int
     keepAlive*: bool
     headerCount*: int
     headerBytes*: int
@@ -422,29 +425,49 @@ proc feedData*(parser: var Http1Parser, data: string, consumed: var int): bool =
     of psChunkedBody:
       let lineEnd = data.find("\r\n", pos)
       if lineEnd < 0:
+        consumed = pos
         return false
       var chunkSize = 0
       if not parseChunkSizeLine(data, pos, lineEnd, chunkSize):
         parser.state = psError
+        consumed = pos
         return true
       pos = lineEnd + 2
       if chunkSize == 0:
         parser.state = psChunkedTrailers
         continue
-      if pos + chunkSize + 2 > data.len:
-        return false
-      if data[pos + chunkSize] != '\r' or data[pos + chunkSize + 1] != '\n':
-        parser.state = psError
-        return true
       if parser.response.body.len + chunkSize > MaxContentLengthVal:
         parser.state = psError
+        consumed = pos
         return true
-      parser.response.body.add data[pos ..< pos + chunkSize]
-      pos += chunkSize + 2
+      parser.chunkRemaining = chunkSize
+      parser.state = psChunkedData
+    of psChunkedData:
+      let available = data.len - pos
+      let toRead = min(parser.chunkRemaining, available)
+      parser.response.body.add data[pos ..< pos + toRead]
+      parser.chunkRemaining -= toRead
+      pos += toRead
       consumed = pos
+      if parser.chunkRemaining > 0:
+        return false
+      parser.state = psChunkedDataCrlf
+    of psChunkedDataCrlf:
+      let available = data.len - pos
+      if available < 2:
+        consumed = pos
+        return false
+      if data[pos] != '\r' or data[pos + 1] != '\n':
+        parser.state = psError
+        consumed = pos
+        return true
+      pos += 2
+      consumed = pos
+      parser.state = psChunkedBody
     of psChunkedTrailers:
       let lineEnd = findCrLf(data, pos)
       if lineEnd < 0:
+        consumed = pos
         return false
       if lineEnd == pos:
         pos += 2

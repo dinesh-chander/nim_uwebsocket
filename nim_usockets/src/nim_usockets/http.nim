@@ -9265,16 +9265,17 @@ proc ping*(ws: WebSocket, data: string = "") {.inline.} =
 proc isValidWsCloseCode(code: int): bool {.inline.}
 proc wsClosePayload(code: int, reason: string = ""): string {.inline.}
 proc isAsciiOnly(data: string): bool {.inline.}
+proc validateUtf8Strict*(s: string): int {.inline.}
 
 proc validWsCloseReasonPrefixLen(reason: string, maxBytes: int = 123): int =
   if reason.len == 0 or maxBytes <= 0:
     return 0
-  if reason.validateUtf8() != -1:
+  if validateUtf8Strict(reason) != -1:
     return 0
   result = min(reason.len, maxBytes)
   if result == reason.len:
     return
-  while result > 0 and reason[0 ..< result].validateUtf8() != -1:
+  while result > 0 and validateUtf8Strict(reason[0 ..< result]) != -1:
     dec result
 
 ## Send a validated close frame and mark the websocket closed for teardown
@@ -9283,7 +9284,7 @@ proc close*(ws: WebSocket, code: int = 1000, reason: string = "") =
   if ws != nil and ws.isOpen and ws.socket != nil:
     let closeCode = if code.isValidWsCloseCode(): code else: 1000
     var safeReason = reason
-    if safeReason.len > 0 and safeReason.validateUtf8() != -1:
+    if safeReason.len > 0 and validateUtf8Strict(safeReason) != -1:
       safeReason = ""
     let payload = wsClosePayload(closeCode, safeReason)
     discard sendWsFrameWithBackpressure(ws, wsClose, payload, false)
@@ -9790,33 +9791,35 @@ proc isAsciiOnlyForTest*(data: string): bool {.inline.} =
 proc isAsciiOnlyBytesForTest*(data: openArray[byte], start: int, length: int): bool {.inline.} =
   isAsciiOnlyBytes(data, start, length)
 
-proc validateUtf8Bytes(data: openArray[byte], start: int, length: int): int {.inline.} =
+## RFC 6455 §8.1 strict UTF-8 validator. Returns byte index of first error, -1 when valid.
+## Generic over byte-like sequences; both `openArray[byte]` and `string` (via toOpenArray) are accepted.
+proc validateUtf8Impl[T: byte | char](data: openArray[T], start: int, length: int): int {.inline.} =
   if length == 0:
     return -1
   var i = 0
   while i < length:
-    let b = data[start + i]
+    let b = byte(data[start + i])
     if b <= 0x7F'u8:
       inc i
     elif (b and 0xE0'u8) == 0xC0'u8:
       if i + 1 >= length:
         return i
-      if (data[start + i + 1] and 0xC0'u8) != 0x80'u8:
+      if (byte(data[start + i + 1]) and 0xC0'u8) != 0x80'u8:
         return i
-      let cp = (uint32(b and 0x1F'u8) shl 6) or uint32(data[start + i + 1] and 0x3F'u8)
+      let cp = (uint32(b and 0x1F'u8) shl 6) or uint32(byte(data[start + i + 1]) and 0x3F'u8)
       if cp < 0x80'u32:
         return i
       i += 2
     elif (b and 0xF0'u8) == 0xE0'u8:
       if i + 2 >= length:
         return i
-      if (data[start + i + 1] and 0xC0'u8) != 0x80'u8:
+      if (byte(data[start + i + 1]) and 0xC0'u8) != 0x80'u8:
         return i
-      if (data[start + i + 2] and 0xC0'u8) != 0x80'u8:
+      if (byte(data[start + i + 2]) and 0xC0'u8) != 0x80'u8:
         return i
       let cp = (uint32(b and 0x0F'u8) shl 12) or
-               (uint32(data[start + i + 1] and 0x3F'u8) shl 6) or
-               uint32(data[start + i + 2] and 0x3F'u8)
+               (uint32(byte(data[start + i + 1]) and 0x3F'u8) shl 6) or
+               uint32(byte(data[start + i + 2]) and 0x3F'u8)
       if cp < 0x800'u32:
         return i
       if cp >= 0xD800'u32 and cp <= 0xDFFF'u32:
@@ -9825,22 +9828,33 @@ proc validateUtf8Bytes(data: openArray[byte], start: int, length: int): int {.in
     elif (b and 0xF8'u8) == 0xF0'u8:
       if i + 3 >= length:
         return i
-      if (data[start + i + 1] and 0xC0'u8) != 0x80'u8:
+      if (byte(data[start + i + 1]) and 0xC0'u8) != 0x80'u8:
         return i
-      if (data[start + i + 2] and 0xC0'u8) != 0x80'u8:
+      if (byte(data[start + i + 2]) and 0xC0'u8) != 0x80'u8:
         return i
-      if (data[start + i + 3] and 0xC0'u8) != 0x80'u8:
+      if (byte(data[start + i + 3]) and 0xC0'u8) != 0x80'u8:
         return i
       let cp = (uint32(b and 0x07'u8) shl 18) or
-               (uint32(data[start + i + 1] and 0x3F'u8) shl 12) or
-               (uint32(data[start + i + 2] and 0x3F'u8) shl 6) or
-               uint32(data[start + i + 3] and 0x3F'u8)
+               (uint32(byte(data[start + i + 1]) and 0x3F'u8) shl 12) or
+               (uint32(byte(data[start + i + 2]) and 0x3F'u8) shl 6) or
+               uint32(byte(data[start + i + 3]) and 0x3F'u8)
       if cp < 0x10000'u32 or cp > 0x10FFFF'u32:
         return i
       i += 4
     else:
       return i
   -1
+
+proc validateUtf8Bytes(data: openArray[byte], start: int, length: int): int {.inline.} =
+  validateUtf8Impl(data, start, length)
+
+## RFC 6455 §8.1 strict UTF-8 validation for strings. Returns byte index of first invalid
+## sequence, -1 when the entire string is valid UTF-8. Rejects overlongs, surrogates, and
+## codepoints above U+10FFFF per WHATWG "Web-friendly UTF-8".
+proc validateUtf8Strict*(s: string): int {.inline.} =
+  if s.len == 0:
+    return -1
+  validateUtf8Impl(s.toOpenArray(0, s.len - 1), 0, s.len)
 
 proc bufferPayloadToString(data: openArray[byte], start: int, length: int): string {.inline.} =
   result = newStringUninit(length)
@@ -9858,7 +9872,7 @@ proc deliverWebSocketMessage(
 ): bool {.inline.} =
   # RFC 6455 §8.1 + §7.4.1(1007):
   # invalid UTF-8 in text messages triggers connection failure.
-  if opcode == 0x1 and (not payload.isAsciiOnly()) and payload.validateUtf8() != -1:
+  if opcode == 0x1 and (not payload.isAsciiOnly()) and validateUtf8Strict(payload) != -1:
     sendWsCloseAndTerminate(sockData, s, WsClose1007)
     return false
   if wsRawHandler != nil and wsConn != nil:
@@ -10840,7 +10854,7 @@ proc handleWebSocketData(sockData: ptr SocketData, s: UsSocketPtr) {.inline.} =
           let closeCode = (ord(closePayload[0]) shl 8) or ord(closePayload[1])
           if not closeCode.isValidWsCloseCode():
             replyPayload = WsClose1002
-          elif closePayload.len > 2 and closePayload[2..^1].validateUtf8() != -1:
+          elif closePayload.len > 2 and validateUtf8Strict(closePayload[2..^1]) != -1:
             replyPayload = WsClose1007
         sendWsCloseAndTerminate(sockData, s, replyPayload)
         return
@@ -10976,7 +10990,7 @@ proc handleWebSocketData(sockData: ptr SocketData, s: UsSocketPtr) {.inline.} =
           let closeCode = (ord(payload[0]) shl 8) or ord(payload[1])
           if not closeCode.isValidWsCloseCode():
             replyPayload = WsClose1002
-          elif payload.len > 2 and payload[2..^1].validateUtf8() != -1:
+          elif payload.len > 2 and validateUtf8Strict(payload[2..^1]) != -1:
             replyPayload = WsClose1007
         sendWsCloseAndTerminate(sockData, s, replyPayload)
         return
