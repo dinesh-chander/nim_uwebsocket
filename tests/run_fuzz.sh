@@ -7,7 +7,7 @@ NIM="${NIM:-nim}"
 USOCKETS_LIB="nim_usockets/usockets/uSockets.a"
 BIN_DIR="bin"
 
-NIM_COMMON="--mm:arc --hints:off --panics:off --path:nim_utils/src --path:nim_usockets/src --path:nim_express/src --path:nim_fasthttpclient/src --path:vendor/zippy/src --path:vendor/brotli/src --path:vendor/nim_zstd --path:vendor/nim_libdeflate_gzip/src --path:vendor/malebolgia/src --path:vendor/jsony/src --path:vendor/checksums"
+NIM_COMMON="--mm:arc --hints:off --panics:off --path:nim_utils/src --path:nim_usockets/src --path:nim_express/src --path:nim_fasthttpclient/src --path:vendor/zippy/src --path:vendor/brotli/src --path:vendor/nim_zstd --path:vendor/nim_libdeflate_gzip/src --path:vendor/malebolgia/src --path:vendor/jsony/src --path:vendor/checksums --path:vendor/nimsimd/src"
 # uSockets.a is a clang LTO bitcode archive: the link must be driven by clang and
 # carry -flto, matching Makefile NIM_EXTRA_FLAGS and harness/common.sh.
 NIM_CC="${NIM_CC:---cc:clang}"

@@ -100,6 +100,7 @@ bench_set_common_paths() {
     --path:"${root}/vendor/malebolgia/src"
     --path:"${root}/vendor/jsony/src"
     --path:"${root}/vendor/checksums"
+    --path:"${root}/vendor/nimsimd/src"
   )
 }
 

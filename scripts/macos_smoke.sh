@@ -26,6 +26,7 @@ COMMON_PATHS=(
   --path:"$ROOT_DIR/vendor/malebolgia/src"
   --path:"$ROOT_DIR/vendor/jsony/src"
   --path:"$ROOT_DIR/vendor/checksums"
+  --path:"$ROOT_DIR/vendor/nimsimd/src"
 )
 
 wait_http() {

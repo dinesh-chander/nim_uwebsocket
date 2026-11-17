@@ -84,6 +84,7 @@ COMMON_PATHS=(
   --path:"$ROOT_DIR/vendor/malebolgia/src"
   --path:"$ROOT_DIR/vendor/jsony/src"
   --path:"$ROOT_DIR/vendor/checksums"
+  --path:"$ROOT_DIR/vendor/nimsimd/src"
 )
 # Bash arrays do NOT survive `export` into xargs child shells (the child sees
 # an empty array), so pass the flags as a newline-separated string and split

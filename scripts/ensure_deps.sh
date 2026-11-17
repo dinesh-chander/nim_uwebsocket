@@ -11,6 +11,7 @@ required_vendor_dirs=(
   "${ROOT_DIR}/vendor/malebolgia/src"
   "${ROOT_DIR}/vendor/jsony/src"
   "${ROOT_DIR}/vendor/checksums"
+  "${ROOT_DIR}/vendor/nimsimd/src"
 )
 
 missing_vendor=0
