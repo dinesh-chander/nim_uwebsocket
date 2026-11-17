@@ -48,6 +48,11 @@ fi
 
 run_step production-check make production-check NATIVE_OPT=0
 
+# Cross-target type check for the macOS/GCD and non-x86 branches. Runs on every
+# host: `nim check` needs no Apple SDK, so a Linux box still catches the macOS
+# build breaks that Apple Silicon users hit first.
+run_step macos-compat-check make macos-compat-check NATIVE_OPT=0
+
 if [ "$IS_LINUX" = "1" ]; then
   run_step linux-compat-check make linux-compat-check NATIVE_OPT=0
   run_step smoke-epoll env USOCKETS_BACKEND=epoll bash scripts/linux_smoke.sh
