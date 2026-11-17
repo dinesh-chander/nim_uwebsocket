@@ -66,7 +66,10 @@ trap cleanup EXIT INT TERM
 cd "$ROOT_DIR"
 mkdir -p "$NIMCACHE_ROOT" "$ROOT_DIR/bin"
 
-make usockets USOCKETS_BACKEND=gcd NATIVE_OPT=0
+# Built with the default NATIVE_OPT=1: the native tuning flags are spelled per
+# architecture, and a smoke run that disables them cannot catch a host whose
+# clang rejects the x86 spelling (the Makefile probes clang for the accepted form).
+make usockets USOCKETS_BACKEND=gcd
 
 "$NIM" c --skipProjCfg --nimcache:"$NIMCACHE_ROOT/ws_live" \
   "${COMMON_PATHS[@]}" "${NIM_BACKEND_FLAGS[@]}" -d:nimUwebsocketsTest \
@@ -95,7 +98,7 @@ WS_UPGRADE_HEADERS="$(
 grep -q "101 Switching Protocols" <<<"$WS_UPGRADE_HEADERS"
 grep -qi "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=" <<<"$WS_UPGRADE_HEADERS"
 
-make bench USOCKETS_BACKEND=gcd NATIVE_OPT=0 USE_PGO=0 BENCH_BIN="$ROOT_DIR/bin/macos_bench_smoke"
+make bench USOCKETS_BACKEND=gcd USE_PGO=0 BENCH_BIN="$ROOT_DIR/bin/macos_bench_smoke"
 
 PORT="$BENCH_PORT" NIM_EXPRESS_SCALE_MODE=single "$ROOT_DIR/bin/macos_bench_smoke" >"$NIMCACHE_ROOT/bench.log" 2>&1 &
 BENCH_PID=$!
