@@ -152,7 +152,7 @@ WEBSOCKETLOAD_BIN ?= nim_websocketcli/websocketload
 WS_RANDOM_OBJECT_BENCH_BIN ?= benchmark/ws_random_object_bench
 
 # Build targets
-.PHONY: all build build-all deps check-iouring-deps usockets validate-usockets-backend usockets-gcd usockets-kqueue usockets-epoll usockets-iouring bench benchmarks bench-gcd bench-kqueue bench-epoll bench-iouring bench-smoke linux-compat-check macos-smoke production-check websocketload ws-echo-bench ws-random-object-bench ws-scale-setup examples build-examples test coverage verify clean clean-examples clean-bench clean-all ci
+.PHONY: all build build-all deps check-iouring-deps usockets validate-usockets-backend usockets-gcd usockets-kqueue usockets-epoll usockets-iouring bench benchmarks bench-gcd bench-kqueue bench-epoll bench-iouring bench-smoke linux-compat-check macos-compat-check macos-smoke production-check websocketload ws-echo-bench ws-random-object-bench ws-scale-setup examples build-examples test coverage verify clean clean-examples clean-bench clean-all ci
 
 NIM_PARALLEL ?= --parallelBuild:8
 
@@ -283,6 +283,11 @@ bench-smoke: deps
 
 linux-compat-check: deps
 	NIM_EXTRA_FLAGS="$(NIM_EXTRA_FLAGS)" ./scripts/linux_target_check.sh
+
+# Type-checks the macOS (GCD) code paths with `nim check --os:macosx` for arm64
+# and amd64. Runs on any host: no Apple SDK is needed because nothing is linked.
+macos-compat-check: deps
+	NIM="$(NIM)" bash ./scripts/macos_target_check.sh
 
 macos-smoke: deps
 	NIM_EXTRA_FLAGS="$(NIM_EXTRA_FLAGS)" bash ./scripts/macos_smoke.sh

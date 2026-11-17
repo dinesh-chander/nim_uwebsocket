@@ -40,6 +40,11 @@ jobs:
       - name: Linux compatibility check
         run: make linux-compat-check NATIVE_OPT=0
 
+      # `nim check --os:macosx` type-checks the GCD and non-x86 branches on any
+      # host, so a Linux job catches macOS build breaks without an Apple SDK.
+      - name: macOS cross-target check
+        run: make macos-compat-check
+
       - name: Linux live transport smoke (epoll)
         if: runner.os == 'Linux'
         run: USOCKETS_BACKEND=epoll bash scripts/linux_smoke.sh
