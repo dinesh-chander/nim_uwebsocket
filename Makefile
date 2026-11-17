@@ -137,8 +137,30 @@ else
   L_OPT_FLAGS += -flto -Wl,--gc-sections
 endif
 
+# Native tuning flags, spelled the way the compiler actually accepts them.
+# `-march=native -mtune=native` is the x86 spelling: Apple clang rejects it on
+# Apple Silicon ("the clang compiler does not support '-march=native'", or
+# "unknown target CPU apple-m1" on Xcode 15/16) and wants `-mcpu=native`, while on
+# x86 `-mcpu=native` is tuning-only and would silently drop the ISA extensions
+# `-march=native` turns on. Probe the compiler that really builds (clang, as the
+# uSockets and Nim rules below do) rather than assuming, so an Intel Mac, an old
+# Apple clang, or a clang that accepts neither spelling still builds: the first
+# accepted spelling wins, and the flags stay empty if none is accepted.
+# Override NATIVE_CFLAGS to pin a spelling (benchmark scripts, CI matrices), or
+# NATIVE_PROBE_ARCH / NATIVE_PROBE_CC to probe for another target.
+NATIVE_PROBE_ARCH ?= $(shell uname -m)
+NATIVE_PROBE_CC ?= $(shell command -v clang >/dev/null 2>&1 && echo clang || echo cc)
+native_probe = $(shell printf 'int main(void){return 0;}' | $(NATIVE_PROBE_CC) -x c $(1) -c - -o /dev/null >/dev/null 2>&1 && echo $(1))
+# On AArch64 clang detects more features through -mcpu=native than through
+# -march=native (llvm/llvm-project#149370), so ARM hosts try that spelling first.
+ifeq ($(filter arm64 aarch64,$(NATIVE_PROBE_ARCH)),)
+  NATIVE_CFLAGS ?= $(or $(call native_probe,-march=native -mtune=native),$(call native_probe,-mcpu=native))
+else
+  NATIVE_CFLAGS ?= $(or $(call native_probe,-mcpu=native),$(call native_probe,-march=native -mtune=native))
+endif
+
 ifeq ($(NATIVE_OPT),1)
-  C_OPT_FLAGS += -march=native -mtune=native
+  C_OPT_FLAGS += $(NATIVE_CFLAGS)
 endif
 
 # PGO

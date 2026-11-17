@@ -164,6 +164,11 @@ curl -sI -H "Upgrade: websocket" -H "Connection: Upgrade" \
   sync: per-directory `nim.cfg` / `config.nims`, the `scripts/*.sh` path arrays,
   `benchmark/*.sh`, and `NIM_FLAGS` in the top-level Makefile. A dep added to only
   some of them breaks the builds those files drive (e.g. `cd nim_express && nim c`).
+- Never hardcode `-march=native`. It is the x86 spelling; Apple clang rejects it on
+  Apple Silicon, and `-mcpu=native` (the ARM spelling) is tuning-only on x86. The
+  Makefile probes clang for the accepted spelling into `NATIVE_CFLAGS`, and
+  `nim_websocketcli/config.nims` switches on the target CPU; `scripts/macos_smoke.sh`
+  builds with the default `NATIVE_OPT=1` so a host that rejects a spelling is caught.
 
 ## Benchmarking
 ```bash

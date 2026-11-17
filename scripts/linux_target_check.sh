@@ -124,6 +124,18 @@ require_dry_run_contains "Darwin GCD Nim define" "-d:LIBUS_USE_GCD" \
   make -C "$ROOT_DIR" -n bench UNAME_S=Darwin USOCKETS_BACKEND=gcd NATIVE_OPT=0 USE_PGO=0
 require_dry_run_contains "Darwin GCD CoreFoundation link" "-framework CoreFoundation" \
   make -C "$ROOT_DIR" -n bench UNAME_S=Darwin USOCKETS_BACKEND=gcd NATIVE_OPT=0 USE_PGO=0
+# The compiler-probed native flags must be overridable and must reach both the
+# uSockets archive and the Nim build, or an Apple Silicon host that needs
+# -mcpu=native cannot be served at all (see NATIVE_CFLAGS in the Makefile).
+NATIVE_DRY_RUN=(make -C "$ROOT_DIR" -n usockets UNAME_S=Darwin USOCKETS_BACKEND=gcd NATIVE_OPT=1 USE_PGO=0)
+require_dry_run_contains "NATIVE_CFLAGS override reaches the uSockets build" "-mcpu=native" \
+  "${NATIVE_DRY_RUN[@]}" NATIVE_CFLAGS=-mcpu=native
+require_dry_run_not_contains "NATIVE_CFLAGS override drops the x86 spelling" "-march=native" \
+  "${NATIVE_DRY_RUN[@]}" NATIVE_CFLAGS=-mcpu=native
+require_dry_run_not_contains "NATIVE_OPT=0 emits no native flags" "-march=native" \
+  "${NATIVE_DRY_RUN[@]}" NATIVE_OPT=0
+require_dry_run_contains "NATIVE_CFLAGS override reaches the Nim build" "-mcpu=native" \
+  make -C "$ROOT_DIR" -n bench UNAME_S=Darwin USOCKETS_BACKEND=gcd NATIVE_OPT=1 USE_PGO=0 NATIVE_CFLAGS=-mcpu=native
 require_dry_run_contains "Darwin kqueue aliases to GCD" "WITH_GCD=1" \
   make -C "$ROOT_DIR" -n bench UNAME_S=Darwin USOCKETS_BACKEND=kqueue NATIVE_OPT=0 USE_PGO=0
 require_dry_run_contains "WebSocket random object bench target exists" "ws_random_object_bench.nim" \
