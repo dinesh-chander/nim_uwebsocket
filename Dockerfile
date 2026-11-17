@@ -1,4 +1,4 @@
-ARG NIM_VERSION=2.2.10
+ARG NIM_VERSION=2.4.0
 
 FROM nimlang/nim:${NIM_VERSION} AS builder
 

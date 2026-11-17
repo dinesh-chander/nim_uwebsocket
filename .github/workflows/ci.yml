@@ -14,12 +14,15 @@ on:
 
 jobs:
   verify:
-    name: verify (${{ matrix.os }})
+    name: verify (${{ matrix.os }}, Nim ${{ matrix.nim_version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        # 2.2.10 is the `requires "nim >= 2.2.10"` floor; 2.4.0 is the current
+        # stable line. Both stay green or the support claim is a lie.
+        nim_version: ["2.2.10", "2.4.0"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,7 +31,7 @@ jobs:
       - name: Setup Nim
         uses: jiro4989/setup-nim-action@v2.3.0
         with:
-          nim-version: "2.2.10"
+          nim-version: "${{ matrix.nim_version }}"
 
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
