@@ -30,8 +30,12 @@ COMMON_PATHS=(
 )
 
 # GCD is the only supported macOS event loop; the define switches the Nim
-# bindings onto the CoreFoundation/libdispatch code paths.
-MACOS_FLAGS=(--os:macosx -d:LIBUS_USE_GCD)
+# bindings onto the CoreFoundation/libdispatch code paths. The remaining flags
+# mirror NIM_FLAGS in the Makefile so the check type-checks the same code the
+# release build compiles: --mm:arc has ownership rules orc does not, release and
+# danger switch on the tuned branches, and the SIMD guards key off --cc.
+MACOS_FLAGS=(--os:macosx -d:LIBUS_USE_GCD -d:release -d:danger --opt:speed --mm:arc
+  --stackTrace:on --panics:off --cc:clang)
 
 run_check() {
   local name="$1"

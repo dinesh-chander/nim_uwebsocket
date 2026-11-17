@@ -158,6 +158,8 @@ curl -sI -H "Upgrade: websocket" -H "Connection: Upgrade" \
 - macOS build check (no Mac needed): `make macos-compat-check` — type-checks the
   stack with `nim check --os:macosx` for `arm64` and `amd64`, covering the GCD and
   portable (non-SSE2) branches that Apple Silicon compiles but Linux x86 does not.
+  Its flags mirror `NIM_FLAGS` in the Makefile, since `--mm:arc` and the release
+  defines change which branches get type-checked at all.
 - Vendored dep `--path` entries have several sources of truth that must stay in
   sync: per-directory `nim.cfg` / `config.nims`, the `scripts/*.sh` path arrays,
   `benchmark/*.sh`, and `NIM_FLAGS` in the top-level Makefile. A dep added to only
