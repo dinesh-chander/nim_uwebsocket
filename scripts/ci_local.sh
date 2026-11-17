@@ -48,6 +48,17 @@ fi
 
 run_step production-check make production-check NATIVE_OPT=0
 
+# Every harness unit gate (packages + middleware). `make production-check` drives
+# the package suites, but nothing ran the per-unit gates, so a middleware unit
+# could redden while the mirror of ci.yml still said green. Linux only, matching
+# ci.yml: these gates have only been exercised on Linux, and macOS is covered by
+# production-check plus smoke-gcd below.
+if [ "$IS_LINUX" = "1" ]; then
+  run_step harness-gates env HARNESS_JOBS="${HARNESS_JOBS:-2}" bash scripts/harness_all.sh
+else
+  SKIPPED+=("harness-gates (Linux only)")
+fi
+
 # Cross-target type check for the macOS/GCD and non-x86 branches. Runs on every
 # host: `nim check` needs no Apple SDK, so a Linux box still catches the macOS
 # build breaks that Apple Silicon users hit first.

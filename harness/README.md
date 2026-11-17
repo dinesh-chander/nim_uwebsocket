@@ -35,6 +35,11 @@ bash harness/nim_express/run.sh
 
 # narrow middleware gate (fast: module check + that middleware's tests)
 bash harness/middleware/rate_limit/run.sh
+
+# every unit gate in one shot (what CI runs): 5 packages + 36 middlewares,
+# exits nonzero if any unit is red. Per-unit output goes to
+# ${TMPDIR:-/tmp}/harness_all_logs/<unit>.log; the console stays one line per unit.
+HARNESS_JOBS=2 bash scripts/harness_all.sh
 ```
 
 Middleware test discovery: `nim_express/tests/test_<name>*.nim`; when a

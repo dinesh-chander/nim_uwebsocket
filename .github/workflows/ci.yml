@@ -85,3 +85,33 @@ jobs:
       - name: Fuzz suites
         if: runner.os == 'Linux'
         run: FUZZ_TIMEOUT=2700 bash tests/run_fuzz.sh
+
+  # -------------------------------------------------------------- harness-gates
+  # harness/<unit>/run.sh is this project's definition of done (harness/README.md),
+  # yet no workflow ran it: `make production-check` drives the package test suites
+  # only, so a middleware unit could go red with CI still green. Pinned to one
+  # Nim on purpose -- these gates exercise behaviour, not codegen, and a second
+  # compiler axis would double ~40 compile-and-run units for no new signal.
+  harness-gates:
+    name: harness-gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Nim
+        uses: jiro4989/setup-nim-action@v2.3.0
+        with:
+          nim-version: "2.4.0"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config liburing-dev libsqlite3-dev sqlite3
+
+      - name: Build uSockets
+        run: make usockets
+
+      - name: Run every unit gate
+        run: HARNESS_JOBS=2 bash scripts/harness_all.sh
