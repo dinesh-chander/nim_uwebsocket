@@ -21,7 +21,7 @@ jobs:
       - name: Setup Nim
         uses: jiro4989/setup-nim-action@v2.3.0
         with:
-          nim-version: "2.2.10"
+          nim-version: "2.4.0"
 
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
@@ -59,7 +59,7 @@ jobs:
 
       - name: Docker image build (epoll)
         if: runner.os == 'Linux'
-        run: docker build --build-arg USOCKETS_BACKEND=epoll --build-arg NIM_VERSION=2.2.10 -t nim-uwebsocket:epoll .
+        run: docker build --build-arg USOCKETS_BACKEND=epoll --build-arg NIM_VERSION=2.4.0 -t nim-uwebsocket:epoll .
 
       - name: Docker image smoke (epoll)
         if: runner.os == 'Linux'
@@ -83,7 +83,7 @@ jobs:
 
       - name: Docker image build (io_uring)
         if: runner.os == 'Linux'
-        run: docker build --build-arg USOCKETS_BACKEND=io_uring --build-arg NIM_VERSION=2.2.10 -t nim-uwebsocket:iouring .
+        run: docker build --build-arg USOCKETS_BACKEND=io_uring --build-arg NIM_VERSION=2.4.0 -t nim-uwebsocket:iouring .
 
       - name: Docker image smoke (io_uring)
         if: runner.os == 'Linux'
@@ -144,7 +144,7 @@ jobs:
       - name: Setup Nim
         uses: jiro4989/setup-nim-action@v2.3.0
         with:
-          nim-version: "2.2.10"
+          nim-version: "2.4.0"
 
       - name: Build uSockets
         run: make usockets
