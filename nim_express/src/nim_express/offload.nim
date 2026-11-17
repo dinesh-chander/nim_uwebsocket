@@ -284,6 +284,15 @@ when defined(nimExpressOffloadTest):
   proc offloadMasterPtrForTest*(): pointer =
     cast[pointer](offloadMasterForThread)
 
+proc offloadResultType(expr: NimNode): NimNode {.inline.} =
+  ## The offloaded call's result type, as a node that is still a `typedesc` once
+  ## it has been spliced into generated code. `getTypeInst` returns a typed
+  ## `nnkSym`, and Nim 2.4's `async` template initialises the future's result
+  ## with `default(<type node>)`, which a typed symbol no longer satisfies:
+  ## `Error: type mismatch; default(string)`. A `typeof` expression denotes the
+  ## same type and resolves in every position these macros use it.
+  newTree(nnkTypeOfExpr, copyNimTree(expr))
+
 macro runOffload*(expr: typed): untyped =
   ## Run a blocking call on malebolgia's worker pool and return a Future.
   ## Example: let rows = await runOffload(loadRowsBlocking())
@@ -293,7 +302,7 @@ macro runOffload*(expr: typed): untyped =
   if expr.kind notin nnkCallKinds:
     error("runOffload expects a call expression", expr)
 
-  let retType = expr.getTypeInst
+  let retType = offloadResultType(expr)
   let fnExpr = expr[0]
 
   let workerProc = genSym(nskProc, "runOffloadWorker")
@@ -432,7 +441,7 @@ macro runOffloadOutcome*(
   if expr.kind notin nnkCallKinds:
     error("runOffloadOutcome expects a call expression", expr)
 
-  let retType = expr.getTypeInst
+  let retType = offloadResultType(expr)
   let awaitProc = genSym(nskProc, "runOffloadOutcomeAwait")
   let runCall = newCall(bindSym"runOffload", expr)
 
