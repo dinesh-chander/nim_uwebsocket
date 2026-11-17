@@ -9741,7 +9741,7 @@ proc isAsciiOnly(data: string): bool {.inline.} =
       let p = cast[uint](unsafeAddr data[0])
       while i + 8 <= data.len:
         var w: uint64
-        copyMem(addr w, cast[pointer](p + i), 8)
+        copyMem(addr w, cast[pointer](p + uint(i)), 8)
         if (w and 0x8080808080808080'u64) != 0:
           return false
         i += 8
@@ -9773,7 +9773,7 @@ proc isAsciiOnlyBytes(data: openArray[byte], start: int, length: int): bool {.in
       let p = cast[uint](unsafeAddr data[start])
       while i + 8 <= length:
         var w: uint64
-        copyMem(addr w, cast[pointer](p + i), 8)
+        copyMem(addr w, cast[pointer](p + uint(i)), 8)
         if (w and 0x8080808080808080'u64) != 0:
           return false
         i += 8
