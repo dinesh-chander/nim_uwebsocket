@@ -115,3 +115,44 @@ jobs:
 
       - name: Run every unit gate
         run: HARNESS_JOBS=2 bash scripts/harness_all.sh
+
+  # ------------------------------------------------------------------- coverage
+  # ci/coverage-baseline.json sat unenforced: no workflow ran scripts/coverage.sh.
+  # This is the slow job of the set -- every discovered test is rebuilt with clang
+  # instrumentation, then run -- so it pins one Nim version: instrumentation
+  # changes codegen anyway, so a second compiler axis would measure a third thing.
+  coverage:
+    name: coverage (floor gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config liburing-dev libsqlite3-dev sqlite3 clang llvm
+
+      - name: Set up Nim
+        uses: jiro4989/setup-nim-action@v2.3.0
+        with:
+          nim-version: "2.4.0"
+
+      - name: Measure instrumented coverage
+        run: COVERAGE_JOBS=2 bash scripts/coverage.sh
+
+      - name: Enforce the floor
+        run: bash scripts/coverage_gate.sh --baseline ci/coverage-baseline.json --out coverage
+
+      - name: Upload the summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-summary
+          path: |
+            coverage/summary.md
+            coverage/build_failures.txt
+            coverage/failed_tests.txt
+            coverage/report_failures.txt
+          if-no-files-found: warn

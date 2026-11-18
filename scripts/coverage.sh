@@ -19,6 +19,8 @@
 #   NIM               nim binary (default: nim)
 #   NIM_EXTRA_FLAGS   extra nim flags, same semantics as test_all.sh
 #   COVERAGE_JOBS     parallel compile workers (default: nproc)
+#   COVERAGE_HTML     0 skips the per-binary HTML export (default: 1); the gate
+#                     reads summary.md, so 0 is fine on a memory-capped host
 
 set -euo pipefail
 
@@ -41,6 +43,8 @@ HTML_DIR="$COVERAGE_OUT/html"
 MERGED="$COVERAGE_OUT/merged.profdata"
 BUILD_FAILURES="$COVERAGE_OUT/build_failures.txt"
 FAILED_TESTS="$COVERAGE_OUT/failed_tests.txt"
+REPORT_FAILURES="$COVERAGE_OUT/report_failures.txt"
+HTML_FAILURES="$COVERAGE_OUT/html_failures.txt"
 
 command -v "$NIM" >/dev/null 2>&1 || { echo "error: $NIM not found on PATH" >&2; exit 1; }
 command -v clang >/dev/null 2>&1 || { echo "error: clang not found on PATH" >&2; exit 1; }
@@ -70,6 +74,8 @@ fi
 command -v llvm-profdata >/dev/null 2>&1 || { echo "error: llvm-profdata not found on PATH" >&2; exit 1; }
 
 mkdir -p "$BIN_DIR" "$CACHE_DIR" "$LOG_DIR" "$REPORT_DIR" "$HTML_DIR"
+: >"$REPORT_FAILURES"
+: >"$HTML_FAILURES"
 
 # Same --path list as scripts/test_all.sh
 COMMON_PATHS=(
@@ -141,16 +147,22 @@ fi
 echo "coverage: ${#MANIFEST[@]} test binaries selected (filter='${COVERAGE_FILTER:-<all>}') -> $COVERAGE_OUT"
 
 # ------------------------------------------- uSockets archive for clang/coverage
-# The shared uSockets.a (built by the root Makefile) is compiled with -flto, so
-# its archive members are GCC LTO objects. The clang driver used for coverage
-# (clang + ld.bfd) does not load the LTO plugin for archive members, so linking
-# it fails with `plugin needed to handle lto object` and
-# `undefined reference to us_socket_write*' for every uSockets-dependent test.
-# Workaround: build a non-LTO, coverage-instrumented archive from the same
-# vendored sources into $COVERAGE_OUT and link it AFTER the config-anchored
-# uSockets.a (that archive's LTO members are skipped with a warning; the
-# symbols resolve from this one). The shared uSockets.a is left untouched.
-# Incremental: rebuilt only when a vendored source is newer than the archive.
+# nim_express/config.nims puts `nim_usockets/usockets/uSockets.a` on the link line
+# of every compile in this tree, and the root Makefile builds that archive with
+# clang `-flto` (usockets/Makefile does `override CFLAGS += -flto`, so it cannot
+# be requested non-LTO from outside). Its members are therefore LLVM bitcode.
+# A link that does not enable LTO cannot read them at all:
+#
+#   ld: uSockets.a: error adding symbols: file format not recognized
+#
+# Appending a second, non-LTO instrumented archive does not help either, even if
+# the first archive were tolerated: ld takes the first definition it finds, the
+# anchored uninstrumented archive comes first, so the instrumented members are
+# never pulled and `llvm-cov report` lists zero uSockets/src files -- a green run
+# measuring nothing. So the instrumented archive is installed AT the anchored
+# path for the duration of the run and the original is restored on exit.
+# Incremental: the instrumented archive is rebuilt only when a vendored source is
+# newer than it.
 USOCKETS_DIR="$ROOT_DIR/nim_usockets/usockets"
 USOCKETS_COV_A=""
 # Serializes concurrent builds of the shared uSockets.a (smoke + coverage jobs
@@ -180,6 +192,42 @@ if [ -f "$USOCKETS_DIR/src/socket.c" ]; then
   fi
 fi
 
+# Install the instrumented archive at the anchored path and keep the real one
+# aside. A marker file is written first, because a hard kill (SIGKILL, OOM) skips
+# the traps: `make deps` then refuses every build until it is removed. Removing
+# the stamp alone is not enough -- validate-usockets-backend is not a prerequisite
+# of any target, and measured fact: with the stamp gone and the archive
+# instrumented, `make bench-smoke` still exited 0 and linked it.
+USOCKETS_A="$USOCKETS_DIR/uSockets.a"
+USOCKETS_STAMP="$USOCKETS_DIR/.uSockets.backend"
+USOCKETS_LTO_BACKUP="$COVERAGE_OUT/uSockets.lto.a.backup"
+USOCKETS_STAMP_BACKUP="$COVERAGE_OUT/uSockets.backend.backup"
+USOCKETS_MARKER="$USOCKETS_DIR/.uSockets.instrumented"
+USOCKETS_SWAPPED=0
+
+restore_usockets() {
+  [ "$USOCKETS_SWAPPED" = "1" ] && [ -f "$USOCKETS_LTO_BACKUP" ] || return 0
+  mv -f "$USOCKETS_LTO_BACKUP" "$USOCKETS_A"
+  rm -f "$USOCKETS_MARKER"
+  if [ -f "$USOCKETS_STAMP_BACKUP" ]; then
+    mv -f "$USOCKETS_STAMP_BACKUP" "$USOCKETS_STAMP"
+  fi
+  USOCKETS_SWAPPED=0
+  echo "restored the non-instrumented uSockets.a and its build stamp"
+}
+trap restore_usockets EXIT
+trap 'restore_usockets; exit 130' INT
+trap 'restore_usockets; exit 143' TERM
+
+if [ -n "${USOCKETS_COV_A:-}" ] && [ -f "$USOCKETS_COV_A" ] && [ -f "$USOCKETS_A" ]; then
+  cp -f "$USOCKETS_A" "$USOCKETS_LTO_BACKUP"
+  [ -f "$USOCKETS_STAMP" ] && mv -f "$USOCKETS_STAMP" "$USOCKETS_STAMP_BACKUP" || true
+  printf 'coverage-instrumented uSockets.a in place, written by scripts/coverage.sh\n' > "$USOCKETS_MARKER"
+  cp -f "$USOCKETS_COV_A" "$USOCKETS_A"
+  USOCKETS_SWAPPED=1
+  echo "coverage: instrumented uSockets.a installed at $USOCKETS_A"
+fi
+
 # ---------------------------------------------------------------- compile
 
 # build_one <idx<TAB>label<TAB>file>: compile one test with coverage flags.
@@ -202,11 +250,10 @@ build_one() {
     # shellcheck disable=SC2206
     read -ra ex <<<"$NIM_EXTRA_FLAGS"
   fi
-  # Link the non-LTO coverage archive after the config-anchored uSockets.a.
+  # Nothing uSockets-specific goes on the link line: the anchored archive at
+  # nim_usockets/usockets/uSockets.a is already the instrumented, non-LTO one
+  # (see the swap above), so there is exactly one archive and it is readable.
   passL="$COV_LFLAGS"
-  if [ -n "${USOCKETS_COV_A:-}" ] && [ -f "$USOCKETS_COV_A" ]; then
-    passL="$passL $USOCKETS_COV_A"
-  fi
   if "$NIM" c --cc:clang \
       --passC:"$COV_CFLAGS" \
       --passL:"$passL" \
@@ -290,7 +337,12 @@ for job in "${MANIFEST[@]}"; do
   [ -x "$bin" ] || continue
   name="${label}_${idx}_${base}"
   report="$REPORT_DIR/${name}.report"
-  llvm-cov report "$bin" -instr-profile="$MERGED" >"$report" 2>&1 || true
+  # A binary whose report fails contributes no rows, which shows up as silently
+  # lower coverage rather than as an error, so the loss is recorded for the gate.
+  if ! llvm-cov report "$bin" -instr-profile="$MERGED" >"$report" 2>"$LOG_DIR/report_${name}.log"; then
+    echo "coverage: llvm-cov report failed for $name (see $LOG_DIR/report_${name}.log)" >&2
+    echo "$name" >>"$REPORT_FAILURES"
+  fi
   {
     echo "=== $name ==="
     echo
@@ -301,9 +353,19 @@ for job in "${MANIFEST[@]}"; do
   # llvm-cov report columns: 1=Filename ... 8=Lines 9=Missed Lines 10=LineCov%
   awk 'NF>=10 && $1!="Filename" && $1!="TOTAL" && $8 ~ /^[0-9]+$/ && $9 ~ /^[0-9]+$/ \
        { print $1 "\t" $8 "\t" $9 }' "$report" >>"$ALL_TSV"
-  # llvm-cov export cannot emit HTML (JSON/lcov only); llvm-cov show does.
-  llvm-cov show "$bin" -instr-profile="$MERGED" \
-    --format=html --output-dir="$HTML_DIR/$name"
+  # llvm-cov export cannot emit HTML (JSON/lcov only); llvm-cov show does. HTML is
+  # diagnostics only -- the gate reads summary.md -- and `llvm-cov show` peaks at
+  # several GiB on the largest binaries, so a killed export must not void a
+  # measurement that is already in hand. On a memory-capped host the thrash costs
+  # minutes per binary, so COVERAGE_HTML=0 skips the stage outright.
+  if [ "${COVERAGE_HTML:-1}" != "1" ]; then
+    continue
+  fi
+  if ! llvm-cov show "$bin" -instr-profile="$MERGED" \
+      --format=html --output-dir="$HTML_DIR/$name" 2>>"$LOG_DIR/html.log"; then
+    echo "coverage: html export failed for $name (non-fatal; see $LOG_DIR/html.log)" >&2
+    echo "$name" >>"$HTML_FAILURES"
+  fi
 done
 
 # ---------------------------------------------------------------- summary

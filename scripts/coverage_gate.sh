@@ -38,11 +38,17 @@ TOLERANCE="${COVERAGE_TOLERANCE_PP:-0.25}"
 # Hard failures first: failed tests/builds make the number meaningless.
 FAILED_TESTS=0
 FAILED_BUILDS=0
+FAILED_REPORTS=0
 if [ -s "$OUT_DIR/failed_tests.txt" ]; then
   FAILED_TESTS=$(wc -l <"$OUT_DIR/failed_tests.txt" | tr -d ' ')
 fi
 if [ -s "$OUT_DIR/build_failures.txt" ]; then
   FAILED_BUILDS=$(wc -l <"$OUT_DIR/build_failures.txt" | tr -d ' ')
+fi
+# A binary whose llvm-cov report failed is missing rows, so the percentage is
+# understated. Absent file (older runs) counts as zero.
+if [ -s "$OUT_DIR/report_failures.txt" ]; then
+  FAILED_REPORTS=$(wc -l <"$OUT_DIR/report_failures.txt" | tr -d ' ')
 fi
 
 # Per-package table from summary.md. Prefer the explicit **Total** row;
@@ -93,10 +99,10 @@ summary "- Baseline: ${BASELINE_PCT}% (${BASELINE})"
 summary "- Tolerance: ${TOLERANCE} pp"
 summary
 
-if [ "$FAILED_TESTS" -gt 0 ] || [ "$FAILED_BUILDS" -gt 0 ]; then
+if [ "$FAILED_TESTS" -gt 0 ] || [ "$FAILED_BUILDS" -gt 0 ] || [ "$FAILED_REPORTS" -gt 0 ]; then
   summary
-  summary "**FAIL: coverage suite was not green** — failed tests: $FAILED_TESTS, failed builds: $FAILED_BUILDS"
-  echo "coverage_gate: FAIL — $FAILED_TESTS failed tests, $FAILED_BUILDS failed builds; coverage numbers are not trustworthy" >&2
+  summary "**FAIL: coverage suite was not green** — failed tests: $FAILED_TESTS, failed builds: $FAILED_BUILDS, failed reports: $FAILED_REPORTS"
+  echo "coverage_gate: FAIL — $FAILED_TESTS failed tests, $FAILED_BUILDS failed builds, $FAILED_REPORTS failed reports; coverage numbers are not trustworthy" >&2
   exit 1
 fi
 

@@ -9,6 +9,7 @@
 #
 # Usage: ./scripts/ci_local.sh            run everything for this platform
 #        SKIP_FUZZ=1 ./scripts/ci_local.sh  skip the slow fuzz layer
+#        SKIP_COVERAGE=1 ./scripts/ci_local.sh  skip the instrumented coverage run
 set -uo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -74,6 +75,19 @@ if [ "$IS_LINUX" = "1" ]; then
   fi
 else
   run_step smoke-gcd bash scripts/macos_smoke.sh
+fi
+
+# Coverage floor from ci/coverage-baseline.json. Slow: every discovered test is
+# rebuilt with clang instrumentation and run, so this is opt-out. The gate fails
+# on a suite that is not green as well as on a dropped number, which is what makes
+# it worth the minutes.
+if [ "$IS_LINUX" = "1" ] && [ "${SKIP_COVERAGE:-0}" != "1" ]; then
+  run_step coverage env COVERAGE_JOBS="${COVERAGE_JOBS:-2}" bash -c \
+    'bash scripts/coverage.sh && bash scripts/coverage_gate.sh --baseline ci/coverage-baseline.json --out coverage'
+elif [ "${SKIP_COVERAGE:-0}" = "1" ]; then
+  SKIPPED+=("coverage (SKIP_COVERAGE=1)")
+else
+  SKIPPED+=("coverage (Linux only)")
 fi
 
 if [ "$IS_LINUX" = "1" ] && [ "${SKIP_FUZZ:-0}" != "1" ]; then
