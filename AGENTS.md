@@ -170,6 +170,17 @@ curl -sI -H "Upgrade: websocket" -H "Connection: Upgrade" \
   `nim_websocketcli/config.nims` switches on the target CPU; `scripts/macos_smoke.sh`
   builds with the default `NATIVE_OPT=1` so a host that rejects a spelling is caught.
 
+## Coverage floor
+`scripts/coverage.sh` measures LLVM line coverage across the whole suite; `scripts/coverage_gate.sh`
+compares it with `ci/coverage-baseline.json` (the `coverage` job in `ci.yml`, mirrored by the
+`coverage` step of `scripts/ci_local.sh`, `SKIP_COVERAGE=1` to opt out). The gate also fails when any
+instrumented build or test fails, so a red suite cannot report a quietly acceptable percentage.
+`nim_express/config.nims` anchors `nim_usockets/usockets/uSockets.a` on every link and that archive is
+clang LTO bitcode, so the run installs an instrumented non-LTO archive at that path and puts the real
+one back on exit. If the run is killed, `make deps` refuses every build until the marker is cleared:
+`rm -f nim_usockets/usockets/.uSockets.instrumented && make usockets`. Raise the floor only from a
+green local run: `bash scripts/coverage.sh && python3 scripts/update_coverage_baseline.py coverage/summary.md`.
+
 ## Benchmarking
 ```bash
 cd benchmark

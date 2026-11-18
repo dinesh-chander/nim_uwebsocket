@@ -91,6 +91,8 @@ nim_utils/src/nim_utils/nim_fastjson/build/
 nim_utils/src/nim_utils/nim_fastjson/simdjson/build/
 nim_usockets/usockets/uSockets.a
 nim_usockets/usockets/.uSockets.backend
+# left behind when an interrupted scripts/coverage.sh run is recovered by hand
+nim_usockets/usockets/.uSockets.instrumented
 
 # Python helper caches
 __pycache__/

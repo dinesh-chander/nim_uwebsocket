@@ -185,7 +185,18 @@ build: build-all
 
 build-all: deps usockets
 
+# A coverage run installs an instrumented, non-LTO uSockets.a at the anchored
+# path and puts the real one back on exit. If that run is killed hard, the marker
+# below is all that is left, and targets that only prereq `deps` (bench-smoke, the
+# compat checks, macos-smoke) never rebuild the archive -- they would link
+# instrumented uSockets into a release binary and report release numbers.
 deps:
+	@test ! -f "$(USOCKETS_DIR)/.uSockets.instrumented" || { \
+		echo "nim_usockets/usockets/uSockets.a is the coverage-instrumented archive:" >&2; \
+		echo "an interrupted scripts/coverage.sh run left it in place. Recovery:" >&2; \
+		echo "  rm -f $(USOCKETS_DIR)/.uSockets.instrumented && make usockets" >&2; \
+		exit 1; \
+	}
 	./scripts/ensure_deps.sh
 
 check-iouring-deps:

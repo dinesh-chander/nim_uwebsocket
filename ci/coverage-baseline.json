@@ -1,35 +1,35 @@
 {
-  "coverage_pct": 49.44,
-  "total_lines": 3732096,
-  "total_missed": 1887063,
+  "coverage_pct": 53.16,
+  "total_lines": 5156180,
+  "total_missed": 2415314,
   "tolerance_pp": 0.25,
-  "updated": "2026-10-17T21:25:19Z",
+  "updated": "2026-11-18T10:50:54Z",
   "packages": {
     "nim_utils": {
-      "lines": 761644,
-      "missed": 369878,
-      "coverage_pct": 51.44
+      "lines": 754478,
+      "missed": 192829,
+      "coverage_pct": 74.44
     },
     "nim_fastjson": {
-      "lines": 420052,
-      "missed": 236361,
-      "coverage_pct": 43.73
+      "lines": 683899,
+      "missed": 408025,
+      "coverage_pct": 40.34
     },
     "nim_usockets": {
-      "lines": 817839,
-      "missed": 526597,
-      "coverage_pct": 35.61
+      "lines": 1190337,
+      "missed": 679699,
+      "coverage_pct": 42.9
     },
     "nim_fasthttpclient": {
-      "lines": 218282,
-      "missed": 121248,
-      "coverage_pct": 44.45
+      "lines": 341000,
+      "missed": 175434,
+      "coverage_pct": 48.55
     },
     "nim_express": {
-      "lines": 1514279,
-      "missed": 632979,
-      "coverage_pct": 58.2
+      "lines": 2186466,
+      "missed": 959327,
+      "coverage_pct": 56.12
     }
   },
-  "note": "Full-suite LLVM line coverage over scripts/test_all.sh discovery. Raise only after a green `bash scripts/coverage.sh` run; the CI gate (scripts/coverage_gate.sh) fails when coverage drops more than tolerance_pp below this baseline."
+  "note": "Full-suite LLVM line coverage over scripts/test_all.sh discovery, including the vendored uSockets C sources that scripts/coverage.sh now instruments at the anchored archive path. Raise only after a green `bash scripts/coverage.sh` run; the CI gate (scripts/coverage_gate.sh) fails when coverage drops more than tolerance_pp below this baseline, or when any instrumented build, test, or report failed. Measured run-to-run spread on identical trees was 0.07 pp (53.09, 53.16, 53.16), so tolerance_pp 0.25 stays above the noise floor."
 }
