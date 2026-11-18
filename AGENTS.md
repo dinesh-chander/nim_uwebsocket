@@ -200,4 +200,6 @@ Use `benchmark/` for performance regressions only after functional correctness i
 Every package and every `nim_express` middleware has per-unit AI-agent guardrails and an executable gate under `harness/` (see `harness/README.md`):
 - `harness/<package>/AGENTS.md` — ownership + hard rules for that layer; `harness/<package>/run.sh` — gate, exit 0 only when green.
 - `harness/middleware/<name>/AGENTS.md` + `run.sh` — same, per middleware (36 units).
+- `scripts/harness_all.sh` — runs all 41 unit gates (`HARNESS_JOBS=2` in CI); the
+  `harness-gates` job in `.github/workflows/ci.yml` fails if any unit is red.
 Agents: read the unit's AGENTS.md before editing, add regression tests, and report done only when the unit's `run.sh` exits 0.
