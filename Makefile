@@ -173,17 +173,31 @@ endif
 WEBSOCKETLOAD_BIN ?= nim_websocketcli/websocketload
 WS_RANDOM_OBJECT_BENCH_BIN ?= benchmark/ws_random_object_bench
 
-# Build targets
-.PHONY: all build build-all deps check-iouring-deps usockets validate-usockets-backend usockets-gcd usockets-kqueue usockets-epoll usockets-iouring bench benchmarks bench-gcd bench-kqueue bench-epoll bench-iouring bench-smoke linux-compat-check macos-compat-check macos-smoke production-check websocketload ws-echo-bench ws-random-object-bench ws-scale-setup examples build-examples test coverage verify clean clean-examples clean-bench clean-all ci
+# Example apps discovered at parse time; each becomes an ex-<name> job.
+EXAMPLE_NAMES := $(notdir $(patsubst %.nim,%,$(wildcard examples/*.nim)))
+EXAMPLE_TARGETS := $(addprefix ex-,$(EXAMPLE_NAMES))
 
-NIM_PARALLEL ?= --parallelBuild:8
+# Build targets
+.PHONY: $(EXAMPLE_TARGETS) all build build-all deps check-iouring-deps usockets validate-usockets-backend usockets-gcd usockets-kqueue usockets-epoll usockets-iouring bench benchmarks bench-gcd bench-kqueue bench-epoll bench-iouring bench-smoke linux-compat-check macos-compat-check macos-smoke production-check websocketload ws-echo-bench ws-random-object-bench ws-scale-setup examples build-examples test coverage verify clean clean-examples clean-bench clean-all ci
+
+# Parallel build knobs:
+# - JOBS: how many independent make jobs (example apps, binaries, doc sets)
+#   run concurrently. Defaults to the core count; override with JOBS=N.
+# - NIM_PARALLEL: Nim's per-module codegen threads inside ONE compile. Kept
+#   modest because many compiles already run side by side; raise it when
+#   building a single binary (bench, one example).
+JOBS ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+NIM_PARALLEL ?= --parallelBuild:2
 
 all: build-all
 
 # Build uSockets.
 build: build-all
 
+# Everything: deps -> uSockets first, then all binaries and example apps
+# concurrently (each app only needs uSockets, not the other apps).
 build-all: deps usockets
+	$(MAKE) -j$(JOBS) bench websocketload ws-echo-bench ws-random-object-bench $(EXAMPLE_TARGETS)
 
 # A coverage run installs an instrumented, non-LTO uSockets.a at the anchored
 # path and puts the real one back on exit. If that run is killed hard, the marker
@@ -352,20 +366,29 @@ ws-scale-setup:
 	@chmod +x nim_websocketcli/scripts/ws_scale_linux.sh 2>/dev/null || true
 	@echo "Run: sudo bash $(CURDIR)/nim_websocketcli/scripts/ws_scale_linux.sh 64"
 
-# Build examples in parallel
-examples build-examples: deps usockets
+# One job per example app: examples/<name>.nim -> examples/bin/<name>.
+# Explicit per-app rules (a pattern rule would not match these .PHONY targets
+# under GNU make), sharing deps+usockets once; under -j$(JOBS) every app
+# compiles alongside the others.
+# Recipes run from examples/ (same cwd/flags as the old sequential loop) so
+# per-app nimcaches keep their cached relative link paths.
+define example_rule
+ex-$(1): deps usockets
+	cd examples && $(NIM) c $(NIM_PARALLEL) -d:release --opt:speed --mm:arc --stackTrace:on $(NIM_EXTRA_FLAGS) \
+		--path:../nim_utils/src --path:../nim_usockets/src --path:../nim_express/src --path:../nim_fasthttpclient/src \
+		--path:../vendor/zippy/src --path:../vendor/brotli/src --path:../vendor/nim_zstd \
+		--path:../vendor/nim_libdeflate_gzip/src --path:../vendor/malebolgia/src \
+		--path:../vendor/jsony/src --path:../vendor/checksums --path:../vendor/nimsimd/src \
+		--passC:"$(C_OPT_FLAGS)" \
+		--passL:"../$(LINK_FLAGS) $(L_OPT_FLAGS)" \
+		-o:bin/$(1) ./$(1).nim
+endef
+$(foreach ex,$(EXAMPLE_NAMES),$(eval $(call example_rule,$(ex))))
+
+# Build every example app in parallel (deps -> usockets -> apps).
+examples build-examples:
 	@mkdir -p examples/bin
-	@set -e; cd examples; for file in *.nim; do \
-		name=$${file%.nim}; \
-			echo "Building $$name"; \
-			$(NIM) c $(NIM_PARALLEL) -d:release --opt:speed --mm:arc --stackTrace:on $(NIM_EXTRA_FLAGS) \
-				--path:../nim_utils/src --path:../nim_usockets/src --path:../nim_express/src --path:../nim_fasthttpclient/src \
-				--path:../vendor/zippy/src --path:../vendor/brotli/src --path:../vendor/nim_zstd \
-				--path:../vendor/nim_libdeflate_gzip/src --path:../vendor/malebolgia/src \
-				--path:../vendor/jsony/src --path:../vendor/checksums --path:../vendor/nimsimd/src \
-				--passC:"$(C_OPT_FLAGS)" \
-				--passL:"../$(LINK_FLAGS) $(L_OPT_FLAGS)" -o:"bin/$$name" "./$$file"; \
-		done
+	$(MAKE) -j$(JOBS) $(EXAMPLE_TARGETS)
 
 test: deps usockets
 	NIM_EXTRA_FLAGS="$(NIM_EXTRA_FLAGS)" bash scripts/test_all.sh
@@ -411,7 +434,9 @@ clean-all: clean
 		benchmark/ws_random_object_bench benchmark/bench_test \
 		$(WEBSOCKETLOAD_BIN) 2>/dev/null || true
 
-docs: docs-express docs-usockets docs-fasthttpclient docs-fastjson docs-async-logger docs-fast-map docs-fast-set
+# Doc sets are independent (own outdir each) -> generate concurrently.
+docs:
+	$(MAKE) -j$(JOBS) docs-express docs-usockets docs-fasthttpclient docs-fastjson docs-async-logger docs-fast-map docs-fast-set
 	@echo "API docs generated in doc/api/"
 
 docs-express:
